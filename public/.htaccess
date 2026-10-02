@@ -1,0 +1,21 @@
+# Per Phase 0 §34/§67: plain Apache + PHP, no Node/Docker required.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Serve real files/directories (e.g. /assets/themes/...) directly.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Everything else goes through the front controller.
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Never serve .env, config, or other non-public files even if a
+# misconfiguration ever exposes this directory listing.
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes

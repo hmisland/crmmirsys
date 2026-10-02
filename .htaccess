@@ -1,0 +1,17 @@
+# Preferred cPanel deployment: point the domain's Document Root at
+# /public directly (Addon Domain / Subdomain settings). In that setup
+# this file is never even read and can be left in place harmlessly.
+#
+# Fallback for hosts where the document root is fixed at the account
+# root: rewrite everything into /public transparently, and explicitly
+# block direct access to the non-public application folders so they
+# can never be served as static files even if someone requests them
+# by exact path.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+</IfModule>
+
+RedirectMatch 404 ^/(app|config|database|storage|themes|routes|modules|tests|\.env)(/|$)

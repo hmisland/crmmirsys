@@ -1,0 +1,9 @@
+{
+    "key": "internal_mail",
+    "name": "Internal Mail",
+    "version": "1.0.0",
+    "type": "optional",
+    "is_core": false,
+    "dependencies": [],
+    "bootstrap": "Modules\\InternalMail\\InternalMailModule"
+}

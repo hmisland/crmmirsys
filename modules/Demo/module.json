@@ -1,0 +1,9 @@
+{
+    "key": "demo",
+    "name": "Demo",
+    "version": "1.0.0",
+    "type": "optional",
+    "is_core": false,
+    "dependencies": [],
+    "bootstrap": "Modules\\Demo\\DemoModule"
+}

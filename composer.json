@@ -1,0 +1,27 @@
+{
+    "name": "crm-platform/app",
+    "description": "Commercial modular multi-tenant CRM platform.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "comment": "Runtime autoloading uses app/autoload.php (no Composer dependency in production, per Phase 0 hosting constraints). This section only lets tools like PHPUnit and IDEs resolve classes during local development.",
+        "psr-4": {
+            "App\\": "app/",
+            "Modules\\": "modules/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}

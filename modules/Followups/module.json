@@ -1,0 +1,9 @@
+{
+    "key": "followups",
+    "name": "Follow-ups",
+    "version": "1.0.0",
+    "type": "optional",
+    "is_core": false,
+    "dependencies": [],
+    "bootstrap": "Modules\\Followups\\FollowupsModule"
+}

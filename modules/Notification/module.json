@@ -1,0 +1,9 @@
+{
+    "key": "notifications",
+    "name": "Notifications (Bale + SMS)",
+    "version": "1.0.0",
+    "type": "addon",
+    "is_core": false,
+    "dependencies": ["wallet"],
+    "bootstrap": "Modules\\Notification\\NotificationModule"
+}

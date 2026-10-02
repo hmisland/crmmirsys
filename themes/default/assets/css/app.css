@@ -1,0 +1,604 @@
+:root {
+    --color-bg: #f5f6f8;
+    --color-surface: #ffffff;
+    --color-text: #1b1f24;
+    --color-muted: #6b7280;
+    --color-border: #e2e4e9;
+    --color-accent: #2f5fd6;
+    font-family: -apple-system, "Segoe UI", Tahoma, "Vazirmatn", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.app-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    padding: 1rem 1.5rem;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    position: relative;
+}
+
+.app-header__tag {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+.app-header__nav {
+    margin-inline-start: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.app-header__nav a { color: var(--color-accent); text-decoration: none; }
+.app-header__nav a:hover { text-decoration: underline; }
+
+.app-main {
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    display: grid;
+    gap: 1rem;
+}
+
+.card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 1.5rem;
+}
+
+.card--error {
+    text-align: center;
+}
+
+.muted { color: var(--color-muted); }
+
+code {
+    background: var(--color-bg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+}
+
+.app-footer {
+    text-align: center;
+    color: var(--color-muted);
+    padding: 2rem 1rem;
+    font-size: 0.85rem;
+}
+
+body.dir-rtl { direction: rtl; }
+body.dir-ltr { direction: ltr; }
+
+/* Phase 2 — auth forms, alerts, inline logout button */
+
+.card--form { max-width: 420px; margin: 0 auto; }
+
+.card--form h1 { margin-top: 0; font-size: 1.4rem; }
+
+.card--form form { display: grid; gap: 0.35rem; margin-top: 1rem; }
+
+/* Tabbed forms (e.g. the Contact form): grid must be reapplied INSIDE
+   each .tab-panel too — a .tab-panel is itself just one grid item of
+   the outer form grid, so its own children (labels/inputs) need this
+   or they fall back to default inline flow and visually jumble
+   together. This bit the real Contact edit form before it shipped. */
+.tab-panel {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.card--form label { font-size: 0.85rem; color: var(--color-muted); margin-top: 0.5rem; }
+
+.card--form input,
+.card--form select {
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.6rem 1.1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+}
+
+.btn--primary {
+    background: var(--color-accent);
+    color: #fff;
+    margin-top: 0.75rem;
+}
+
+.btn--primary:hover { opacity: 0.9; }
+
+.alert {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+.alert--success { background: #e6f4ea; color: #1e7a34; }
+.alert--error { background: #fdecea; color: #b3261e; }
+
+.field-error {
+    color: #b3261e;
+    font-size: 0.8rem;
+    margin-top: -0.2rem;
+}
+
+.inline-form { display: inline; margin: 0; }
+
+.link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-accent);
+    cursor: pointer;
+    font: inherit;
+    text-decoration: none;
+}
+
+.link-button:hover { text-decoration: underline; }
+
+/* Phase 3 — org admin tables and inline forms */
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+}
+
+.table-responsive {
+    /* Horizontal scroll on narrow screens instead of the table
+       squeezing columns unreadably or breaking the page layout. */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table th, .table td {
+    text-align: start;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.table th { color: var(--color-muted); font-weight: 600; font-size: 0.85rem; }
+
+.table--compact th, .table--compact td { padding: 0.35rem 0.5rem; font-size: 0.85rem; }
+
+.table select { padding: 0.25rem; }
+
+.inline-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.inline-form-row input, .inline-form-row select {
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+/* Phase 5 — CRM Core: tags, notes, timeline, attachments */
+
+.tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+
+.tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.85rem;
+}
+
+.tag-pill__remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-muted);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+}
+
+.tag-pill__remove:hover { color: #b3261e; }
+
+.note-list, .timeline-list, .attachment-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: grid;
+    gap: 0.6rem;
+}
+
+.note-list li, .attachment-list li {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.6rem;
+}
+
+.note-list p { margin: 0 0 0.25rem; }
+
+.checkbox-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-bg);
+    font-size: 0.75rem;
+    line-height: 1;
+    cursor: pointer;
+    margin-inline-end: 0.4rem;
+    vertical-align: middle;
+}
+
+.checkbox-toggle:hover { border-color: var(--color-accent); }
+
+.timeline-list li { font-size: 0.9rem; }
+
+/* Phase 6 — Sales kanban board */
+
+.kanban {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.kanban__column {
+    flex: 0 0 240px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 0.75rem;
+}
+
+.kanban__column h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+
+.kanban__card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.6rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.kanban__move { margin-top: 0.4rem; }
+.kanban__move select { width: 100%; padding: 0.25rem; font-size: 0.8rem; }
+
+/* Contact form — tabs and dynamic multi-value rows */
+
+.tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 1rem;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    color: var(--color-muted);
+    font-size: 0.95rem;
+    font-family: inherit;
+}
+
+.tab-btn.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+
+.field-hint { color: var(--color-muted); font-size: 0.78rem; margin-top: -0.15rem; }
+
+.repeat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--color-border);
+}
+
+.repeat-row select, .repeat-row input[type="text"], .repeat-row input[type="email"] {
+    padding: 0.4rem 0.55rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+.repeat-row__primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    font-weight: normal;
+    color: var(--color-muted);
+}
+
+/* System-wide date picker (see docs/conventions.md) */
+
+.crm-datepicker__popup {
+    position: absolute;
+    z-index: 50;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    padding: 0.6rem;
+    width: 260px;
+}
+
+.crm-datepicker__tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.crm-datepicker__tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+    color: var(--color-muted);
+    font-family: inherit;
+}
+
+.crm-datepicker__tab.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+
+.crm-datepicker__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.crm-datepicker__header button {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.1rem 0.5rem;
+    color: var(--color-text);
+}
+
+.crm-datepicker__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.2rem;
+}
+
+.crm-datepicker__grid button {
+    border: none;
+    background: var(--color-bg);
+    border-radius: 6px;
+    padding: 0.35rem 0;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.crm-datepicker__grid button:hover { background: var(--color-border); }
+.crm-datepicker__grid button.selected { background: var(--color-accent); color: #fff; }
+
+.crm-datepicker__label {
+    font: inherit;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+}
+.crm-datepicker__label:hover { background: var(--color-border); }
+
+.crm-datepicker__grid--months {
+    grid-template-columns: repeat(3, 1fr);
+}
+.crm-datepicker__grid--months button {
+    padding: 0.6rem 0;
+}
+
+.crm-datepicker__today {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 0.3rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: var(--color-accent);
+}
+
+/* Small screens: tighter spacing, full-width cards, no side margins
+   eating into already-limited width. */
+@media (max-width: 600px) {
+    .app-header { padding: 0.75rem 1rem; }
+    .app-main { margin: 1rem auto; padding: 0 0.75rem; gap: 0.75rem; }
+    .card { padding: 1rem; border-radius: 8px; }
+    .card--form { max-width: 100%; }
+    .inline-form-row { flex-direction: column; align-items: stretch; }
+    .inline-form-row input, .inline-form-row select, .inline-form-row button { width: 100%; }
+}
+
+/* Tag-pill input (tag-input.js) */
+.tag-input-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 0.4rem 0.5rem;
+    background: #fff;
+}
+.tag-input-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+.tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--color-primary-light, #eef2ff);
+    color: var(--color-primary, #3949ab);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.85rem;
+}
+.tag-pill-remove {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    color: inherit;
+    padding: 0;
+}
+.tag-input-text {
+    border: none;
+    outline: none;
+    flex: 1;
+    min-width: 120px;
+    padding: 0.2rem;
+}
+
+/* Gmail-style recipient picker (recipient-picker.js) — the wrapper/pills/text styles above are shared; this adds only the suggestion dropdown */
+.recipient-picker-wrapper {
+    max-width: 100%;
+}
+.recipient-picker-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    margin-top: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 220px;
+    overflow-y: auto;
+}
+.recipient-picker-suggestion {
+    padding: 0.45rem 0.6rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.recipient-picker-suggestion.is-active,
+.recipient-picker-suggestion:hover {
+    background: var(--color-primary-light, #eef2ff);
+}
+
+/* Dashboard */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.dashboard-tile h2 {
+    font-size: 0.95rem;
+    color: var(--color-text-muted, #666);
+    margin: 0 0 0.4rem;
+    font-weight: 600;
+}
+.dashboard-tile__number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.4rem;
+}
+.dashboard-tile__unit {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-text-muted, #666);
+}
+
+/* Mobile hamburger menu */
+.app-header__hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+}
+.app-header__hamburger span {
+    display: block;
+    height: 2px;
+    width: 100%;
+    background: currentColor;
+    border-radius: 2px;
+}
+
+@media (max-width: 780px) {
+    .app-header__hamburger {
+        display: flex;
+    }
+    .app-header__nav {
+        display: none;
+    }
+    .app-header__nav.is-open {
+        /* An overlay dropdown, not part of normal document flow —
+           the whole point is that opening it must NOT push the
+           page's own content down; it floats on top instead. */
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.25rem;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        width: auto;
+        background: var(--color-surface);
+        border-bottom: 1px solid var(--color-border);
+        padding: 0.75rem 1rem;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        z-index: 50;
+        max-height: calc(100vh - 100%);
+        overflow-y: auto;
+    }
+}

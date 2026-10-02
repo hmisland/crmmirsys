@@ -1,0 +1,9 @@
+{
+    "key": "wallet",
+    "name": "Wallet",
+    "version": "1.0.0",
+    "type": "addon",
+    "is_core": false,
+    "dependencies": [],
+    "bootstrap": "Modules\\Wallet\\WalletModule"
+}

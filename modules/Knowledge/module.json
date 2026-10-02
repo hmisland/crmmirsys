@@ -1,0 +1,9 @@
+{
+    "key": "knowledge",
+    "name": "Knowledge Base & Files",
+    "version": "1.0.0",
+    "type": "optional",
+    "is_core": false,
+    "dependencies": [],
+    "bootstrap": "Modules\\Knowledge\\KnowledgeModule"
+}
