@@ -7,6 +7,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 use App\Infrastructure\Geography\IranProvinces;
 
@@ -86,10 +87,10 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
             <input type="text" id="last_name" name="last_name" value="<?= $val('last_name') ?>">
 
             <label><?= e(t('contacts.field_title')) ?></label>
-            <label style="display:inline-flex;align-items:center;gap:0.3rem;font-weight:normal;margin-inline-end:1rem;">
+            <label class="check check--spaced">
                 <input type="radio" name="gender" value="male" <?= ($old['gender'] ?? $contact['gender'] ?? '') === 'male' ? 'checked' : '' ?>> <?= e(t('contacts.title_mr')) ?>
             </label>
-            <label style="display:inline-flex;align-items:center;gap:0.3rem;font-weight:normal;">
+            <label class="check">
                 <input type="radio" name="gender" value="female" <?= ($old['gender'] ?? $contact['gender'] ?? '') === 'female' ? 'checked' : '' ?>> <?= e(t('contacts.title_ms')) ?>
             </label>
 
@@ -156,7 +157,7 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
             <input type="text" id="country" name="country" value="<?= $val('country') ?>">
 
             <label for="description"><?= e(t('contacts.description')) ?></label>
-            <textarea id="description" name="description" rows="4" style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"><?= $val('description') ?></textarea>
+            <textarea id="description" name="description" rows="4"><?= $val('description') ?></textarea>
 
             <label for="interests"><?= e(t('contacts.interests')) ?></label>
             <input type="text" id="interests" name="interests" value="<?= e($old['interests'] ?? implode(', ', array_column($related['interests'], 'interest'))) ?>" placeholder="<?= e(t('contacts.interests_placeholder')) ?>">
@@ -175,7 +176,7 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
                             <option value="landline" <?= ($row['type'] ?? '') === 'landline' ? 'selected' : '' ?>><?= e(t('contacts.phone_type_landline')) ?></option>
                         </select>
                         <input type="text" name="phones[<?= e($key) ?>][number]" value="<?= e($row['number'] ?? '') ?>" placeholder="<?= e(t('contacts.phone_number_placeholder')) ?>">
-                        <button type="button" class="link-button remove-row"><?= e(t('common.remove')) ?></button>
+                        <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -186,7 +187,7 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
                 <?php foreach ($additionalEmailRows as $key => $row): ?>
                     <div class="repeat-row">
                         <input type="email" name="emails[<?= e($key) ?>][email]" value="<?= e($row['email'] ?? '') ?>" placeholder="<?= e(t('contacts.email_address_placeholder')) ?>">
-                        <button type="button" class="link-button remove-row"><?= e(t('common.remove')) ?></button>
+                        <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -206,14 +207,14 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
                         <input type="text" name="social[<?= e($key) ?>][custom_label]" value="<?= e($row['custom_label'] ?? '') ?>"
                                placeholder="<?= e(t('contacts.network_name_placeholder')) ?>" class="social-custom-label" <?= ($row['platform'] ?? '') !== 'custom' ? 'hidden' : '' ?>>
                         <input type="text" name="social[<?= e($key) ?>][value]" value="<?= e($row['value'] ?? '') ?>" placeholder="<?= e(t('contacts.profile_url_placeholder')) ?>">
-                        <button type="button" class="link-button remove-row"><?= e(t('common.remove')) ?></button>
+                        <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
                     </div>
                 <?php endforeach; ?>
             </div>
             <button type="button" class="btn" id="add-social">+ <?= e(t('contacts.add_social_network')) ?></button>
         </div>
 
-        <p style="margin-top:1.5rem"><button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button></p>
+        <p style="margin-top:1.5rem"><button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button></p>
     </form>
 </section>
 
@@ -224,14 +225,14 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
             <option value="landline"><?= e(t('contacts.phone_type_landline')) ?></option>
         </select>
         <input type="text" name="phones[__INDEX__][number]" placeholder="<?= e(t('contacts.phone_number_placeholder')) ?>">
-        <button type="button" class="link-button remove-row"><?= e(t('common.remove')) ?></button>
+        <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
     </div>
 </template>
 
 <template id="email-row-template">
     <div class="repeat-row">
         <input type="email" name="emails[__INDEX__][email]" placeholder="<?= e(t('contacts.email_address_placeholder')) ?>">
-        <button type="button" class="link-button remove-row"><?= e(t('common.remove')) ?></button>
+        <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
     </div>
 </template>
 
@@ -244,7 +245,7 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
         </select>
         <input type="text" name="social[__INDEX__][custom_label]" placeholder="<?= e(t('contacts.network_name_placeholder')) ?>" class="social-custom-label" hidden>
         <input type="text" name="social[__INDEX__][value]" placeholder="<?= e(t('contacts.profile_url_placeholder')) ?>">
-        <button type="button" class="link-button remove-row"><?= e(t('common.remove')) ?></button>
+        <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
     </div>
 </template>
 

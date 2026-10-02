@@ -8,6 +8,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -17,23 +19,23 @@ use App\Infrastructure\Security\Csrf;
         <?= $lead['phone'] ? ' · ' . e($lead['phone']) : '' ?>
         <?= $lead['company_name'] ? ' · ' . e($lead['company_name']) : '' ?>
     </p>
-    <p><?= e(t('leads.status')) ?>: <strong><?= e(t('leads.status.' . $lead['status'])) ?></strong> · <?= e(t('leads.score')) ?>: <?= e($lead['score']) ?></p>
+    <p><?= e(t('leads.status')) ?>: <strong><?= badge(t('leads.status.' . $lead['status']), $lead['status']) ?></strong> · <?= e(t('leads.score')) ?>: <?= e($lead['score']) ?></p>
 
-    <p>
+    <div class="actions">
         <?php if ($lead['status'] !== 'converted'): ?>
             <form method="post" action="/leads/<?= e($lead['id']) ?>/convert" class="inline-form">
                 <?= Csrf::field() ?>
-                <button type="submit" class="btn btn--primary"><?= e(t('leads.convert_to_contact')) ?></button>
+                <button type="submit" class="btn btn--primary"><?= icon('arrow-left-right') ?><?= e(t('leads.convert_to_contact')) ?></button>
             </form>
         <?php else: ?>
-            <a href="/contacts/<?= e($lead['converted_contact_id']) ?>" class="btn btn--primary"><?= e(t('leads.view_converted_contact')) ?></a>
+            <a href="/contacts/<?= e($lead['converted_contact_id']) ?>" class="btn btn--primary"><?= icon('eye') ?><?= e(t('leads.view_converted_contact')) ?></a>
         <?php endif; ?>
-        <a href="/leads/<?= e($lead['id']) ?>/edit" class="btn"><?= e(t('common.edit')) ?></a>
+        <a href="/leads/<?= e($lead['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
         <form method="post" action="/leads/<?= e($lead['id']) ?>/delete" class="inline-form">
             <?= Csrf::field() ?>
-            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
         </form>
-    </p>
+    </div>
 </section>
 
 <?php

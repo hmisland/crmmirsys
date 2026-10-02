@@ -5,11 +5,13 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
     <h1><?= e(t('notif.admin_title')) ?></h1>
-    <p style="font-size:1.6rem;font-weight:700"><?= e(t('notif.credit_balance')) ?>: <?= e(number_format((float) $balance, 0)) ?></p>
+    <p class="stat-value"><?= e(t('notif.credit_balance')) ?>: <?= e(number_format((float) $balance, 0)) ?></p>
 </section>
 
 <section class="card card--form">
@@ -19,7 +21,7 @@ use App\Infrastructure\Security\Csrf;
         <?= Csrf::field() ?>
         <label for="amount"><?= e(t('wallet.amount')) ?></label>
         <input type="number" id="amount" name="amount" min="1" required>
-        <button type="submit" class="btn btn--primary"><?= e(t('notif.charge')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('coins') ?><?= e(t('notif.charge')) ?></button>
     </form>
 </section>
 
@@ -56,7 +58,7 @@ use App\Infrastructure\Security\Csrf;
             <tr>
                 <td><?= e($log['created_at']) ?></td>
                 <td><?= e(t('notif.channel.' . $log['channel'])) ?></td>
-                <td><?= e(t('notif.log_status.' . $log['status'])) ?></td>
+                <td><?= badge(t('notif.log_status.' . $log['status']), $log['status']) ?></td>
                 <td class="muted"><?= e($log['detail'] ?? '') ?></td>
             </tr>
         <?php endforeach; ?>

@@ -5,6 +5,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -43,6 +44,6 @@ use App\Infrastructure\Security\Csrf;
         <label><input type="checkbox" name="is_won" value="1"> <?= e(t('deals.stage_means_won')) ?></label>
         <label><input type="checkbox" name="is_lost" value="1"> <?= e(t('deals.stage_means_lost')) ?></label>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('deals.add_stage')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('deals.add_stage')) ?></button>
     </form>
 </section>

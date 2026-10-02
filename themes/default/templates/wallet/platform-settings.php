@@ -5,6 +5,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card card--form">
@@ -29,7 +30,7 @@ use App\Infrastructure\Security\Csrf;
         <label for="max_topup"><?= e(t('wallet.max_topup')) ?></label>
         <input type="number" id="max_topup" name="max_topup" value="<?= e($settings['max_topup']) ?>" required>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
     </form>
 </section>
 
@@ -47,7 +48,7 @@ use App\Infrastructure\Security\Csrf;
                 <td>
                     <form method="post" action="/admin/wallet/banks/<?= e($bank['id']) ?>/deactivate" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('common.remove')) ?></button>
+                        <button type="submit" class="link-button"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
                     </form>
                 </td>
             </tr>
@@ -66,6 +67,6 @@ use App\Infrastructure\Security\Csrf;
         <?= Csrf::field() ?>
         <label for="name"><?= e(t('common.name')) ?></label>
         <input type="text" id="name" name="name" required>
-        <button type="submit" class="btn btn--primary"><?= e(t('wallet.add')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('wallet.add')) ?></button>
     </form>
 </section>

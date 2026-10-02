@@ -4,6 +4,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -18,7 +19,7 @@ use App\Infrastructure\Security\Csrf;
                 <td>
                     <form method="post" action="/org/structure/departments/<?= e($department['id']) ?>/delete" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                        <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                     </form>
                 </td>
             </tr>
@@ -32,7 +33,7 @@ use App\Infrastructure\Security\Csrf;
     <form method="post" action="/org/structure/departments" class="inline-form-row">
         <?= Csrf::field() ?>
         <input type="text" name="name" placeholder="<?= e(t('org.new_department_name')) ?>" required>
-        <button type="submit" class="btn btn--primary"><?= e(t('org.add_department')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('org.add_department')) ?></button>
     </form>
 </section>
 
@@ -57,7 +58,7 @@ use App\Infrastructure\Security\Csrf;
                 <td>
                     <form method="post" action="/org/structure/teams/<?= e($team['id']) ?>/delete" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                        <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                     </form>
                 </td>
             </tr>
@@ -71,12 +72,12 @@ use App\Infrastructure\Security\Csrf;
     <form method="post" action="/org/structure/teams" class="inline-form-row">
         <?= Csrf::field() ?>
         <input type="text" name="name" placeholder="<?= e(t('org.new_team_name')) ?>" required>
-        <select name="department_id">
+        <select aria-label="<?= e(t('org.department')) ?>" name="department_id">
             <option value=""><?= e(t('org.no_department')) ?></option>
             <?php foreach ($departments as $department): ?>
                 <option value="<?= e($department['id']) ?>"><?= e($department['name']) ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="btn btn--primary"><?= e(t('org.add_team')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('org.add_team')) ?></button>
     </form>
 </section>

@@ -5,6 +5,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -24,12 +25,12 @@ use App\Infrastructure\Security\Csrf;
                     <?php if ($status === 'disabled'): ?>
                         <form method="post" action="/org/modules/<?= e($module['id']) ?>/access/<?= e($user['id']) ?>/allow" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('org.remove_restriction')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('check') ?><?= e(t('org.remove_restriction')) ?></button>
                         </form>
                     <?php else: ?>
                         <form method="post" action="/org/modules/<?= e($module['id']) ?>/access/<?= e($user['id']) ?>/restrict" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('org.restrict')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('ban') ?><?= e(t('org.restrict')) ?></button>
                         </form>
                     <?php endif; ?>
                 </td>

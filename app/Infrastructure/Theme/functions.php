@@ -49,3 +49,49 @@ function t(string $key, array $replace = []): string
 
     return $translator->get($key, $replace);
 }
+
+/**
+ * Presentation-only helper: references one symbol from the theme's
+ * inline SVG sprite (themes/<name>/templates/partials/icons.php, which
+ * the layout prints once per page). One icon set, one stroke weight,
+ * one sizing rule — templates never paste raw SVG. Icons are
+ * decorative (aria-hidden) by design: the visible text label next to
+ * an icon, or an aria-label on an icon-only control, is what assistive
+ * technology reads. Directional icons (arrows/chevrons) get the
+ * `icon--dir` class so the theme mirrors them in RTL locales.
+ */
+function icon(string $name, string $class = ''): string
+{
+    static $directional = ['chevron-right', 'chevron-left', 'arrow-right', 'arrow-left', 'log-in', 'log-out', 'reply', 'send', 'undo'];
+
+    $classes = trim('icon ' . (in_array($name, $directional, true) ? 'icon--dir ' : '') . $class);
+
+    return '<svg class="' . e($classes) . '" aria-hidden="true" focusable="false"><use href="#i-' . e($name) . '"></use></svg>';
+}
+
+/**
+ * Presentation-only helper: renders an already-translated status label
+ * as a colored pill. The raw status value only picks a color tone —
+ * one shared vocabulary across modules, so "paid", "won" and
+ * "resolved" all read as success everywhere. Unknown values fall back
+ * to neutral rather than guessing.
+ */
+function badge(string $label, ?string $status): string
+{
+    static $tones = [
+        'success' => ['active', 'won', 'paid', 'accepted', 'converted', 'completed', 'resolved', 'approved', 'delivered', 'enabled'],
+        'warning' => ['pending', 'partial', 'in_progress', 'contacted', 'unpaid', 'expired'],
+        'danger' => ['lost', 'rejected', 'cancelled', 'failed', 'disabled', 'unqualified', 'deprecated'],
+        'info' => ['issued', 'open', 'new', 'qualified', 'sent', 'scheduled'],
+    ];
+
+    $tone = 'neutral';
+    foreach ($tones as $candidate => $values) {
+        if (in_array((string) $status, $values, true)) {
+            $tone = $candidate;
+            break;
+        }
+    }
+
+    return '<span class="badge' . ($tone !== 'neutral' ? ' badge--' . $tone : '') . '">' . e($label) . '</span>';
+}

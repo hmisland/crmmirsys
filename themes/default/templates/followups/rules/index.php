@@ -5,6 +5,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -27,7 +28,7 @@ use App\Infrastructure\Security\Csrf;
                     </form>
                     <form method="post" action="/followups/rules/<?= e($r['id']) ?>/delete" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                        <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                     </form>
                 </td>
             </tr>
@@ -58,20 +59,20 @@ use App\Infrastructure\Security\Csrf;
         <div class="field-hint"><?= e(t('followups.rule_event_hint')) ?></div>
 
         <label for="conditions_json"><?= e(t('followups.rule_conditions')) ?></label>
-        <textarea id="conditions_json" name="conditions_json" rows="2" placeholder='{"is_won": true}' style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:monospace;"></textarea>
+        <textarea id="conditions_json" name="conditions_json" rows="2" placeholder='{"is_won": true}' class="mono"></textarea>
         <div class="field-hint"><?= e(t('followups.rule_conditions_hint')) ?></div>
 
         <label for="action_configuration_json"><?= e(t('followups.rule_action')) ?></label>
-        <textarea id="action_configuration_json" name="action_configuration_json" rows="4" placeholder='{"title": "Follow up on won deal", "due_in_hours": 24, "assign_to": "deal_owner", "priority": "high", "reminder_minutes_before": 30}' style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:monospace;" required></textarea>
+        <textarea id="action_configuration_json" name="action_configuration_json" rows="4" placeholder='{"title": "Follow up on won deal", "due_in_hours": 24, "assign_to": "deal_owner", "priority": "high", "reminder_minutes_before": 30}' class="mono" required></textarea>
         <div class="field-hint"><?= e(t('followups.rule_action_hint')) ?></div>
 
         <label for="priority"><?= e(t('followups.rule_priority')) ?></label>
         <input type="number" id="priority" name="priority" value="0">
 
-        <label style="display:inline-flex;align-items:center;gap:0.4rem;font-weight:normal;margin-top:0.5rem;">
+        <label class="check check--spaced">
             <input type="checkbox" name="enabled" value="1" checked> <?= e(t('products.is_active')) ?>
         </label>
 
-        <p style="margin-top:1rem"><button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button></p>
+        <p style="margin-top:1rem"><button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button></p>
     </form>
 </section>

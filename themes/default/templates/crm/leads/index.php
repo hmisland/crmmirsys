@@ -5,6 +5,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 
 $statuses = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
 ?>
@@ -13,14 +15,14 @@ $statuses = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
 
     <form method="get" action="/leads" class="inline-form-row">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('leads.search_placeholder')) ?>">
-        <select name="status">
+        <select aria-label="<?= e(t('leads.status')) ?>" name="status">
             <option value=""><?= e(t('leads.all_statuses')) ?></option>
             <?php foreach ($statuses as $s): ?>
                 <option value="<?= e($s) ?>" <?= $status === $s ? 'selected' : '' ?>><?= e(t('leads.status.' . $s)) ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="btn"><?= e(t('common.search')) ?></button>
-        <a href="/leads/create" class="btn btn--primary"><?= e(t('leads.new')) ?></a>
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
+        <a href="/leads/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('leads.new')) ?></a>
     </form>
 
     <div class="table-responsive">
@@ -31,7 +33,7 @@ $statuses = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
             <tr>
                 <td><a href="/leads/<?= e($lead['id']) ?>"><?= e(trim($lead['first_name'] . ' ' . ($lead['last_name'] ?? ''))) ?></a></td>
                 <td><?= e($lead['company_name'] ?? '—') ?></td>
-                <td><?= e(t('leads.status.' . $lead['status'])) ?></td>
+                <td><?= badge(t('leads.status.' . $lead['status']), $lead['status']) ?></td>
                 <td><?= e($lead['score']) ?></td>
             </tr>
         <?php endforeach; ?>

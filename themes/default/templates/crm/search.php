@@ -4,12 +4,13 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('nav.search')) ?></h1>
     <form method="get" action="/search" class="inline-form-row">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('search.placeholder')) ?>" autofocus>
-        <button type="submit" class="btn btn--primary"><?= e(t('common.search')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('search') ?><?= e(t('common.search')) ?></button>
     </form>
 </section>
 

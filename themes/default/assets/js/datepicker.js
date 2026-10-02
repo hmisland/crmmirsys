@@ -401,7 +401,10 @@
             var rect = input.getBoundingClientRect();
             popup.style.position = 'fixed';
             popup.style.top = (rect.bottom + 4) + 'px';
-            popup.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 268)) + 'px';
+            // Anchor to the input's start edge: its right edge in RTL locales.
+            var isRtl = window.getComputedStyle(input).direction === 'rtl';
+            var left = isRtl ? rect.right - 260 : rect.left;
+            popup.style.left = Math.max(4, Math.min(left, window.innerWidth - 268)) + 'px';
         }
 
         function openPopup() {

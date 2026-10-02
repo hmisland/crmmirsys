@@ -4,14 +4,15 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
     <h1><?= e(t('tickets.title')) ?></h1>
     <p>
-        <a href="/support/tickets/create" class="btn btn--primary"><?= e(t('tickets.new')) ?></a>
-        <a href="/support/tickets" class="btn"><?= e(t('deals.list_view')) ?></a>
-        <a href="/support/categories" class="btn"><?= e(t('tickets.categories')) ?></a>
+        <a href="/support/tickets/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('tickets.new')) ?></a>
+        <a href="/support/tickets" class="btn"><?= icon('list') ?><?= e(t('deals.list_view')) ?></a>
+        <a href="/support/categories" class="btn"><?= icon('tag') ?><?= e(t('tickets.categories')) ?></a>
     </p>
 </section>
 
@@ -31,7 +32,7 @@ use App\Infrastructure\Security\Csrf;
                     <form method="post" action="/support/tickets/<?= e($ticket['id']) ?>/status" class="kanban__move">
                         <?= Csrf::field() ?>
                         <input type="hidden" name="return_to" value="/support/tickets/board">
-                        <select name="status" onchange="this.form.submit()">
+                        <select aria-label="<?= e(t('deals.status')) ?>" name="status" onchange="this.form.submit()">
                             <?php foreach ($statuses as $s): ?>
                                 <option value="<?= e($s) ?>" <?= $s === $status ? 'selected' : '' ?>><?= e(t('tickets.status.' . $s)) ?></option>
                             <?php endforeach; ?>

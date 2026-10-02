@@ -12,6 +12,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -21,13 +22,13 @@ use App\Infrastructure\Security\Csrf;
         <?= $company['industry'] ? e($company['industry']) . ' · ' : '' ?>
         <?= e($company['city'] ?? '') ?>
     </p>
-    <p>
-        <a href="/companies/<?= e($company['id']) ?>/edit" class="btn"><?= e(t('common.edit')) ?></a>
+    <div class="actions">
+        <a href="/companies/<?= e($company['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
         <form method="post" action="/companies/<?= e($company['id']) ?>/delete" class="inline-form">
             <?= Csrf::field() ?>
-            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
         </form>
-    </p>
+    </div>
 </section>
 
 <section class="card">
@@ -51,7 +52,7 @@ use App\Infrastructure\Security\Csrf;
             <input type="text" id="custom_<?= e($def['field_key']) ?>" name="custom[<?= e($def['field_key']) ?>]"
                    value="<?= e($customFieldValues[$def['field_key']] ?? '') ?>">
         <?php endforeach; ?>
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save_custom_fields')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save_custom_fields')) ?></button>
     </form>
 </section>
 <?php endif; ?>

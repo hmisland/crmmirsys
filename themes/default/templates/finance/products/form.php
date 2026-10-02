@@ -7,6 +7,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -28,7 +29,7 @@ $isActive = $old !== [] ? isset($old['is_active']) : ($product['is_active'] ?? t
         <input type="text" id="sku" name="sku" value="<?= $val('sku') ?>">
 
         <label for="description"><?= e(t('contacts.description')) ?></label>
-        <textarea id="description" name="description" rows="3" style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"><?= $val('description') ?></textarea>
+        <textarea id="description" name="description" rows="3"><?= $val('description') ?></textarea>
 
         <label for="unit"><?= e(t('products.unit')) ?></label>
         <input type="text" id="unit" name="unit" value="<?= $val('unit') ?>" placeholder="<?= e(t('products.unit_placeholder')) ?>">
@@ -54,19 +55,19 @@ $isActive = $old !== [] ? isset($old['is_active']) : ($product['is_active'] ?? t
         </select>
         <div class="field-hint"><?= e(t('products.tax_profile_hint')) ?></div>
 
-        <label style="display:inline-flex;align-items:center;gap:0.4rem;font-weight:normal;margin-top:0.5rem;">
+        <label class="check check--spaced">
             <input type="checkbox" name="is_active" value="1" <?= $isActive ? 'checked' : '' ?>> <?= e(t('products.is_active')) ?>
         </label>
 
         <p style="margin-top:1rem">
-            <button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button>
+            <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
         </p>
     </form>
 
     <?php if ($product !== null): ?>
         <form method="post" action="/finance/products/<?= e($product['id']) ?>/delete" class="inline-form">
             <?= Csrf::field() ?>
-            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
         </form>
     <?php endif; ?>
 </section>

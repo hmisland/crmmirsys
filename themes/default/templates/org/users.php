@@ -6,6 +6,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 use App\Infrastructure\Security\CurrentUser;
 
@@ -26,7 +28,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
                 <td>
                     <form method="post" action="/org/users/<?= e($user['id']) ?>/role" class="inline-form">
                         <?= Csrf::field() ?>
-                        <select name="role_id" onchange="this.form.submit()">
+                        <select aria-label="<?= e(t('org.role')) ?>" name="role_id" onchange="this.form.submit()">
                             <?php foreach ($roles as $role): ?>
                                 <option value="<?= e($role['id']) ?>" <?= (int) $user['role_id'] === (int) $role['id'] ? 'selected' : '' ?>>
                                     <?= e($role['name']) ?>
@@ -35,19 +37,19 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
                         </select>
                     </form>
                 </td>
-                <td><?= e(t('org.user_status.' . $user['status'])) ?></td>
+                <td><?= badge(t('org.user_status.' . $user['status']), $user['status']) ?></td>
                 <td>
                     <?php if ($user['status'] === 'active'): ?>
                         <?php if ((int) $user['id'] !== (int) CurrentUser::id()): ?>
                         <form method="post" action="/org/users/<?= e($user['id']) ?>/deactivate" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('org.deactivate')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('ban') ?><?= e(t('org.deactivate')) ?></button>
                         </form>
                         <?php endif; ?>
                     <?php else: ?>
                         <form method="post" action="/org/users/<?= e($user['id']) ?>/activate" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('org.activate')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('check-circle') ?><?= e(t('org.activate')) ?></button>
                         </form>
                     <?php endif; ?>
                 </td>
@@ -85,6 +87,6 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
             <?php endforeach; ?>
         </select>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('org.add_teammate')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('user-plus') ?><?= e(t('org.add_teammate')) ?></button>
     </form>
 </section>

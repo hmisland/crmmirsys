@@ -4,15 +4,17 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('deals.title')) ?></h1>
 
     <form method="get" action="/deals" class="inline-form-row">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('deals.search_placeholder')) ?>">
-        <button type="submit" class="btn"><?= e(t('common.search')) ?></button>
-        <a href="/deals/board" class="btn"><?= e(t('deals.board_view')) ?></a>
-        <a href="/deals/create" class="btn btn--primary"><?= e(t('deals.new')) ?></a>
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
+        <a href="/deals/board" class="btn"><?= icon('kanban') ?><?= e(t('deals.board_view')) ?></a>
+        <a href="/deals/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('deals.new')) ?></a>
     </form>
 
     <div class="table-responsive">
@@ -25,7 +27,7 @@ use function App\Infrastructure\Theme\t;
                 <td><?= e($deal['contact_name'] ?? '—') ?></td>
                 <td><?= e($deal['company_name'] ?? '—') ?></td>
                 <td><?= e($deal['currency_code']) ?> <?= e(number_format((float) $deal['value'], 0)) ?></td>
-                <td><?= e(t('deals.status.' . $deal['status'])) ?></td>
+                <td><?= badge(t('deals.status.' . $deal['status']), $deal['status']) ?></td>
             </tr>
         <?php endforeach; ?>
         <?php if ($deals === []): ?>

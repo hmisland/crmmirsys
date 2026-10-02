@@ -9,12 +9,14 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
     <h1><?= e(t('wallet.my_wallet')) ?></h1>
-    <p style="font-size:1.8rem;font-weight:700;margin:0.3rem 0"><?= e(number_format((float) $wallet['balance'], 0)) ?></p>
-    <p class="muted"><?= e(t('wallet.status')) ?>: <?= e(t('wallet.wallet_status.' . $wallet['status'])) ?></p>
+    <p class="stat-value"><?= e(number_format((float) $wallet['balance'], 0)) ?></p>
+    <p class="muted"><?= e(t('wallet.status')) ?>: <?= badge(t('wallet.wallet_status.' . $wallet['status']), $wallet['status']) ?></p>
 </section>
 
 <section class="card card--form">
@@ -35,7 +37,7 @@ use App\Infrastructure\Security\Csrf;
                 <?php endforeach; ?>
             </select>
 
-            <button type="submit" class="btn btn--primary"><?= e(t('wallet.pay')) ?></button>
+            <button type="submit" class="btn btn--primary"><?= icon('credit-card') ?><?= e(t('wallet.pay')) ?></button>
         </form>
     <?php endif; ?>
 </section>
@@ -57,7 +59,7 @@ use App\Infrastructure\Security\Csrf;
             <label for="transfer_amount"><?= e(t('wallet.amount')) ?></label>
             <input type="number" id="transfer_amount" name="amount" min="1" required>
 
-            <button type="submit" class="btn btn--primary"><?= e(t('wallet.send')) ?></button>
+            <button type="submit" class="btn btn--primary"><?= icon('send') ?><?= e(t('wallet.send')) ?></button>
         </form>
     <?php endif; ?>
 </section>
@@ -86,7 +88,7 @@ use App\Infrastructure\Security\Csrf;
             </select>
             <div class="field-hint"><a href="/profile"><?= e(t('wallet.manage_bank_accounts')) ?></a></div>
 
-            <button type="submit" class="btn"><?= e(t('wallet.request')) ?></button>
+            <button type="submit" class="btn"><?= icon('credit-card') ?><?= e(t('wallet.request')) ?></button>
         </form>
     <?php endif; ?>
 
@@ -94,7 +96,7 @@ use App\Infrastructure\Security\Csrf;
         <h3 style="margin-top:1rem"><?= e(t('wallet.your_requests')) ?></h3>
         <ul>
             <?php foreach ($withdrawalRequests as $req): ?>
-                <li><?= e(number_format((float) $req['amount'], 0)) ?> — <?= e(t('wallet.withdrawal_status.' . $req['status'])) ?> <span class="muted">(<?= e($req['requested_at']) ?>)</span></li>
+                <li><?= e(number_format((float) $req['amount'], 0)) ?> — <?= badge(t('wallet.withdrawal_status.' . $req['status']), $req['status']) ?> <span class="muted">(<?= e($req['requested_at']) ?>)</span></li>
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>

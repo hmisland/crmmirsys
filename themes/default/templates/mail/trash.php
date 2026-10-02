@@ -3,14 +3,15 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
     <h1><?= e(t('mail.trash')) ?></h1>
     <p>
-        <a href="/mail" class="btn"><?= e(t('mail.inbox')) ?></a>
-        <a href="/mail/sent" class="btn"><?= e(t('mail.sent')) ?></a>
-        <a href="/mail/drafts" class="btn"><?= e(t('mail.drafts')) ?></a>
+        <a href="/mail" class="btn"><?= icon('inbox') ?><?= e(t('mail.inbox')) ?></a>
+        <a href="/mail/sent" class="btn"><?= icon('send') ?><?= e(t('mail.sent')) ?></a>
+        <a href="/mail/drafts" class="btn"><?= icon('file-text') ?><?= e(t('mail.drafts')) ?></a>
     </p>
 
     <h2><?= e(t('mail.inbox')) ?></h2>
@@ -27,7 +28,7 @@ use App\Infrastructure\Security\Csrf;
                 <td>
                     <form method="post" action="/mail/inbox/<?= e($item['message_id']) ?>/restore" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('mail.restore')) ?></button>
+                        <button type="submit" class="link-button"><?= icon('undo') ?><?= e(t('mail.restore')) ?></button>
                     </form>
                 </td>
             </tr>
@@ -52,7 +53,7 @@ use App\Infrastructure\Security\Csrf;
                 <td>
                     <form method="post" action="/mail/sent/<?= e($item['id']) ?>/restore" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('mail.restore')) ?></button>
+                        <button type="submit" class="link-button"><?= icon('undo') ?><?= e(t('mail.restore')) ?></button>
                     </form>
                 </td>
             </tr>

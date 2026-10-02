@@ -5,6 +5,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -13,9 +14,9 @@ use App\Infrastructure\Security\Csrf;
 
     <form method="get" action="/files" class="inline-form-row">
         <input type="text" name="tag" value="<?= e($tagSearch) ?>" placeholder="<?= e(t('files.search_by_tag')) ?>">
-        <button type="submit" class="btn"><?= e(t('common.search')) ?></button>
-        <?php if ($tagSearch !== ''): ?><a href="/files" class="btn"><?= e(t('files.clear')) ?></a><?php endif; ?>
-        <?php if ($canManage): ?><a href="/files/uploaders" class="btn"><?= e(t('files.manage_upload_access')) ?></a><?php endif; ?>
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
+        <?php if ($tagSearch !== ''): ?><a href="/files" class="btn"><?= icon('x') ?><?= e(t('files.clear')) ?></a><?php endif; ?>
+        <?php if ($canManage): ?><a href="/files/uploaders" class="btn"><?= icon('key') ?><?= e(t('files.manage_upload_access')) ?></a><?php endif; ?>
     </form>
 
     <div class="table-responsive">
@@ -30,7 +31,7 @@ use App\Infrastructure\Security\Csrf;
                 </td>
                 <td>
                     <?php foreach ($doc['tags'] as $tag): ?>
-                        <span class="tag-pill" style="cursor:default"><span><?= e($tag['name']) ?></span></span>
+                        <span class="tag-pill"><span><?= e($tag['name']) ?></span></span>
                     <?php endforeach; ?>
                 </td>
                 <td class="muted"><?= e(round($doc['size'] / 1024)) ?> KB</td>
@@ -40,7 +41,7 @@ use App\Infrastructure\Security\Csrf;
                     <?php if ($canManage): ?>
                         <form method="post" action="/files/<?= e($doc['id']) ?>/delete" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                         </form>
                     <?php endif; ?>
                 </td>
@@ -69,7 +70,7 @@ use App\Infrastructure\Security\Csrf;
         <label for="tags-input"><?= e(t('common.tags')) ?></label>
         <input type="text" id="tags-input" class="crm-tag-input" data-name="tags[]" placeholder="<?= e(t('files.add_a_tag_hint')) ?>">
 
-        <button type="submit" class="btn btn--primary"><?= e(t('common.upload')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('upload') ?><?= e(t('common.upload')) ?></button>
     </form>
 </section>
 <?php endif; ?>

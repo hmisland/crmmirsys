@@ -8,6 +8,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -31,7 +32,7 @@ $scopes = ['own', 'team', 'department', 'organization', 'all'];
                         &middot;
                         <form method="post" action="/org/roles/<?= e($role['id']) ?>/delete" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                         </form>
                     <?php else: ?>
                         <span class="muted"><?= e(t('org.not_editable')) ?></span>

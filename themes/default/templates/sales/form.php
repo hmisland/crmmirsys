@@ -9,6 +9,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -67,6 +68,6 @@ $action = $deal !== null ? '/deals/' . $deal['id'] : '/deals';
         <label for="source"><?= e(t('leads.source')) ?></label>
         <input type="text" id="source" name="source" value="<?= $val('source') ?>">
 
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
     </form>
 </section>

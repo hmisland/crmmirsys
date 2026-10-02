@@ -4,6 +4,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -36,7 +37,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
         <label for="password_confirmation"><?= e(t('auth.register.confirm_password')) ?></label>
         <input type="password" id="password_confirmation" name="password_confirmation" required>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('auth.register.submit')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('user-plus') ?><?= e(t('auth.register.submit')) ?></button>
     </form>
 
     <p class="muted">

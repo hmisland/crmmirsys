@@ -7,6 +7,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -47,7 +48,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
         <label for="timezone"><?= e(t('profile.timezone')) ?></label>
         <input type="text" id="timezone" name="timezone" value="<?= e($user['timezone'] ?? 'UTC') ?>">
 
-        <button type="submit" class="btn btn--primary"><?= e(t('profile.save_changes')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('profile.save_changes')) ?></button>
     </form>
 </section>
 
@@ -67,13 +68,13 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
         <input type="text" id="telegram_chat_id" name="telegram_chat_id" value="<?= e($notificationChannels['telegram_chat_id'] ?? '') ?>">
         <div class="field-hint"><?= e(t('profile.telegram_chat_id_hint')) ?></div>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('profile.save_channels')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('profile.save_channels')) ?></button>
     </form>
 
     <form method="post" action="/notifications/settings/test-bale" style="margin-top:0.75rem">
         <?= Csrf::field() ?>
         <input type="hidden" name="bale_chat_id" value="<?= e($notificationChannels['bale_chat_id'] ?? '') ?>">
-        <button type="submit" class="btn"><?= e(t('profile.send_test_bale')) ?></button>
+        <button type="submit" class="btn"><?= icon('send') ?><?= e(t('profile.send_test_bale')) ?></button>
         <div class="field-hint"><?= e(t('profile.send_test_bale_hint')) ?></div>
     </form>
 </section>
@@ -102,7 +103,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
                     <td>
                         <form method="post" action="/profile/bank-accounts/<?= e($account['id']) ?>/delete" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                         </form>
                     </td>
                 </tr>
@@ -138,7 +139,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
         <label for="branch_code"><?= e(t('profile.branch')) ?></label>
         <input type="text" id="branch_code" name="branch_code">
 
-        <button type="submit" class="btn btn--primary"><?= e(t('profile.add_bank_account')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('profile.add_bank_account')) ?></button>
     </form>
     </div>
 </section>

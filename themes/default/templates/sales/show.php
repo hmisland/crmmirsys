@@ -9,6 +9,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Csrf;
 ?>
@@ -16,7 +18,7 @@ use App\Infrastructure\Security\Csrf;
     <h1><?= e($deal['name']) ?></h1>
     <p class="muted">
         <?= e($deal['currency_code']) ?> <?= e(number_format((float) $deal['value'], 0)) ?>
-        · <?= e(t('deals.status.' . $deal['status'])) ?>
+        · <?= badge(t('deals.status.' . $deal['status']), $deal['status']) ?>
         <?= $deal['expected_close_date'] ? ' · ' . e(t('deals.expected')) . ': ' . e($deal['expected_close_date']) : '' ?>
     </p>
     <?php if ($contact !== null): ?><p><?= e(t('common.contact')) ?>: <a href="/contacts/<?= e($contact['id']) ?>"><?= e(trim($contact['first_name'] . ' ' . ($contact['last_name'] ?? ''))) ?></a></p><?php endif; ?>
@@ -33,13 +35,13 @@ use App\Infrastructure\Security\Csrf;
         </select>
     </form>
 
-    <p>
-        <a href="/deals/<?= e($deal['id']) ?>/edit" class="btn"><?= e(t('common.edit')) ?></a>
+    <div class="actions">
+        <a href="/deals/<?= e($deal['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
         <form method="post" action="/deals/<?= e($deal['id']) ?>/delete" class="inline-form">
             <?= Csrf::field() ?>
-            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
         </form>
-    </p>
+    </div>
 </section>
 
 <section class="card">
@@ -59,7 +61,7 @@ use App\Infrastructure\Security\Csrf;
                 <form method="post" action="/tasks/<?= e($task['id']) ?>/delete" class="inline-form">
                     <?= Csrf::field() ?>
                     <input type="hidden" name="return_to" value="/deals/<?= e($deal['id']) ?>">
-                    <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                    <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                 </form>
             </li>
         <?php endforeach; ?>
@@ -80,7 +82,7 @@ use App\Infrastructure\Security\Csrf;
                 </option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="btn"><?= e(t('tasks.add')) ?></button>
+        <button type="submit" class="btn"><?= icon('plus') ?><?= e(t('tasks.add')) ?></button>
     </form>
     <p class="muted"><?= e(t('tasks.more_options_hint')) ?></p>
 </section>

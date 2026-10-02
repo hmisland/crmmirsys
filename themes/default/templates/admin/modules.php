@@ -3,6 +3,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -11,7 +13,7 @@ use App\Infrastructure\Security\Csrf;
 
     <form method="post" action="/admin/modules/sync" class="inline-form">
         <?= Csrf::field() ?>
-        <button type="submit" class="btn"><?= e(t('admin.sync_from_disk')) ?></button>
+        <button type="submit" class="btn"><?= icon('refresh') ?><?= e(t('admin.sync_from_disk')) ?></button>
     </form>
 
     <div class="table-responsive">
@@ -24,19 +26,19 @@ use App\Infrastructure\Security\Csrf;
                 <td><code><?= e($module['key']) ?></code></td>
                 <td><?= e($module['version']) ?></td>
                 <td><?= e(t('admin.module_type.' . $module['type'])) ?><?= $module['is_core'] ? ' (' . e(t('org.always_on_core')) . ')' : '' ?></td>
-                <td><?= e(t('admin.module_status.' . $module['status'])) ?></td>
+                <td><?= badge(t('admin.module_status.' . $module['status']), $module['status']) ?></td>
                 <td>
                     <?php if ((bool) $module['is_core']): ?>
                         <span class="muted"><?= e(t('admin.always_on')) ?></span>
                     <?php elseif ($module['status'] === 'active'): ?>
                         <form method="post" action="/admin/modules/<?= e($module['id']) ?>/disable" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('admin.disable')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('ban') ?><?= e(t('admin.disable')) ?></button>
                         </form>
                     <?php else: ?>
                         <form method="post" action="/admin/modules/<?= e($module['id']) ?>/enable" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('admin.enable')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('check-circle') ?><?= e(t('admin.enable')) ?></button>
                         </form>
                     <?php endif; ?>
                 </td>

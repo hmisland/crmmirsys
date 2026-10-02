@@ -3,6 +3,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -17,17 +19,17 @@ use App\Infrastructure\Security\Csrf;
             <tr>
                 <td><?= e($p['starts_on']) ?></td>
                 <td><?= e($p['ends_on']) ?></td>
-                <td><?= e(t('periods.status.' . $p['status'])) ?></td>
+                <td><?= badge(t('periods.status.' . $p['status']), $p['status']) ?></td>
                 <td>
                     <?php if ($p['status'] === 'open'): ?>
                         <form method="post" action="/finance/periods/<?= e($p['id']) ?>/close" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('periods.close_action')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('lock') ?><?= e(t('periods.close_action')) ?></button>
                         </form>
                     <?php else: ?>
                         <form method="post" action="/finance/periods/<?= e($p['id']) ?>/reopen" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('periods.reopen_action')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('unlock') ?><?= e(t('periods.reopen_action')) ?></button>
                         </form>
                     <?php endif; ?>
                 </td>
@@ -52,6 +54,6 @@ use App\Infrastructure\Security\Csrf;
         <label for="ends_on"><?= e(t('periods.ends_on')) ?></label>
         <input type="text" class="crm-datepicker" id="ends_on" name="ends_on" required>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('periods.add_period')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('periods.add_period')) ?></button>
     </form>
 </section>

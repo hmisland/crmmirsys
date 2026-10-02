@@ -4,12 +4,13 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
     <h1><?= e(t('files.manage_upload_access')) ?></h1>
     <p class="muted"><?= e(t('files.uploaders_hint')) ?></p>
-    <p><a href="/files" class="btn"><?= e(t('files.back_to_files')) ?></a></p>
+    <p><a href="/files" class="btn"><?= icon('arrow-left') ?><?= e(t('files.back_to_files')) ?></a></p>
 
     <div class="table-responsive">
     <table class="table">
@@ -24,13 +25,13 @@ use App\Infrastructure\Security\Csrf;
                     <?php if ($granted): ?>
                         <form method="post" action="/files/uploaders/<?= e($user['id']) ?>/revoke" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('files.revoke')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('ban') ?><?= e(t('files.revoke')) ?></button>
                         </form>
                     <?php else: ?>
                         <form method="post" action="/files/uploaders/grant" class="inline-form">
                             <?= Csrf::field() ?>
                             <input type="hidden" name="user_id" value="<?= e($user['id']) ?>">
-                            <button type="submit" class="link-button"><?= e(t('files.grant')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('check') ?><?= e(t('files.grant')) ?></button>
                         </form>
                     <?php endif; ?>
                 </td>

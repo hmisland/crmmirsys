@@ -4,6 +4,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -53,6 +54,6 @@ use App\Infrastructure\Security\Csrf;
         <label for="rate"><?= e(t('exchange_rates.rate')) ?></label>
         <input type="number" id="rate" name="rate" step="0.000001" min="0.000001" required>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('exchange_rates.save_rate')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('exchange_rates.save_rate')) ?></button>
     </form>
 </section>

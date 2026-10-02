@@ -4,6 +4,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldTypes = ['text', 'number', 'date', 'boolean', 'select', 'multiselect', 'email', 'phone', 'url'];
@@ -26,7 +27,7 @@ $fieldTypes = ['text', 'number', 'date', 'boolean', 'select', 'multiselect', 'em
                     <td>
                         <form method="post" action="/org/custom-fields/<?= e($def['id']) ?>/delete" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                         </form>
                     </td>
                 </tr>
@@ -65,6 +66,6 @@ $fieldTypes = ['text', 'number', 'date', 'boolean', 'select', 'multiselect', 'em
         <label for="options"><?= e(t('org.options_label')) ?></label>
         <textarea id="options" name="options" rows="3" style="padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"></textarea>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('org.add_field')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('org.add_field')) ?></button>
     </form>
 </section>

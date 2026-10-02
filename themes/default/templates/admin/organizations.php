@@ -4,6 +4,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
 ?>
 <section class="card">
     <h1><?= e(t('admin.all_organizations')) ?></h1>
@@ -17,7 +18,7 @@ use function App\Infrastructure\Theme\t;
             <tr>
                 <td><?= e($organization['name']) ?></td>
                 <td><code><?= e($organization['slug']) ?></code></td>
-                <td><?= e(t('org.user_status.' . $organization['status'])) ?></td>
+                <td><?= badge(t('org.user_status.' . $organization['status']), $organization['status']) ?></td>
                 <td><?= e($userCounts[$organization['id']] ?? 0) ?></td>
                 <td><?= e($organization['created_at']) ?></td>
                 <td><a href="/admin/organizations/<?= e($organization['id']) ?>/modules"><?= e(t('admin.manage_modules')) ?></a></td>

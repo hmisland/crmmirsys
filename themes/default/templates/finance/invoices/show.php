@@ -15,6 +15,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $isDraft = $invoice['status'] === 'draft';
@@ -27,9 +29,9 @@ $isDraft = $invoice['status'] === 'draft';
     <p class="muted">
         <?= e(t('proformas.issue_date')) ?>: <?= e($invoice['issue_date']) ?>
         <?= $invoice['due_date'] ? ' · ' . e(t('invoices.due_date')) . ' ' . e($invoice['due_date']) : '' ?>
-        · <?= e(t('deals.status')) ?>: <?= e(t('invoices.status.' . $invoice['status'])) ?>
+        · <?= e(t('deals.status')) ?>: <?= badge(t('invoices.status.' . $invoice['status']), $invoice['status']) ?>
         <?php if ($invoice['status'] === 'issued'): ?>
-            · <?= e(t('payments.payment_status')) ?>: <?= e(t('payments.status.' . $paymentStatus)) ?>
+            · <?= e(t('payments.payment_status')) ?>: <?= badge(t('payments.status.' . $paymentStatus), $paymentStatus) ?>
         <?php endif; ?>
     </p>
     <?php if ($contact !== null): ?>
@@ -40,17 +42,17 @@ $isDraft = $invoice['status'] === 'draft';
         <div class="alert alert--error"><?= e(t('invoices.draft_hint')) ?></div>
     <?php endif; ?>
 
-    <p>
+    <div class="actions">
         <?php if ($isDraft): ?>
-            <a href="/finance/invoices/<?= e($invoice['id']) ?>/edit" class="btn"><?= e(t('common.edit')) ?></a>
+            <a href="/finance/invoices/<?= e($invoice['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
             <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/delete" class="inline-form">
                 <?= Csrf::field() ?>
-                <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
             </form>
             <?php if ($canIssue): ?>
                 <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/issue" class="inline-form">
                     <?= Csrf::field() ?>
-                    <button type="submit" class="btn btn--primary"><?= e(t('invoices.issue_action')) ?></button>
+                    <button type="submit" class="btn btn--primary"><?= icon('check-circle') ?><?= e(t('invoices.issue_action')) ?></button>
                 </form>
             <?php else: ?>
                 <span class="muted"><?= e(t('invoices.awaiting_approval')) ?></span>
@@ -58,10 +60,10 @@ $isDraft = $invoice['status'] === 'draft';
         <?php elseif ($invoice['status'] === 'issued' && $canCancel): ?>
             <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/cancel" class="inline-form">
                 <?= Csrf::field() ?>
-                <button type="submit" class="link-button"><?= e(t('invoices.cancel_action')) ?></button>
+                <button type="submit" class="link-button"><?= icon('ban') ?><?= e(t('invoices.cancel_action')) ?></button>
             </form>
         <?php endif; ?>
-    </p>
+    </div>
 </section>
 
 <section class="card">
@@ -154,7 +156,7 @@ $isDraft = $invoice['status'] === 'draft';
         <label for="payment_notes"><?= e(t('common.notes')) ?></label>
         <input type="text" id="payment_notes" name="notes">
 
-        <button type="submit" class="btn btn--primary" style="margin-top:0.5rem"><?= e(t('payments.record_action')) ?></button>
+        <button type="submit" class="btn btn--primary" style="margin-top:0.5rem"><?= icon('credit-card') ?><?= e(t('payments.record_action')) ?></button>
     </form>
     </div>
     <?php endif; ?>
@@ -198,7 +200,7 @@ $isDraft = $invoice['status'] === 'draft';
         <label for="cn_issue_date"><?= e(t('proformas.issue_date')) ?></label>
         <input type="text" class="crm-datepicker" id="cn_issue_date" name="issue_date" value="<?= e(date('Y-m-d')) ?>" required>
 
-        <button type="submit" class="btn btn--primary" style="margin-top:0.5rem"><?= e(t('credit_notes.issue_action')) ?></button>
+        <button type="submit" class="btn btn--primary" style="margin-top:0.5rem"><?= icon('receipt') ?><?= e(t('credit_notes.issue_action')) ?></button>
     </form>
     </div>
     <?php endif; ?>

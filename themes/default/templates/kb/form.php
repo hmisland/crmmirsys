@@ -6,6 +6,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -33,9 +34,9 @@ $action = $article !== null ? '/kb/articles/' . $article['id'] : '/kb/articles';
         </select>
 
         <label for="body"><?= e(t('kb.body')) ?></label>
-        <textarea id="body" name="body" rows="10" required style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"><?= $val('body') ?></textarea>
+        <textarea id="body" name="body" rows="10" required><?= $val('body') ?></textarea>
         <?php if ($fieldError('body')): ?><div class="field-error"><?= e($fieldError('body')) ?></div><?php endif; ?>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
     </form>
 </section>

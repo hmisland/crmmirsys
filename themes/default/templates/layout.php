@@ -9,6 +9,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Config\Config;
 use App\Infrastructure\Localization\Locale;
 use App\Infrastructure\Modules\ModuleAccessResolver;
@@ -73,102 +74,306 @@ $knowledgeEnabled = $authUser !== null && (new ModuleAccessResolver(
     new UserModuleOverrideRepository()
 ))->resolvedForUser('knowledge', $authUser);
 
+// ---------------------------------------------------------------------
+// Navigation model (presentation only). Each group is one module area;
+// each item lists the URL prefixes that count as "inside" it, so the
+// sidebar highlight and breadcrumb follow the user into sub-pages.
+// Visibility uses exactly the same flags as before this redesign.
+// ---------------------------------------------------------------------
+$isSuperAdmin = $authUser !== null && !empty($authUser['is_super_admin']);
+$hasOrg = $authUser !== null && $authUser['organization_id'] !== null;
+
+$navGroups = [];
+if ($isSuperAdmin) {
+    $navGroups[] = ['label' => t('nav.group_platform'), 'items' => [
+        ['href' => '/admin/organizations', 'icon' => 'building', 'label' => t('admin.all_organizations'), 'match' => ['/admin/organizations']],
+        ['href' => '/admin/modules', 'icon' => 'layers', 'label' => t('admin.modules_platform'), 'match' => ['/admin/modules']],
+        ['href' => '/admin/wallet/settings', 'icon' => 'wallet', 'label' => t('admin.wallet_settings_platform'), 'match' => ['/admin/wallet']],
+        ['href' => '/admin/notifications/settings', 'icon' => 'bell', 'label' => t('admin.notification_pricing_platform'), 'match' => ['/admin/notifications']],
+        ['href' => '/admin/exchange-rates', 'icon' => 'coins', 'label' => t('exchange_rates.title'), 'match' => ['/admin/exchange-rates']],
+    ]];
+}
+if ($hasOrg) {
+    $navGroups[] = ['label' => null, 'items' => [
+        ['href' => '/', 'icon' => 'dashboard', 'label' => t('nav.dashboard'), 'match' => ['/'], 'exact' => true],
+    ]];
+    $navGroups[] = ['label' => t('nav.group_crm'), 'items' => [
+        ['href' => '/contacts', 'icon' => 'users', 'label' => t('nav.contacts'), 'match' => ['/contacts']],
+        ['href' => '/companies', 'icon' => 'building', 'label' => t('nav.companies'), 'match' => ['/companies']],
+        ['href' => '/leads', 'icon' => 'target', 'label' => t('nav.leads'), 'match' => ['/leads']],
+    ]];
+    $salesItems = [];
+    if ($salesEnabled) {
+        $salesItems[] = ['href' => '/deals/board', 'icon' => 'briefcase', 'label' => t('nav.deals'), 'match' => ['/deals']];
+        $salesItems[] = ['href' => '/tasks', 'icon' => 'check-square', 'label' => t('nav.tasks'), 'match' => ['/tasks']];
+    }
+    if ($followupsEnabled) {
+        $salesItems[] = ['href' => '/followups', 'icon' => 'calendar-check', 'label' => t('followups.title'), 'match' => ['/followups']];
+    }
+    if ($salesItems !== []) {
+        $navGroups[] = ['label' => t('nav.group_sales'), 'items' => $salesItems];
+    }
+    $financeItems = [];
+    if ($financeEnabled) {
+        $financeItems[] = ['href' => '/finance/products', 'icon' => 'package', 'label' => t('products.title'), 'match' => ['/finance/products']];
+        $financeItems[] = ['href' => '/finance/proformas', 'icon' => 'file-text', 'label' => t('proformas.title'), 'match' => ['/finance/proformas']];
+        $financeItems[] = ['href' => '/finance/invoices', 'icon' => 'receipt', 'label' => t('invoices.title'), 'match' => ['/finance/invoices']];
+    }
+    if ($walletEnabled) {
+        $financeItems[] = ['href' => '/wallet', 'icon' => 'wallet', 'label' => t('nav.my_wallet'), 'match' => ['/wallet']];
+    }
+    if ($financeItems !== []) {
+        $navGroups[] = ['label' => t('nav.group_finance'), 'items' => $financeItems];
+    }
+    $commItems = [];
+    if ($supportEnabled) {
+        $commItems[] = ['href' => '/support/tickets/board', 'icon' => 'life-buoy', 'label' => t('nav.tickets'), 'match' => ['/support/tickets', '/support']];
+    }
+    if ($mailEnabled) {
+        $commItems[] = ['href' => '/mail', 'icon' => 'mail', 'label' => t('nav.mail'), 'match' => ['/mail']];
+    }
+    if ($commItems !== []) {
+        $navGroups[] = ['label' => t('nav.group_communication'), 'items' => $commItems];
+    }
+    if ($knowledgeEnabled) {
+        $navGroups[] = ['label' => t('nav.group_knowledge'), 'items' => [
+            ['href' => '/kb/articles', 'icon' => 'book-open', 'label' => t('nav.knowledge_base'), 'match' => ['/kb']],
+            ['href' => '/files', 'icon' => 'folder', 'label' => t('nav.files'), 'match' => ['/files']],
+        ]];
+    }
+    $navGroups[] = ['label' => t('nav.group_organization'), 'items' => [
+        ['href' => '/search', 'icon' => 'search', 'label' => t('nav.search'), 'match' => ['/search']],
+        ['href' => '/org/settings', 'icon' => 'settings', 'label' => t('nav.org_settings'),
+            'match' => ['/org', '/finance/settings', '/finance/periods', '/finance/reports', '/notifications/admin', '/sales/pipeline', '/support/categories', '/kb/categories', '/files/uploaders']],
+    ]];
+}
+
+// Active item = the longest matching prefix across every visible item.
+$currentPath = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
+$activeHref = null;
+$activeGroup = null;
+$activeLabel = null;
+$bestLength = -1;
+foreach ($navGroups as $group) {
+    foreach ($group['items'] as $item) {
+        foreach ($item['match'] as $prefix) {
+            $hit = !empty($item['exact'])
+                ? $currentPath === $prefix
+                : ($currentPath === $prefix || str_starts_with($currentPath, rtrim($prefix, '/') . '/'));
+            if ($hit && strlen($prefix) > $bestLength) {
+                $bestLength = strlen($prefix);
+                $activeHref = $item['href'];
+                $activeGroup = $group['label'];
+                $activeLabel = $item['label'];
+            }
+        }
+    }
+}
+if ($activeLabel === null && $authUser !== null && str_starts_with($currentPath, '/profile')) {
+    $activeLabel = t('nav.profile');
+}
+
+$pageTitle = $title ?? ($activeLabel !== null ? $activeLabel . ' · ' . t('app.name') : t('app.name'));
+
+$displayName = '';
+$initial = '';
+if ($authUser !== null) {
+    $displayName = trim(($authUser['first_name'] ?? '') . ' ' . ($authUser['last_name'] ?? ''));
+    if ($displayName === '') {
+        $displayName = (string) ($authUser['email'] ?? '');
+    }
+    $initial = function_exists('mb_substr') ? mb_substr($displayName, 0, 1) : substr($displayName, 0, 1);
+}
+
+// Language names are shown in their own script, never translated —
+// a user who can't read the current UI language must still find theirs.
+$languageNames = ['en' => 'English', 'fa' => 'فارسی', 'ar' => 'العربية', 'tr' => 'Türkçe'];
+
+$asset = function (string $path) use ($theme): string {
+    $file = $theme->assetsPath() . '/' . $path;
+
+    return $theme->assetUrl($path) . (is_file($file) ? '?v=' . filemtime($file) : '');
+};
 ?>
 <!DOCTYPE html>
 <html lang="<?= e($lang) ?>" dir="<?= e($dir) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= e($title ?? t('app.name')) ?></title>
-    <link rel="stylesheet" href="<?= e($theme->assetUrl('css/app.css')) ?>">
+    <title><?= e($pageTitle) ?></title>
+    <link rel="stylesheet" href="<?= e($asset('css/app.css')) ?>">
+    <script>
+        // Restore the desktop sidebar's collapsed state before first
+        // paint (no flash of the expanded sidebar).
+        try { if (localStorage.getItem('crm_sidebar_collapsed') === '1') { document.documentElement.classList.add('sidebar-collapsed'); } } catch (e) {}
+    </script>
 </head>
 <body class="dir-<?= e($dir) ?>">
-    <header class="app-header">
-        <strong><?= e(t('app.name')) ?></strong>
-        <button type="button" class="app-header__hamburger" id="nav-toggle" aria-label="<?= e(t('nav.menu')) ?>" aria-expanded="false">
-            <span></span><span></span><span></span>
-        </button>
-        <nav class="app-header__nav" id="app-nav">
-            <?php if ($authUser !== null): ?>
-                <?php if (!empty($authUser['is_super_admin'])): ?>
-                    <a href="/admin/organizations"><?= e(t('admin.all_organizations')) ?></a>
-                    <a href="/admin/modules"><?= e(t('admin.modules_platform')) ?></a>
-                    <a href="/admin/wallet/settings"><?= e(t('admin.wallet_settings_platform')) ?></a>
-                    <a href="/admin/notifications/settings"><?= e(t('admin.notification_pricing_platform')) ?></a>
-                    <a href="/admin/exchange-rates"><?= e(t('exchange_rates.title')) ?></a>
-                <?php endif; ?>
-                <?php if ($authUser['organization_id'] !== null): ?>
-                    <a href="/"><?= e(t('nav.dashboard')) ?></a>
-                    <a href="/contacts"><?= e(t('nav.contacts')) ?></a>
-                    <a href="/companies"><?= e(t('nav.companies')) ?></a>
-                    <a href="/leads"><?= e(t('nav.leads')) ?></a>
-                    <?php if ($salesEnabled): ?>
-                        <a href="/deals/board"><?= e(t('nav.deals')) ?></a>
-                        <a href="/tasks"><?= e(t('nav.tasks')) ?></a>
-                    <?php endif; ?>
-                    <?php if ($followupsEnabled): ?>
-                        <a href="/followups"><?= e(t('followups.title')) ?></a>
-                    <?php endif; ?>
-                    <?php if ($financeEnabled): ?>
-                        <a href="/finance/products"><?= e(t('products.title')) ?></a>
-                        <a href="/finance/proformas"><?= e(t('proformas.title')) ?></a>
-                        <a href="/finance/invoices"><?= e(t('invoices.title')) ?></a>
-                    <?php endif; ?>
-                    <?php if ($walletEnabled): ?>
-                        <a href="/wallet"><?= e(t('nav.my_wallet')) ?></a>
-                    <?php endif; ?>
-                    <?php if ($supportEnabled): ?>
-                        <a href="/support/tickets/board"><?= e(t('nav.tickets')) ?></a>
-                    <?php endif; ?>
-                    <?php if ($mailEnabled): ?>
-                        <a href="/mail"><?= e(t('nav.mail')) ?></a>
-                    <?php endif; ?>
-                    <?php if ($knowledgeEnabled): ?>
-                        <a href="/kb/articles"><?= e(t('nav.knowledge_base')) ?></a>
-                        <a href="/files"><?= e(t('nav.files')) ?></a>
-                    <?php endif; ?>
-                    <a href="/search"><?= e(t('nav.search')) ?></a>
-                    <a href="/org/settings"><?= e(t('nav.org_settings')) ?></a>
-                <?php endif; ?>
-                <a href="/profile"><?= e($authUser['first_name'] ?? $authUser['email']) ?></a>
-                <form method="post" action="/logout" class="inline-form">
-                    <?= Csrf::field() ?>
-                    <button type="submit" class="link-button"><?= e(t('nav.logout')) ?></button>
-                </form>
-            <?php else: ?>
-                <a href="/login"><?= e(t('nav.login')) ?></a>
-                <a href="/register"><?= e(t('nav.register')) ?></a>
-            <?php endif; ?>
-            <form method="get" action="/lang/switch" class="inline-form" style="display:inline">
-                <input type="hidden" name="return_to" value="<?= e($_SERVER['REQUEST_URI'] ?? '/') ?>">
-                <select name="lang" onchange="this.form.submit()" aria-label="<?= e(t('nav.language')) ?>">
-                    <?php foreach (\App\Infrastructure\Localization\Translator::SUPPORTED_LOCALES as $locale): ?>
-                        <option value="<?= e($locale) ?>" <?= $locale === $lang ? 'selected' : '' ?>><?= e(strtoupper($locale)) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </form>
-        </nav>
+<?php include __DIR__ . '/partials/icons.php'; ?>
+<a class="skip-link" href="#main"><?= e(t('nav.skip_to_content')) ?></a>
+
+<?php
+$flashes = '';
+if ($successFlash !== null) {
+    $flashes .= '<div class="alert alert--success" role="status"><div class="alert__body">' . e($successFlash) . '</div>'
+        . '<button type="button" class="btn btn--ghost btn--icon btn--sm alert__close" data-dismiss="alert" aria-label="' . e(t('common.close')) . '">' . icon('x', 'icon--sm') . '</button></div>';
+}
+if ($errorFlash !== null) {
+    $flashes .= '<div class="alert alert--error" role="alert"><div class="alert__body">' . e($errorFlash) . '</div>'
+        . '<button type="button" class="btn btn--ghost btn--icon btn--sm alert__close" data-dismiss="alert" aria-label="' . e(t('common.close')) . '">' . icon('x', 'icon--sm') . '</button></div>';
+}
+
+$languageSwitcher = function () use ($lang, $languageNames): string {
+    ob_start(); ?>
+    <form method="get" action="/lang/switch" class="lang-switch">
+        <input type="hidden" name="return_to" value="<?= e($_SERVER['REQUEST_URI'] ?? '/') ?>">
+        <?= icon('globe', 'icon--sm') ?>
+        <label for="lang-select" class="visually-hidden"><?= e(t('nav.change_language')) ?></label>
+        <select id="lang-select" name="lang" onchange="this.form.submit()">
+            <?php foreach (\App\Infrastructure\Localization\Translator::SUPPORTED_LOCALES as $locale): ?>
+                <option value="<?= e($locale) ?>" lang="<?= e($locale) ?>" <?= $locale === $lang ? 'selected' : '' ?>><?= e($languageNames[$locale] ?? strtoupper($locale)) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <noscript><button type="submit" class="btn btn--sm"><?= e(t('nav.language')) ?></button></noscript>
+    </form>
+    <?php return (string) ob_get_clean();
+};
+?>
+
+<?php if ($authUser === null): ?>
+<div class="auth-shell">
+    <header class="auth-shell__top">
+        <a href="/" class="auth-shell__brand">
+            <span class="brand-mark"><?= icon('zap') ?></span>
+            <span><?= e(t('app.name')) ?></span>
+        </a>
+        <div class="auth-shell__links">
+            <a href="/login" class="btn btn--ghost btn--sm"><?= icon('log-in', 'icon--sm') ?><?= e(t('nav.login')) ?></a>
+            <a href="/register" class="btn btn--sm"><?= icon('user-plus', 'icon--sm') ?><?= e(t('nav.register')) ?></a>
+            <?= $languageSwitcher() ?>
+        </div>
     </header>
 
-    <main class="app-main">
-        <?php if ($successFlash !== null): ?>
-            <div class="alert alert--success"><?= e($successFlash) ?></div>
-        <?php endif; ?>
-        <?php if ($errorFlash !== null): ?>
-            <div class="alert alert--error"><?= e($errorFlash) ?></div>
-        <?php endif; ?>
-
+    <main class="app-main" id="main" tabindex="-1">
+        <?= $flashes ?>
         <?= $content ?>
     </main>
 
     <footer class="app-footer">
         <span>&copy; <?= e(date('Y')) ?> CRM GROUP by MIRSYS</span>
     </footer>
+</div>
+<?php else: ?>
+<div class="app-shell" id="app-shell">
+    <aside class="sidebar" id="app-sidebar" aria-label="<?= e(t('nav.main_navigation')) ?>">
+        <div class="sidebar__head">
+            <a href="<?= $hasOrg ? '/' : '/admin/organizations' ?>" class="sidebar__brand">
+                <span class="brand-mark"><?= icon('zap') ?></span>
+                <span class="sidebar__brand-name"><?= e(t('app.name')) ?></span>
+            </a>
+            <button type="button" class="btn btn--ghost btn--icon btn--sm sidebar__close" data-nav-close aria-label="<?= e(t('nav.close_menu')) ?>"><?= icon('x') ?></button>
+        </div>
 
-    <script src="<?= e($theme->assetUrl('js/app.js')) ?>"></script>
-    <script src="<?= e($theme->assetUrl('js/datepicker.js')) ?>"></script>
-    <script src="<?= e($theme->assetUrl('js/tag-input.js')) ?>"></script>
-    <script src="<?= e($theme->assetUrl('js/recipient-picker.js')) ?>"></script>
+        <nav class="sidebar__nav" aria-label="<?= e(t('nav.main_navigation')) ?>">
+            <?php foreach ($navGroups as $group): ?>
+                <div class="nav-group">
+                    <?php if ($group['label'] !== null): ?>
+                        <p class="nav-group__label"><?= e($group['label']) ?></p>
+                    <?php endif; ?>
+                    <?php foreach ($group['items'] as $item): ?>
+                        <a href="<?= e($item['href']) ?>" class="nav-item" title="<?= e($item['label']) ?>"<?= $item['href'] === $activeHref ? ' aria-current="page"' : '' ?>>
+                            <?= icon($item['icon']) ?>
+                            <span class="nav-item__label"><?= e($item['label']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php endforeach; ?>
+        </nav>
+    </aside>
+    <div class="sidebar-backdrop" data-nav-close></div>
+
+    <div class="app-body">
+        <header class="topbar">
+            <button type="button" class="btn btn--ghost btn--icon topbar__menu" id="nav-toggle" aria-controls="app-sidebar" aria-expanded="false" aria-label="<?= e(t('nav.menu')) ?>"><?= icon('menu') ?></button>
+            <button type="button" class="btn btn--ghost btn--icon topbar__collapse" id="sidebar-collapse" aria-controls="app-sidebar" aria-label="<?= e(t('nav.toggle_sidebar')) ?>" title="<?= e(t('nav.toggle_sidebar')) ?>"><?= icon('panel') ?></button>
+
+            <?php if ($activeLabel !== null): ?>
+                <nav class="topbar__crumbs" aria-label="<?= e(t('nav.breadcrumb')) ?>">
+                    <ol class="breadcrumb">
+                        <?php if ($activeGroup !== null): ?><li><?= e($activeGroup) ?></li><?php endif; ?>
+                        <li><span aria-current="page"><?= e($activeLabel) ?></span></li>
+                    </ol>
+                </nav>
+            <?php endif; ?>
+
+            <div class="topbar__spacer"></div>
+
+            <?php if ($hasOrg): ?>
+                <form method="get" action="/search" class="topbar-search" role="search">
+                    <?= icon('search', 'icon--sm') ?>
+                    <label for="topbar-q" class="visually-hidden"><?= e(t('nav.search')) ?></label>
+                    <input type="search" id="topbar-q" name="q" placeholder="<?= e(t('dashboard.search_placeholder')) ?>" autocomplete="off">
+                </form>
+                <a href="/search" class="btn btn--ghost btn--icon topbar__search-link" aria-label="<?= e(t('nav.search')) ?>"><?= icon('search') ?></a>
+            <?php endif; ?>
+
+            <?= $languageSwitcher() ?>
+
+            <details class="dropdown user-menu">
+                <summary aria-label="<?= e(t('nav.account_menu')) ?>">
+                    <span class="avatar" aria-hidden="true"><?= e($initial) ?></span>
+                    <span class="user-menu__name"><?= e($authUser['first_name'] ?? $authUser['email']) ?></span>
+                    <?= icon('chevron-down', 'icon--sm') ?>
+                </summary>
+                <div class="dropdown__panel">
+                    <div class="dropdown__header">
+                        <strong><?= e($displayName) ?></strong>
+                        <span class="ltr"><?= e($authUser['email'] ?? '') ?></span>
+                    </div>
+                    <a href="/profile" class="dropdown__item"><?= icon('user') ?><?= e(t('nav.profile')) ?></a>
+                    <?php if ($hasOrg): ?>
+                        <a href="/org/settings" class="dropdown__item"><?= icon('settings') ?><?= e(t('nav.org_settings')) ?></a>
+                    <?php endif; ?>
+                    <form method="post" action="/logout" class="inline-form">
+                        <?= Csrf::field() ?>
+                        <button type="submit" class="dropdown__item dropdown__item--danger"><?= icon('log-out') ?><?= e(t('nav.logout')) ?></button>
+                    </form>
+                </div>
+            </details>
+        </header>
+
+        <main class="app-main" id="main" tabindex="-1">
+            <?= $flashes ?>
+            <?= $content ?>
+        </main>
+
+        <footer class="app-footer">
+            <span>&copy; <?= e(date('Y')) ?> CRM GROUP by MIRSYS</span>
+        </footer>
+    </div>
+</div>
+<?php endif; ?>
+
+<dialog class="modal" id="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-text">
+    <form method="dialog">
+        <div class="modal__body">
+            <span class="modal__icon"><?= icon('alert-triangle') ?></span>
+            <div>
+                <h2 class="modal__title" id="confirm-dialog-title"><?= e(t('common.confirm_title')) ?></h2>
+                <p class="modal__text" id="confirm-dialog-text"><?= e(t('common.confirm_delete')) ?></p>
+            </div>
+        </div>
+        <div class="modal__footer">
+            <button type="submit" value="cancel" class="btn" autofocus><?= e(t('common.cancel')) ?></button>
+            <button type="submit" value="confirm" class="btn btn--danger-solid"><?= e(t('common.confirm')) ?></button>
+        </div>
+    </form>
+</dialog>
+
+    <script src="<?= e($asset('js/app.js')) ?>"></script>
+    <script src="<?= e($asset('js/datepicker.js')) ?>"></script>
+    <script src="<?= e($asset('js/tag-input.js')) ?>"></script>
+    <script src="<?= e($asset('js/recipient-picker.js')) ?>"></script>
     <script>
         // System-wide date field convention (docs/conventions.md): every
         // <input class="crm-datepicker"> on the page gets the picker,
@@ -179,31 +384,6 @@ $knowledgeEnabled = $authUser !== null && (new ModuleAccessResolver(
             var defaultCalendar = <?= json_encode($lang === 'fa' ? 'jalali' : 'gregorian') ?>;
             document.querySelectorAll('.crm-datepicker').forEach(function (el) {
                 CRMDatePicker.attach(el, { defaultCalendar: defaultCalendar });
-            });
-        })();
-
-        // Mobile hamburger menu — toggles the nav open/closed as a
-        // floating overlay (see the .is-open CSS); no effect above
-        // the breakpoint where the nav is always shown inline.
-        (function () {
-            var toggle = document.getElementById('nav-toggle');
-            var nav = document.getElementById('app-nav');
-            if (!toggle || !nav) {
-                return;
-            }
-            toggle.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var isOpen = nav.classList.toggle('is-open');
-                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-            });
-            // Tapping anywhere outside the open overlay closes it —
-            // the expected behavior for a dropdown, not a
-            // push-the-page-down panel.
-            document.addEventListener('click', function (e) {
-                if (nav.classList.contains('is-open') && !nav.contains(e.target)) {
-                    nav.classList.remove('is-open');
-                    toggle.setAttribute('aria-expanded', 'false');
-                }
             });
         })();
     </script>

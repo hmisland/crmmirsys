@@ -6,21 +6,22 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('kb.title')) ?></h1>
 
     <form method="get" action="/kb/articles" class="inline-form-row">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('kb.search_placeholder')) ?>">
-        <select name="category_id">
+        <select aria-label="<?= e(t('contacts.category')) ?>" name="category_id">
             <option value=""><?= e(t('kb.all_categories')) ?></option>
             <?php foreach ($categories as $cat): ?>
                 <option value="<?= e($cat['id']) ?>" <?= $categoryId === (string) $cat['id'] ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="btn"><?= e(t('common.search')) ?></button>
-        <a href="/kb/categories" class="btn"><?= e(t('tickets.categories')) ?></a>
-        <a href="/kb/articles/create" class="btn btn--primary"><?= e(t('kb.new_article')) ?></a>
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
+        <a href="/kb/categories" class="btn"><?= icon('tag') ?><?= e(t('tickets.categories')) ?></a>
+        <a href="/kb/articles/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('kb.new_article')) ?></a>
     </form>
 
     <div class="table-responsive">

@@ -9,6 +9,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -53,7 +54,7 @@ $peopleJson = json_encode(array_map(
         <?php if ($fieldError('subject')): ?><div class="field-error"><?= e($fieldError('subject')) ?></div><?php endif; ?>
 
         <label for="body"><?= e(t('mail.message')) ?></label>
-        <textarea id="body" name="body" rows="6" required style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"><?= e($old['body'] ?? '') ?></textarea>
+        <textarea id="body" name="body" rows="6" required><?= e($old['body'] ?? '') ?></textarea>
         <?php if ($fieldError('body')): ?><div class="field-error"><?= e($fieldError('body')) ?></div><?php endif; ?>
 
         <label for="attachment_files"><?= e(t('mail.attachments')) ?></label>
@@ -63,13 +64,13 @@ $peopleJson = json_encode(array_map(
             <div class="field-hint"><?= e(t('mail.already_attached_hint')) ?></div>
         <?php endif; ?>
 
-        <label style="font-weight:normal;display:inline-flex;align-items:center;gap:0.3rem;margin-top:0.4rem;">
+        <label class="check check--spaced">
             <input type="checkbox" name="notify" value="1"> <?= e(t('mail.notify_checkbox')) ?>
         </label>
         <br>
 
-        <button type="submit" name="intent" value="send" class="btn btn--primary" style="margin-top:0.5rem"><?= e(t('mail.send')) ?></button>
-        <button type="submit" name="intent" value="save_draft" class="btn" style="margin-top:0.5rem"><?= e(t('mail.save_draft')) ?></button>
+        <button type="submit" name="intent" value="send" class="btn btn--primary" style="margin-top:0.5rem"><?= icon('send') ?><?= e(t('mail.send')) ?></button>
+        <button type="submit" name="intent" value="save_draft" class="btn" style="margin-top:0.5rem"><?= icon('save') ?><?= e(t('mail.save_draft')) ?></button>
     </form>
 
     <?php if ($isDraft && $attachments !== []): ?>
@@ -78,7 +79,7 @@ $peopleJson = json_encode(array_map(
                 <form method="post" action="/mail/attachments/<?= e($a['id']) ?>/delete" class="inline-form">
                     <?= Csrf::field() ?>
                     <input type="hidden" name="return_to" value="/mail/drafts/<?= e($draft['id']) ?>/edit">
-                    <button type="submit" class="link-button"><?= e(t('mail.remove_attachment')) ?> — <?= e($a['original_filename']) ?></button>
+                    <button type="submit" class="link-button"><?= icon('x') ?><?= e(t('mail.remove_attachment')) ?> — <?= e($a['original_filename']) ?></button>
                 </form>
             <?php endforeach; ?>
         </div>
@@ -87,7 +88,7 @@ $peopleJson = json_encode(array_map(
     <?php if ($isDraft): ?>
         <form method="post" action="/mail/drafts/<?= e($draft['id']) ?>/delete" class="inline-form" style="margin-top:0.5rem">
             <?= Csrf::field() ?>
-            <button type="submit" class="link-button"><?= e(t('mail.delete_draft')) ?></button>
+            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('mail.delete_draft')) ?></button>
         </form>
     <?php endif; ?>
 </section>

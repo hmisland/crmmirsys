@@ -5,6 +5,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -12,7 +14,7 @@ use App\Infrastructure\Security\Csrf;
     <p class="muted">
         <?= e(t('wallet.date')) ?>: <?= e($proforma['issue_date']) ?>
         <?= $proforma['expiry_date'] ? ' · ' . e(t('proformas.expires')) . ' ' . e($proforma['expiry_date']) : '' ?>
-        · <?= e(t('deals.status')) ?>: <?= e(t('proformas.status.' . $proforma['status'])) ?>
+        · <?= e(t('deals.status')) ?>: <?= badge(t('proformas.status.' . $proforma['status']), $proforma['status']) ?>
     </p>
     <?php if ($contact !== null): ?>
         <p><?= e(t('common.contact')) ?>: <a href="/contacts/<?= e($contact['id']) ?>"><?= e(trim($contact['first_name'] . ' ' . ($contact['last_name'] ?? ''))) ?></a></p>
@@ -25,19 +27,19 @@ use App\Infrastructure\Security\Csrf;
         </div>
     <?php endif; ?>
 
-    <p>
+    <div class="actions">
         <?php if ($proforma['converted_invoice_id'] === null): ?>
             <form method="post" action="/finance/proformas/<?= e($proforma['id']) ?>/convert" class="inline-form">
                 <?= Csrf::field() ?>
-                <button type="submit" class="btn btn--primary"><?= e(t('proformas.convert_to_invoice')) ?></button>
+                <button type="submit" class="btn btn--primary"><?= icon('arrow-left-right') ?><?= e(t('proformas.convert_to_invoice')) ?></button>
             </form>
-            <a href="/finance/proformas/<?= e($proforma['id']) ?>/edit" class="btn"><?= e(t('common.edit')) ?></a>
+            <a href="/finance/proformas/<?= e($proforma['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
             <form method="post" action="/finance/proformas/<?= e($proforma['id']) ?>/delete" class="inline-form">
                 <?= Csrf::field() ?>
-                <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
             </form>
         <?php endif; ?>
-    </p>
+    </div>
 </section>
 
 <section class="card">

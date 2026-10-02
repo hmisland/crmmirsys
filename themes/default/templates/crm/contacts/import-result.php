@@ -3,6 +3,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('import.complete')) ?></h1>
@@ -22,7 +23,7 @@ use function App\Infrastructure\Theme\t;
     <?php endif; ?>
 
     <p>
-        <a href="/contacts" class="btn btn--primary"><?= e(t('import.go_to_contacts')) ?></a>
-        <a href="/contacts/import" class="btn"><?= e(t('import.import_another')) ?></a>
+        <a href="/contacts" class="btn btn--primary"><?= icon('users') ?><?= e(t('import.go_to_contacts')) ?></a>
+        <a href="/contacts/import" class="btn"><?= icon('upload') ?><?= e(t('import.import_another')) ?></a>
     </p>
 </section>

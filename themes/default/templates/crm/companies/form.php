@@ -5,6 +5,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -45,6 +46,6 @@ $action = $company !== null ? '/companies/' . $company['id'] : '/companies';
         <label for="country"><?= e(t('companies.country')) ?></label>
         <input type="text" id="country" name="country" value="<?= $val('country') ?>">
 
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
     </form>
 </section>

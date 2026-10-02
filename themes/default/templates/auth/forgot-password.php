@@ -3,6 +3,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card card--form">
@@ -20,7 +21,7 @@ use App\Infrastructure\Security\Csrf;
             <label for="email"><?= e(t('auth.email')) ?></label>
             <input type="email" id="email" name="email" required autofocus>
 
-            <button type="submit" class="btn btn--primary"><?= e(t('auth.send_reset_link')) ?></button>
+            <button type="submit" class="btn btn--primary"><?= icon('send') ?><?= e(t('auth.send_reset_link')) ?></button>
         </form>
     <?php endif; ?>
 </section>

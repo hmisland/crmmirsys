@@ -3,6 +3,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card card--form">
@@ -20,6 +21,6 @@ use App\Infrastructure\Security\Csrf;
         <input type="number" id="sms_cost" name="sms_cost" step="0.01" value="<?= e($settings['sms_cost']) ?>" required>
         <div class="field-hint"><?= e(t('notif.sms_cost_hint')) ?></div>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
     </form>
 </section>

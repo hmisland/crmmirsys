@@ -4,6 +4,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Csrf;
 ?>
@@ -43,7 +44,7 @@ use App\Infrastructure\Security\Csrf;
         <input type="text" id="title" name="title" required>
 
         <label for="description"><?= e(t('contacts.description')) ?></label>
-        <textarea id="description" name="description" rows="3" style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"></textarea>
+        <textarea id="description" name="description" rows="3"></textarea>
 
         <label for="due_at"><?= e(t('tasks.due_date')) ?></label>
         <input type="text" class="crm-datepicker" id="due_at" name="due_at">
@@ -64,6 +65,6 @@ use App\Infrastructure\Security\Csrf;
             <?php endforeach; ?>
         </select>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('tasks.add')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('tasks.add')) ?></button>
     </form>
 </section>

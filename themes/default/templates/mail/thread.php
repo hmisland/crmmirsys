@@ -6,6 +6,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $labelFor = fn (string $type) => match ($type) {
@@ -27,7 +28,7 @@ $labelFor = fn (string $type) => match ($type) {
             <?php endforeach; ?>
         </p>
     <?php endif; ?>
-    <p><a href="/mail" class="btn"><?= e(t('mail.back_to_inbox')) ?></a></p>
+    <p><a href="/mail" class="btn"><?= icon('arrow-left') ?><?= e(t('mail.back_to_inbox')) ?></a></p>
 </section>
 
 <?php foreach ($messages as $msg): ?>
@@ -49,13 +50,13 @@ $labelFor = fn (string $type) => match ($type) {
     <h2><?= e(t('mail.reply')) ?></h2>
     <form method="post" action="/mail/thread/<?= e($rootId) ?>/reply" enctype="multipart/form-data">
         <?= Csrf::field() ?>
-        <textarea name="body" rows="4" required style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"></textarea>
+        <textarea name="body" rows="4" required></textarea>
         <label for="reply_attachments"><?= e(t('mail.attachments')) ?></label>
         <input type="file" id="reply_attachments" name="attachments[]" multiple>
-        <label style="font-weight:normal;display:inline-flex;align-items:center;gap:0.3rem;margin-top:0.4rem;">
+        <label class="check check--spaced">
             <input type="checkbox" name="notify" value="1"> <?= e(t('mail.notify_checkbox_short')) ?>
         </label>
         <br>
-        <button type="submit" class="btn btn--primary" style="margin-top:0.5rem"><?= e(t('mail.send_reply')) ?></button>
+        <button type="submit" class="btn btn--primary" style="margin-top:0.5rem"><?= icon('reply') ?><?= e(t('mail.send_reply')) ?></button>
     </form>
 </section>

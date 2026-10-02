@@ -11,6 +11,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -87,11 +88,11 @@ if ($rows === []) {
                         <option value="fixed" <?= ($row['discount_type'] ?? '') === 'fixed' ? 'selected' : '' ?>><?= e(t('proformas.discount_fixed')) ?></option>
                     </select>
                     <input type="number" name="items[<?= e($key) ?>][discount_value]" value="<?= e($row['discount_value'] ?? '0') ?>" step="0.01" min="0" style="width:90px">
-                    <button type="button" class="link-button remove-row"><?= e(t('common.remove')) ?></button>
+                    <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
                 </div>
             <?php endforeach; ?>
         </div>
-        <button type="button" class="btn" id="add-item"><?= e(t('proformas.add_line')) ?></button>
+        <button type="button" class="btn" id="add-item"><?= icon('plus') ?><?= e(t('proformas.add_line')) ?></button>
         <?php if ($fieldError('items')): ?><div class="field-error"><?= e($fieldError('items')) ?></div><?php endif; ?>
 
         <label for="invoice_discount"><?= e(t('proformas.invoice_discount')) ?></label>
@@ -99,12 +100,12 @@ if ($rows === []) {
         <div class="field-hint"><?= e(t('proformas.invoice_discount_hint')) ?></div>
 
         <label for="terms"><?= e(t('proformas.terms')) ?></label>
-        <textarea id="terms" name="terms" rows="3" style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"><?= $val('terms') ?></textarea>
+        <textarea id="terms" name="terms" rows="3"><?= $val('terms') ?></textarea>
 
         <label for="notes"><?= e(t('common.notes')) ?></label>
-        <textarea id="notes" name="notes" rows="3" style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"><?= $val('notes') ?></textarea>
+        <textarea id="notes" name="notes" rows="3"><?= $val('notes') ?></textarea>
 
-        <p style="margin-top:1rem"><button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button></p>
+        <p style="margin-top:1rem"><button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button></p>
     </form>
 </section>
 
@@ -125,7 +126,7 @@ if ($rows === []) {
             <option value="fixed"><?= e(t('proformas.discount_fixed')) ?></option>
         </select>
         <input type="number" name="items[__INDEX__][discount_value]" value="0" step="0.01" min="0" style="width:90px">
-        <button type="button" class="link-button remove-row"><?= e(t('common.remove')) ?></button>
+        <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
     </div>
 </template>
 

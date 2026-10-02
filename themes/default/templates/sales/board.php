@@ -6,14 +6,15 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
     <h1><?= e($pipeline['name']) ?></h1>
     <p>
-        <a href="/deals/create" class="btn btn--primary"><?= e(t('deals.new')) ?></a>
-        <a href="/deals" class="btn"><?= e(t('deals.list_view')) ?></a>
-        <a href="/sales/pipeline" class="btn"><?= e(t('deals.manage_pipeline')) ?></a>
+        <a href="/deals/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('deals.new')) ?></a>
+        <a href="/deals" class="btn"><?= icon('list') ?><?= e(t('deals.list_view')) ?></a>
+        <a href="/sales/pipeline" class="btn"><?= icon('settings') ?><?= e(t('deals.manage_pipeline')) ?></a>
     </p>
 </section>
 
@@ -35,7 +36,7 @@ use App\Infrastructure\Security\Csrf;
                     <form method="post" action="/deals/<?= e($deal['id']) ?>/stage" class="kanban__move">
                         <?= Csrf::field() ?>
                         <input type="hidden" name="return_to" value="/deals/board">
-                        <select name="stage_id" onchange="this.form.submit()">
+                        <select aria-label="<?= e(t('deals.stage')) ?>" name="stage_id" onchange="this.form.submit()">
                             <?php foreach ($stages as $s): ?>
                                 <option value="<?= e($s['id']) ?>" <?= (int) $s['id'] === (int) $stage['id'] ? 'selected' : '' ?>><?= e($s['name']) ?></option>
                             <?php endforeach; ?>

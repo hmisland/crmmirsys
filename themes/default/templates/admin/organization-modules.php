@@ -4,6 +4,8 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -17,7 +19,7 @@ use App\Infrastructure\Security\Csrf;
         <?php foreach ($modules as $module): ?>
             <tr>
                 <td><?= e($module['name']) ?></td>
-                <td><?= e(t('admin.module_status.' . $module['status'])) ?></td>
+                <td><?= badge(t('admin.module_status.' . $module['status']), $module['status']) ?></td>
                 <td><?= $module['enabled_for_org'] ? e(t('common.yes')) : e(t('common.no')) ?></td>
                 <td>
                     <?php if ((bool) $module['is_core']): ?>
@@ -27,12 +29,12 @@ use App\Infrastructure\Security\Csrf;
                     <?php elseif ($module['enabled_for_org']): ?>
                         <form method="post" action="/admin/organizations/<?= e($organization['id']) ?>/modules/<?= e($module['id']) ?>/disable" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('admin.revoke')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('ban') ?><?= e(t('admin.revoke')) ?></button>
                         </form>
                     <?php else: ?>
                         <form method="post" action="/admin/organizations/<?= e($organization['id']) ?>/modules/<?= e($module['id']) ?>/enable" class="inline-form">
                             <?= Csrf::field() ?>
-                            <button type="submit" class="link-button"><?= e(t('admin.grant')) ?></button>
+                            <button type="submit" class="link-button"><?= icon('check') ?><?= e(t('admin.grant')) ?></button>
                         </form>
                     <?php endif; ?>
                 </td>

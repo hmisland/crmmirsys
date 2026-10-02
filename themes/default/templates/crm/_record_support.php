@@ -8,6 +8,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $base = "/records/{$type}/{$id}";
@@ -32,7 +33,7 @@ $base = "/records/{$type}/{$id}";
         <datalist id="tag-suggestions">
             <?php foreach ($allTags as $tagOption): ?><option value="<?= e($tagOption['name']) ?>"><?php endforeach; ?>
         </datalist>
-        <button type="submit" class="btn"><?= e(t('common.add_tag')) ?></button>
+        <button type="submit" class="btn"><?= icon('tag') ?><?= e(t('common.add_tag')) ?></button>
     </form>
 </section>
 
@@ -46,7 +47,7 @@ $base = "/records/{$type}/{$id}";
                 <span class="muted">(<?= e(round($a['size'] / 1024)) ?> KB)</span>
                 <form method="post" action="<?= e($base) ?>/attachments/<?= e($a['id']) ?>/delete" class="inline-form">
                     <?= Csrf::field() ?>
-                    <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                    <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                 </form>
             </li>
         <?php endforeach; ?>
@@ -54,8 +55,8 @@ $base = "/records/{$type}/{$id}";
     </ul>
     <form method="post" action="<?= e($base) ?>/attachments" enctype="multipart/form-data" class="inline-form-row">
         <?= Csrf::field() ?>
-        <input type="file" name="file" required>
-        <button type="submit" class="btn"><?= e(t('common.upload')) ?></button>
+        <input aria-label="<?= e(t('common.attachments')) ?>" type="file" name="file" required>
+        <button type="submit" class="btn"><?= icon('upload') ?><?= e(t('common.upload')) ?></button>
     </form>
 </section>
 <?php endif; ?>
@@ -64,8 +65,8 @@ $base = "/records/{$type}/{$id}";
     <h2><?= e(t('common.notes')) ?></h2>
     <form method="post" action="<?= e($base) ?>/notes" class="card--form" style="max-width:100%">
         <?= Csrf::field() ?>
-        <textarea name="body" rows="3" placeholder="<?= e(t('common.write_a_note')) ?>" required style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"></textarea>
-        <button type="submit" class="btn btn--primary"><?= e(t('common.add_note')) ?></button>
+        <textarea name="body" rows="3" placeholder="<?= e(t('common.write_a_note')) ?>" required></textarea>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('common.add_note')) ?></button>
     </form>
     <ul class="note-list">
         <?php foreach ($notes as $note): ?>
@@ -74,7 +75,7 @@ $base = "/records/{$type}/{$id}";
                 <span class="muted"><?= e($note['created_at']) ?></span>
                 <form method="post" action="<?= e($base) ?>/notes/<?= e($note['id']) ?>/delete" class="inline-form">
                     <?= Csrf::field() ?>
-                    <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                    <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                 </form>
             </li>
         <?php endforeach; ?>

@@ -5,16 +5,18 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('followups.title')) ?></h1>
     <p>
-        <a href="/followups/create" class="btn btn--primary"><?= e(t('followups.new')) ?></a>
-        <a href="/followups/rules" class="btn"><?= e(t('followups.rules_title')) ?></a>
+        <a href="/followups/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('followups.new')) ?></a>
+        <a href="/followups/rules" class="btn"><?= icon('zap') ?><?= e(t('followups.rules_title')) ?></a>
     </p>
 
     <form method="get" action="/followups" class="inline-form-row">
-        <select name="status" onchange="this.form.submit()">
+        <select aria-label="<?= e(t('deals.status')) ?>" name="status" onchange="this.form.submit()">
             <option value=""><?= e(t('followups.all_statuses')) ?></option>
             <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>><?= e(t('followups.status.pending')) ?></option>
             <option value="scheduled" <?= $statusFilter === 'scheduled' ? 'selected' : '' ?>><?= e(t('followups.status.scheduled')) ?></option>
@@ -22,7 +24,7 @@ use function App\Infrastructure\Theme\t;
             <option value="completed" <?= $statusFilter === 'completed' ? 'selected' : '' ?>><?= e(t('followups.status.completed')) ?></option>
             <option value="cancelled" <?= $statusFilter === 'cancelled' ? 'selected' : '' ?>><?= e(t('followups.status.cancelled')) ?></option>
         </select>
-        <label style="display:inline-flex;align-items:center;gap:0.3rem;font-weight:normal">
+        <label class="check">
             <input type="checkbox" name="overdue" value="1" <?= $overdueFilter ? 'checked' : '' ?> onchange="this.form.submit()"> <?= e(t('followups.overdue_only')) ?>
         </label>
     </form>
@@ -40,7 +42,7 @@ use function App\Infrastructure\Theme\t;
                 <td><?= e(t('followups.type.' . $f['type'])) ?></td>
                 <td class="<?= $isOverdue ? 'text-danger' : 'muted' ?>"><?= e($f['due_at'] ?? '—') ?><?= $isOverdue ? ' (' . e(t('followups.overdue')) . ')' : '' ?></td>
                 <td><?= e(t('followups.priority.' . $f['priority'])) ?></td>
-                <td><?= e(t('followups.status.' . $f['status'])) ?></td>
+                <td><?= badge(t('followups.status.' . $f['status']), $f['status']) ?></td>
                 <td class="muted"><?= e(trim((string) ($f['assignee_name'] ?? ''))) ?: '—' ?></td>
             </tr>
         <?php endforeach; ?>

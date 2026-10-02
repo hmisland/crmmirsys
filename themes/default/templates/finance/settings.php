@@ -8,6 +8,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -20,10 +21,10 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
         <?= Csrf::field() ?>
 
         <label><?= e(t('finance.entity_type')) ?></label>
-        <label style="display:inline-flex;align-items:center;gap:0.3rem;font-weight:normal;margin-inline-end:1rem;">
+        <label class="check check--spaced">
             <input type="radio" name="entity_type" value="legal" id="entity_type_legal" <?= ($profile['entity_type'] ?? 'legal') === 'legal' ? 'checked' : '' ?>> <?= e(t('finance.entity_type.legal')) ?>
         </label>
-        <label style="display:inline-flex;align-items:center;gap:0.3rem;font-weight:normal;">
+        <label class="check">
             <input type="radio" name="entity_type" value="natural" id="entity_type_natural" <?= ($profile['entity_type'] ?? '') === 'natural' ? 'checked' : '' ?>> <?= e(t('finance.entity_type.natural')) ?>
         </label>
 
@@ -89,7 +90,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
             <option value="tax_inclusive" <?= ($profile['pricing_mode'] ?? '') === 'tax_inclusive' ? 'selected' : '' ?>><?= e(t('finance.pricing_mode.tax_inclusive')) ?></option>
         </select>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('profile.save_changes')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('profile.save_changes')) ?></button>
     </form>
 </section>
 

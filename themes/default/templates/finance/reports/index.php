@@ -3,6 +3,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('reports.title')) ?></h1>
@@ -12,7 +13,7 @@ use function App\Infrastructure\Theme\t;
         <input type="text" class="crm-datepicker" id="start_date" name="start_date" value="<?= e($summary['start_date']) ?>">
         <label for="end_date" style="margin:0"><?= e(t('reports.to')) ?></label>
         <input type="text" class="crm-datepicker" id="end_date" name="end_date" value="<?= e($summary['end_date']) ?>">
-        <button type="submit" class="btn btn--primary"><?= e(t('reports.apply')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('filter') ?><?= e(t('reports.apply')) ?></button>
     </form>
 </section>
 

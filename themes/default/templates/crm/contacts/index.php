@@ -6,23 +6,24 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('contacts.title')) ?></h1>
 
     <form method="get" action="/contacts" class="inline-form-row">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('contacts.search_placeholder')) ?>">
-        <select name="category_id">
+        <select aria-label="<?= e(t('contacts.category')) ?>" name="category_id">
             <option value=""><?= e(t('contacts.all_categories')) ?></option>
             <?php foreach ($categories as $cat): ?>
                 <option value="<?= e($cat['id']) ?>" <?= $categoryId === (string) $cat['id'] ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="btn"><?= e(t('common.search')) ?></button>
-        <a href="/contacts/create" class="btn btn--primary"><?= e(t('contacts.new')) ?></a>
-        <a href="/contacts/categories" class="btn"><?= e(t('contacts.categories_title')) ?></a>
-        <a href="/contacts/import" class="btn"><?= e(t('common.import_csv')) ?></a>
-        <a href="/contacts/export<?= $q !== '' ? '?q=' . urlencode($q) : '' ?>" class="btn"><?= e(t('common.export_csv')) ?></a>
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
+        <a href="/contacts/create" class="btn btn--primary"><?= icon('user-plus') ?><?= e(t('contacts.new')) ?></a>
+        <a href="/contacts/categories" class="btn"><?= icon('tag') ?><?= e(t('contacts.categories_title')) ?></a>
+        <a href="/contacts/import" class="btn"><?= icon('upload') ?><?= e(t('common.import_csv')) ?></a>
+        <a href="/contacts/export<?= $q !== '' ? '?q=' . urlencode($q) : '' ?>" class="btn"><?= icon('download') ?><?= e(t('common.export_csv')) ?></a>
     </form>
 
     <div class="table-responsive">

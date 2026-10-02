@@ -8,6 +8,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -25,7 +26,7 @@ $action = $ticket !== null ? '/support/tickets/' . $ticket['id'] : '/support/tic
         <?php if ($fieldError('subject')): ?><div class="field-error"><?= e($fieldError('subject')) ?></div><?php endif; ?>
 
         <label for="description"><?= e(t('contacts.description')) ?></label>
-        <textarea id="description" name="description" rows="4" style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"><?= $val('description') ?></textarea>
+        <textarea id="description" name="description" rows="4"><?= $val('description') ?></textarea>
 
         <label for="contact_id"><?= e(t('common.contact')) ?></label>
         <select id="contact_id" name="contact_id">
@@ -64,6 +65,6 @@ $action = $ticket !== null ? '/support/tickets/' . $ticket['id'] : '/support/tic
             <?php endforeach; ?>
         </select>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
     </form>
 </section>

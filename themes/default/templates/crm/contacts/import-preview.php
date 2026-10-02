@@ -4,6 +4,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $validCount = 0;
@@ -47,7 +48,7 @@ foreach ($rows as $r) {
             <tbody>
             <?php foreach ($rows as $i => $row): ?>
                 <?php $hasErrors = $row['errors'] !== []; ?>
-                <tr <?= $hasErrors ? 'style="background:#fdecea"' : '' ?>>
+                <tr<?= $hasErrors ? ' class="row--danger"' : '' ?>>
                     <td>
                         <input type="checkbox" name="rows[<?= e($i) ?>][include]" value="1" <?= !$hasErrors ? 'checked' : '' ?>>
                     </td>
@@ -63,7 +64,7 @@ foreach ($rows as $r) {
                         <input type="hidden" name="rows[<?= e($i) ?>][existing_id]" value="<?= e($row['existing_id'] ?? '') ?>">
                     </td>
                     <td class="muted">
-                        <?php foreach ($row['errors'] as $err): ?><div style="color:#b3261e"><?= e($err) ?></div><?php endforeach; ?>
+                        <?php foreach ($row['errors'] as $err): ?><div class="text-danger"><?= e($err) ?></div><?php endforeach; ?>
                         <?php if ($row['company_note']): ?><div><?= e($row['company_note']) ?></div><?php endif; ?>
                         <?php foreach (['position', 'address', 'city', 'country', 'source', 'status'] as $hidden): ?>
                             <input type="hidden" name="rows[<?= e($i) ?>][data][<?= e($hidden) ?>]" value="<?= e($row['data'][$hidden]) ?>">
@@ -79,7 +80,7 @@ foreach ($rows as $r) {
         </div>
 
         <p>
-            <button type="submit" class="btn btn--primary"><?= e(t('import.import_checked')) ?></button>
+            <button type="submit" class="btn btn--primary"><?= icon('check') ?><?= e(t('import.import_checked')) ?></button>
             <a href="/contacts/import" class="btn"><?= e(t('org.cancel')) ?></a>
         </p>
     </form>

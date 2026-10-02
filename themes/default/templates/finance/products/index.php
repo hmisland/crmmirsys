@@ -4,14 +4,15 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('products.title')) ?></h1>
 
     <form method="get" action="/finance/products" class="inline-form-row">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('products.search_placeholder')) ?>">
-        <button type="submit" class="btn"><?= e(t('common.search')) ?></button>
-        <a href="/finance/products/create" class="btn btn--primary"><?= e(t('products.new')) ?></a>
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
+        <a href="/finance/products/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('products.new')) ?></a>
     </form>
 
     <div class="table-responsive">

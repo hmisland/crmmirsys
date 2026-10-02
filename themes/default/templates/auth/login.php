@@ -4,6 +4,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card card--form">
@@ -22,7 +23,7 @@ use App\Infrastructure\Security\Csrf;
         <label for="password"><?= e(t('auth.password')) ?></label>
         <input type="password" id="password" name="password" required>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('auth.login.submit')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('log-in') ?><?= e(t('auth.login.submit')) ?></button>
     </form>
 
     <p class="muted">

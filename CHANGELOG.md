@@ -4,6 +4,16 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### UI/UX redesign (presentation layer only)
+- New design system in `themes/default/assets/css/app.css` (tokens, buttons, forms, tables, badges, alerts, tabs, dropdowns, dialog, empty/loading states). Every pre-existing class name still works.
+- New app shell: grouped sidebar with icons (module → section), collapsible on desktop, off-canvas drawer on tablet/mobile; topbar with breadcrumb, global search, language switcher (native language names) and account menu.
+- One icon set (inline SVG sprite) via a new `icon()` template helper; ~210 action buttons now show icon + label. Status values render as colored pills via `badge()`.
+- Delete actions are styled as danger and ask for confirmation (`data-confirm`) before submitting — the form/request itself is unchanged.
+- Dashboard redesigned (KPI cards, grouped tasks, follow-ups, quick actions) using only the data the controller already provided.
+- Org settings is now a settings hub grid; 404/500 pages are styled standalone documents.
+- RTL fixes: date picker anchors/arrow direction, mixed-script text, mirrored chevrons. Accessibility: skip link, landmarks, focus rings, labels on unlabeled selects/file inputs.
+- No controller, service, repository, route, migration, RBAC or config changes. See `docs/ui-design-system.md`.
+
 ### Phase 11 — Localization (infrastructure complete, content partial)
 - Real `Translator`/`Locale` system, replacing the Phase 1 `t()` stub: 4 language files (`en`/`fa`/`ar`/`tr`), English as the required fallback for any missing key in another locale, automatic RTL/LTR direction.
 - **Honest scope note**: Phase 1 set up templates to call `t('key')` specifically so this phase would be a clean swap — that convention wasn't actually followed for any template built across Phases 5–10, all of which hardcode English text directly. This phase converted only the nav/header and the login/register pages; every other template still shows English regardless of locale, and will be converted module by module in further deliveries.

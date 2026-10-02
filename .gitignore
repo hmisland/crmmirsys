@@ -1,0 +1,30 @@
+# --- Secrets: never commit ---
+.env
+
+# --- Local backups, archives, unrelated folders ---
+ddddd/
+git repo hamed/
+mirsys.ir/
+*.zip
+.tmb/
+
+# --- Hosting-managed folders (cPanel / SSL) ---
+cgi-bin/
+.well-known/
+
+# --- Runtime data: keep the folders, never the contents ---
+storage/logs/*
+storage/uploads/*
+storage/file-library/*
+storage/mail/*
+storage/cache/*
+!storage/*/.gitkeep
+
+# --- Dev tooling ---
+vendor/
+.claude/settings.local.json
+.phpunit.result.cache
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini

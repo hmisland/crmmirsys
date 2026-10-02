@@ -3,10 +3,12 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('proformas.title')) ?></h1>
-    <p><a href="/finance/proformas/create" class="btn btn--primary"><?= e(t('proformas.new')) ?></a></p>
+    <p><a href="/finance/proformas/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('proformas.new')) ?></a></p>
 
     <div class="table-responsive">
     <table class="table">
@@ -18,7 +20,7 @@ use function App\Infrastructure\Theme\t;
                 <td><?= e($p['contact_name'] !== null ? trim($p['contact_name']) : '—') ?></td>
                 <td class="muted"><?= e($p['issue_date']) ?></td>
                 <td><?= e(number_format((float) $p['grand_total'], 0)) ?> <?= e($p['currency_code']) ?></td>
-                <td><?= e(t('proformas.status.' . $p['status'])) ?></td>
+                <td><?= badge(t('proformas.status.' . $p['status']), $p['status']) ?></td>
                 <td class="muted"><?= e(trim((string) $p['owner_name'])) ?></td>
             </tr>
         <?php endforeach; ?>

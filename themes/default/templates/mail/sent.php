@@ -3,15 +3,16 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
     <h1><?= e(t('mail.sent')) ?></h1>
     <p>
-        <a href="/mail" class="btn"><?= e(t('mail.inbox')) ?></a>
-        <a href="/mail/compose" class="btn btn--primary"><?= e(t('mail.compose')) ?></a>
-        <a href="/mail/drafts" class="btn"><?= e(t('mail.drafts')) ?></a>
-        <a href="/mail/trash" class="btn"><?= e(t('mail.trash')) ?></a>
+        <a href="/mail" class="btn"><?= icon('inbox') ?><?= e(t('mail.inbox')) ?></a>
+        <a href="/mail/compose" class="btn btn--primary"><?= icon('pencil') ?><?= e(t('mail.compose')) ?></a>
+        <a href="/mail/drafts" class="btn"><?= icon('file-text') ?><?= e(t('mail.drafts')) ?></a>
+        <a href="/mail/trash" class="btn"><?= icon('trash') ?><?= e(t('mail.trash')) ?></a>
     </p>
 
     <div class="table-responsive">
@@ -26,7 +27,7 @@ use App\Infrastructure\Security\Csrf;
                 <td>
                     <form method="post" action="/mail/sent/<?= e($item['id']) ?>/delete" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                        <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                     </form>
                 </td>
             </tr>

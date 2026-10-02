@@ -3,6 +3,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card card--form" style="max-width:600px">
@@ -25,6 +26,6 @@ use App\Infrastructure\Security\Csrf;
         <label for="file"><?= e(t('import.csv_file')) ?></label>
         <input type="file" id="file" name="file" accept=".csv,text/csv" required>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('import.upload_and_preview')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('upload') ?><?= e(t('import.upload_and_preview')) ?></button>
     </form>
 </section>

@@ -3,12 +3,13 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
     <h1><?= e(t('mail.broadcast')) ?></h1>
     <p class="muted"><?= e(t('mail.broadcast_hint')) ?></p>
-    <p><a href="/mail" class="btn"><?= e(t('mail.back_to_inbox')) ?></a></p>
+    <p><a href="/mail" class="btn"><?= icon('arrow-left') ?><?= e(t('mail.back_to_inbox')) ?></a></p>
 </section>
 
 <section class="card card--form">
@@ -19,8 +20,8 @@ use App\Infrastructure\Security\Csrf;
         <label for="team_subject"><?= e(t('mail.subject')) ?></label>
         <input type="text" id="team_subject" name="subject" required>
         <label for="team_body"><?= e(t('mail.message')) ?></label>
-        <textarea id="team_body" name="body" rows="5" required style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"></textarea>
-        <button type="submit" class="btn btn--primary"><?= e(t('mail.send_to_team_btn')) ?></button>
+        <textarea id="team_body" name="body" rows="5" required></textarea>
+        <button type="submit" class="btn btn--primary"><?= icon('send') ?><?= e(t('mail.send_to_team_btn')) ?></button>
     </form>
 </section>
 
@@ -32,8 +33,8 @@ use App\Infrastructure\Security\Csrf;
         <label for="cust_subject"><?= e(t('mail.subject')) ?></label>
         <input type="text" id="cust_subject" name="subject" required>
         <label for="cust_body"><?= e(t('mail.message')) ?></label>
-        <textarea id="cust_body" name="body" rows="5" required style="width:100%;padding:0.55rem;border:1px solid var(--color-border);border-radius:6px;font-family:inherit;"></textarea>
-        <button type="submit" class="btn btn--primary"><?= e(t('mail.send_to_customers_btn')) ?></button>
+        <textarea id="cust_body" name="body" rows="5" required></textarea>
+        <button type="submit" class="btn btn--primary"><?= icon('send') ?><?= e(t('mail.send_to_customers_btn')) ?></button>
     </form>
 </section>
 

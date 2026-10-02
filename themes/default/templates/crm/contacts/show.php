@@ -13,6 +13,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $genderLabel = match ($contact['gender'] ?? null) {
@@ -49,13 +50,13 @@ $socialLabels = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube'
             <?php endforeach; ?>
         </p>
     <?php endif; ?>
-    <p>
-        <a href="/contacts/<?= e($contact['id']) ?>/edit" class="btn"><?= e(t('common.edit')) ?></a>
+    <div class="actions">
+        <a href="/contacts/<?= e($contact['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
         <form method="post" action="/contacts/<?= e($contact['id']) ?>/delete" class="inline-form">
             <?= Csrf::field() ?>
-            <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+            <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
         </form>
-    </p>
+    </div>
 </section>
 
 <?php if ($related['phones'] !== [] || $related['emails'] !== []): ?>
@@ -99,7 +100,7 @@ $socialLabels = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube'
             <input type="text" id="custom_<?= e($def['field_key']) ?>" name="custom[<?= e($def['field_key']) ?>]"
                    value="<?= e($customFieldValues[$def['field_key']] ?? '') ?>">
         <?php endforeach; ?>
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save_custom_fields')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save_custom_fields')) ?></button>
     </form>
 </section>
 <?php endif; ?>

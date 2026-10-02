@@ -7,6 +7,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -28,11 +29,11 @@ use App\Infrastructure\Security\Csrf;
                 <td>
                     <form method="post" action="/org/wallet/withdrawals/<?= e($req['id']) ?>/approve" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('wallet.approve')) ?></button>
+                        <button type="submit" class="link-button"><?= icon('check') ?><?= e(t('wallet.approve')) ?></button>
                     </form>
                     <form method="post" action="/org/wallet/withdrawals/<?= e($req['id']) ?>/reject" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('wallet.reject')) ?></button>
+                        <button type="submit" class="link-button"><?= icon('x-circle') ?><?= e(t('wallet.reject')) ?></button>
                     </form>
                 </td>
             </tr>
@@ -68,7 +69,7 @@ use App\Infrastructure\Security\Csrf;
         <label for="reason"><?= e(t('wallet.reason')) ?></label>
         <input type="text" id="reason" name="reason" required>
 
-        <button type="submit" class="btn btn--primary"><?= e(t('wallet.apply')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('check') ?><?= e(t('wallet.apply')) ?></button>
     </form>
 </section>
 
@@ -99,7 +100,7 @@ use App\Infrastructure\Security\Csrf;
         <label for="transfer_fee_percent"><?= e(t('wallet.transfer_fee_percent')) ?></label>
         <input type="number" id="transfer_fee_percent" name="transfer_fee_percent" min="0" max="100" step="0.01" value="<?= e($orgSettings['transfer_fee_percent'] ?? '0') ?>">
 
-        <button type="submit" class="btn btn--primary"><?= e(t('common.save')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
     </form>
 </section>
 

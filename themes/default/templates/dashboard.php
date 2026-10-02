@@ -12,138 +12,155 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
+use App\Infrastructure\Security\CurrentUser;
+
+$me = CurrentUser::user();
+$greetingName = trim((string) ($me['first_name'] ?? ''));
+
+// Every tile maps 1:1 to a value the controller already provides; a
+// tile whose module isn't available (value === null) is simply omitted.
+$kpis = [
+    ['label' => t('dashboard.contacts_count'), 'value' => $contactsCount, 'href' => '/contacts', 'link' => t('nav.contacts'), 'icon' => 'users', 'tone' => ''],
+    ['label' => t('dashboard.companies_count'), 'value' => $companiesCount, 'href' => '/companies', 'link' => t('nav.companies'), 'icon' => 'building', 'tone' => 'info'],
+];
+if ($wallet !== null) {
+    $kpis[] = ['label' => t('dashboard.wallet_balance'), 'value' => (float) $wallet['balance'], 'unit' => $wallet['currency_code'], 'href' => '/wallet', 'link' => t('wallet.my_wallet'), 'icon' => 'wallet', 'tone' => 'success'];
+}
+if ($unreadMailCount !== null) {
+    $kpis[] = ['label' => t('dashboard.unread_mail'), 'value' => $unreadMailCount, 'href' => '/mail', 'link' => t('mail.inbox'), 'icon' => 'mail', 'tone' => ''];
+}
+if ($openTicketsCount !== null) {
+    $kpis[] = ['label' => t('dashboard.open_tickets'), 'value' => $openTicketsCount, 'href' => '/support/tickets/board', 'link' => t('tickets.title'), 'icon' => 'life-buoy', 'tone' => $openTicketsCount > 0 ? 'warning' : ''];
+}
+if ($invoicesCount !== null) {
+    $kpis[] = ['label' => t('dashboard.invoices_count'), 'value' => $invoicesCount, 'href' => '/finance/invoices', 'link' => t('invoices.title'), 'icon' => 'receipt', 'tone' => 'info'];
+}
+if ($proformasCount !== null) {
+    $kpis[] = ['label' => t('dashboard.proformas_count'), 'value' => $proformasCount, 'href' => '/finance/proformas', 'link' => t('proformas.title'), 'icon' => 'file-text', 'tone' => ''];
+}
+if ($productsCount !== null) {
+    $kpis[] = ['label' => t('dashboard.products_count'), 'value' => $productsCount, 'href' => '/finance/products', 'link' => t('products.title'), 'icon' => 'package', 'tone' => ''];
+}
 ?>
+<div class="page-head">
+    <div>
+        <h1><?= $greetingName !== '' ? e(t('dashboard.greeting', ['name' => $greetingName])) : e(t('dashboard.title')) ?></h1>
+        <p><?= e(t('dashboard.subtitle')) ?></p>
+    </div>
+    <div class="quick-actions" aria-label="<?= e(t('dashboard.quick_actions')) ?>">
+        <a href="/contacts/create" class="btn btn--primary"><?= icon('user-plus') ?><?= e(t('contacts.new')) ?></a>
+        <a href="/companies/create" class="btn"><?= icon('building') ?><?= e(t('companies.new')) ?></a>
+        <a href="/leads/create" class="btn"><?= icon('target') ?><?= e(t('leads.new')) ?></a>
+    </div>
+</div>
+
 <section class="card">
-    <form method="get" action="/search" class="inline-form-row">
-        <input type="text" name="q" placeholder="<?= e(t('dashboard.search_placeholder')) ?>" style="flex:1">
-        <button type="submit" class="btn btn--primary"><?= e(t('common.search')) ?></button>
+    <form method="get" action="/search" class="search-hero" role="search">
+        <div class="search-hero__field">
+            <?= icon('search') ?>
+            <label for="dashboard-q" class="visually-hidden"><?= e(t('common.search')) ?></label>
+            <input type="search" id="dashboard-q" name="q" placeholder="<?= e(t('dashboard.search_placeholder')) ?>">
+        </div>
+        <button type="submit" class="btn btn--primary"><?= icon('search') ?><?= e(t('common.search')) ?></button>
     </form>
 </section>
 
-<div class="dashboard-grid">
+<section aria-labelledby="dashboard-overview">
+    <h2 id="dashboard-overview" class="visually-hidden"><?= e(t('dashboard.overview')) ?></h2>
+    <div class="kpi-grid">
+        <?php foreach ($kpis as $kpi): ?>
+            <a href="<?= e($kpi['href']) ?>" class="card kpi">
+                <span class="kpi__top">
+                    <span class="kpi__label"><?= e($kpi['label']) ?></span>
+                    <span class="kpi__icon<?= $kpi['tone'] !== '' ? ' kpi__icon--' . e($kpi['tone']) : '' ?>"><?= icon($kpi['icon']) ?></span>
+                </span>
+                <span class="kpi__value">
+                    <?= e(number_format($kpi['value'], 0)) ?><?php if (!empty($kpi['unit'])): ?> <span class="kpi__unit"><?= e($kpi['unit']) ?></span><?php endif; ?>
+                </span>
+                <span class="kpi__link"><?= e($kpi['link']) ?><?= icon('arrow-right', 'icon--sm') ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</section>
 
-    <section class="card dashboard-tile">
-        <h2><?= e(t('dashboard.contacts_count')) ?></h2>
-        <p class="dashboard-tile__number"><?= e(number_format($contactsCount)) ?></p>
-        <a href="/contacts"><?= e(t('nav.contacts')) ?> →</a>
-    </section>
+<?php if ($tasks !== null || $topFollowUps !== null): ?>
+<div class="dashboard-columns">
 
-    <section class="card dashboard-tile">
-        <h2><?= e(t('dashboard.companies_count')) ?></h2>
-        <p class="dashboard-tile__number"><?= e(number_format($companiesCount)) ?></p>
-        <a href="/companies"><?= e(t('nav.companies')) ?> →</a>
-    </section>
+    <?php if ($tasks !== null): ?>
+    <section class="card">
+        <div class="card__header">
+            <h2><?= icon('check-square') ?><?= e(t('dashboard.my_tasks')) ?></h2>
+            <a href="/tasks" class="btn btn--ghost btn--sm"><?= e(t('common.view_all')) ?><?= icon('arrow-right', 'icon--sm') ?></a>
+        </div>
 
-    <?php if ($wallet !== null): ?>
-    <section class="card dashboard-tile">
-        <h2><?= e(t('dashboard.wallet_balance')) ?></h2>
-        <p class="dashboard-tile__number">
-            <?= e(number_format((float) $wallet['balance'], 0)) ?>
-            <span class="dashboard-tile__unit"><?= e($wallet['currency_code']) ?></span>
-        </p>
-        <a href="/wallet"><?= e(t('wallet.my_wallet')) ?> →</a>
+        <?php
+        $groups = [
+            'overdue' => [t('dashboard.tasks_overdue'), 'count--danger'],
+            'due_today' => [t('dashboard.tasks_due_today'), 'count--warning'],
+            'upcoming' => [t('dashboard.tasks_upcoming'), ''],
+        ];
+        ?>
+        <?php foreach ($groups as $key => [$label, $countClass]): ?>
+            <?php $rows = $tasks[$key]; ?>
+            <div class="task-group">
+                <h3 class="task-group__title">
+                    <?= e($label) ?>
+                    <span class="count <?= $rows !== [] ? e($countClass) : '' ?>"><?= count($rows) ?></span>
+                </h3>
+                <?php if ($rows === []): ?>
+                    <p class="item-list--empty"><?= e(t('dashboard.tasks_none_in_group')) ?></p>
+                <?php else: ?>
+                    <ul class="item-list">
+                        <?php foreach ($rows as $task): ?>
+                            <li>
+                                <span class="dot dot--<?= e($task['priority']) ?>" title="<?= e(t('tasks.priority.' . $task['priority'])) ?>"></span>
+                                <div class="item-list__main">
+                                    <a href="/tasks/<?= e($task['id']) ?>"><?= e($task['title']) ?></a>
+                                    <span class="item-list__meta">
+                                        <?= $task['due_at'] ? e(t('tasks.due')) . ' ' . e(substr((string) $task['due_at'], 0, 10)) : e(t('tasks.no_due_date')) ?>
+                                        · <?= e(t('tasks.priority.' . $task['priority'])) ?>
+                                    </span>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
     </section>
     <?php endif; ?>
 
-    <?php if ($unreadMailCount !== null): ?>
-    <section class="card dashboard-tile">
-        <h2><?= e(t('dashboard.unread_mail')) ?></h2>
-        <p class="dashboard-tile__number"><?= e(number_format($unreadMailCount)) ?></p>
-        <a href="/mail"><?= e(t('mail.inbox')) ?> →</a>
-    </section>
-    <?php endif; ?>
+    <?php if ($topFollowUps !== null): ?>
+    <section class="card">
+        <div class="card__header">
+            <h2><?= icon('calendar-check') ?><?= e(t('dashboard.my_followups')) ?></h2>
+            <a href="/followups" class="btn btn--ghost btn--sm"><?= e(t('common.view_all')) ?><?= icon('arrow-right', 'icon--sm') ?></a>
+        </div>
 
-    <?php if ($openTicketsCount !== null): ?>
-    <section class="card dashboard-tile">
-        <h2><?= e(t('dashboard.open_tickets')) ?></h2>
-        <p class="dashboard-tile__number"><?= e(number_format($openTicketsCount)) ?></p>
-        <a href="/support/tickets/board"><?= e(t('tickets.title')) ?> →</a>
-    </section>
-    <?php endif; ?>
-
-    <?php if ($invoicesCount !== null): ?>
-    <section class="card dashboard-tile">
-        <h2><?= e(t('dashboard.invoices_count')) ?></h2>
-        <p class="dashboard-tile__number"><?= e(number_format($invoicesCount)) ?></p>
-        <a href="/finance/invoices"><?= e(t('invoices.title')) ?> →</a>
-    </section>
-    <?php endif; ?>
-
-    <?php if ($proformasCount !== null): ?>
-    <section class="card dashboard-tile">
-        <h2><?= e(t('dashboard.proformas_count')) ?></h2>
-        <p class="dashboard-tile__number"><?= e(number_format($proformasCount)) ?></p>
-        <a href="/finance/proformas"><?= e(t('proformas.title')) ?> →</a>
-    </section>
-    <?php endif; ?>
-
-    <?php if ($productsCount !== null): ?>
-    <section class="card dashboard-tile">
-        <h2><?= e(t('dashboard.products_count')) ?></h2>
-        <p class="dashboard-tile__number"><?= e(number_format($productsCount)) ?></p>
-        <a href="/finance/products"><?= e(t('products.title')) ?> →</a>
-    </section>
-    <?php endif; ?>
-
-</div>
-
-<?php if ($tasks !== null): ?>
-<section class="card">
-    <h2><?= e(t('dashboard.my_tasks')) ?></h2>
-
-    <?php
-    $groups = [
-        'overdue' => t('dashboard.tasks_overdue'),
-        'due_today' => t('dashboard.tasks_due_today'),
-        'upcoming' => t('dashboard.tasks_upcoming'),
-    ];
-    ?>
-    <?php foreach ($groups as $key => $label): ?>
-        <?php $rows = $tasks[$key]; ?>
-        <h3 style="margin-top:1rem">
-            <?= e($label) ?> <span class="muted">(<?= count($rows) ?>)</span>
-        </h3>
-        <?php if ($rows === []): ?>
-            <p class="muted"><?= e(t('dashboard.tasks_none_in_group')) ?></p>
+        <?php if ($topFollowUps === []): ?>
+            <div class="empty-state">
+                <span class="empty-state__icon"><?= icon('calendar-check') ?></span>
+                <p><?= e(t('followups.empty')) ?></p>
+            </div>
         <?php else: ?>
-            <ul class="note-list">
-                <?php foreach ($rows as $task): ?>
+            <ul class="item-list">
+                <?php foreach ($topFollowUps as $f): ?>
                     <li>
-                        <a href="/tasks/<?= e($task['id']) ?>"><?= e($task['title']) ?></a>
-                        <span class="muted">
-                            <?= $task['due_at'] ? e(t('tasks.due')) . ' ' . e(substr((string) $task['due_at'], 0, 10)) : e(t('tasks.no_due_date')) ?>
-                            · <?= e(t('tasks.priority.' . $task['priority'])) ?>
-                        </span>
+                        <span class="dot dot--<?= e($f['priority']) ?>" title="<?= e(t('followups.priority.' . $f['priority'])) ?>"></span>
+                        <div class="item-list__main">
+                            <a href="/followups/<?= e($f['id']) ?>"><?= e($f['title']) ?></a>
+                            <span class="item-list__meta">
+                                <?= $f['due_at'] ? e(t('followups.due_at')) . ' ' . e(substr((string) $f['due_at'], 0, 16)) : e(t('followups.no_due_date')) ?>
+                                · <?= e(t('followups.priority.' . $f['priority'])) ?>
+                            </span>
+                        </div>
                     </li>
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
-    <?php endforeach; ?>
-
-    <p style="margin-top:0.75rem"><a href="/tasks"><?= e(t('tasks.my_tasks')) ?> →</a></p>
-</section>
-<?php endif; ?>
-
-<?php if ($topFollowUps !== null): ?>
-<section class="card">
-    <h2><?= e(t('dashboard.my_followups')) ?></h2>
-
-    <?php if ($topFollowUps === []): ?>
-        <p class="muted"><?= e(t('followups.empty')) ?></p>
-    <?php else: ?>
-        <ul class="note-list">
-            <?php foreach ($topFollowUps as $f): ?>
-                <li>
-                    <a href="/followups/<?= e($f['id']) ?>"><?= e($f['title']) ?></a>
-                    <span class="muted">
-                        <?= $f['due_at'] ? e(t('followups.due_at')) . ' ' . e(substr((string) $f['due_at'], 0, 16)) : e(t('followups.no_due_date')) ?>
-                        · <?= e(t('followups.priority.' . $f['priority'])) ?>
-                    </span>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+    </section>
     <?php endif; ?>
 
-    <p style="margin-top:0.75rem"><a href="/followups"><?= e(t('followups.title')) ?> →</a></p>
-</section>
+</div>
 <?php endif; ?>

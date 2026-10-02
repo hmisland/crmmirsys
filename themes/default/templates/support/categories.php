@@ -3,6 +3,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -18,7 +19,7 @@ use App\Infrastructure\Security\Csrf;
                 <td>
                     <form method="post" action="/support/categories/<?= e($cat['id']) ?>/delete" class="inline-form">
                         <?= Csrf::field() ?>
-                        <button type="submit" class="link-button"><?= e(t('common.delete')) ?></button>
+                        <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
                     </form>
                 </td>
             </tr>
@@ -37,6 +38,6 @@ use App\Infrastructure\Security\Csrf;
         <?= Csrf::field() ?>
         <label for="name"><?= e(t('common.name')) ?></label>
         <input type="text" id="name" name="name" required>
-        <button type="submit" class="btn btn--primary"><?= e(t('wallet.add')) ?></button>
+        <button type="submit" class="btn btn--primary"><?= icon('plus') ?><?= e(t('wallet.add')) ?></button>
     </form>
 </section>
