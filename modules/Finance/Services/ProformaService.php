@@ -10,9 +10,14 @@ use App\Core\Exceptions\ValidationException;
 use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Authorization\Permission;
 use App\Infrastructure\Authorization\Scope;
+use Modules\Finance\AmountInput;
+use Modules\Finance\Money;
+use Modules\Finance\FinanceDocumentLinkRepository;
 use Modules\Finance\FinancialProfileRepository;
 use Modules\Finance\ProformaItemRepository;
 use Modules\Finance\ProformaRepository;
+
+use function App\Infrastructure\Theme\t;
 
 final class ProformaService
 {
@@ -22,6 +27,8 @@ final class ProformaService
         private readonly FinancialProfileRepository $financialProfiles,
         private readonly TaxCalculationService $tax,
         private readonly AuthorizationEngine $authorization,
+        private readonly DocumentHeaderGuard $headerGuard = new DocumentHeaderGuard(),
+        private readonly ?FinanceDocumentLinkRepository $documentLinks = null,
     ) {
     }
 
@@ -36,6 +43,31 @@ final class ProformaService
         $filters = $scope === Scope::OWN ? ['owner_id' => $actingUser['id']] : [];
 
         return $this->proformas->search($filters);
+    }
+
+    /**
+     * One page of the proforma list with the list screen's filters
+     * (status, search, date_from, date_to). Scope as in list().
+     *
+     * @return array{rows: array, total: int}
+     */
+    public function listPage(array $actingUser, array $filters, int $limit, int $offset): array
+    {
+        $scope = $this->authorization->scopeFor($actingUser, Permission::QUOTES_VIEW);
+
+        if ($scope === null) {
+            throw new AuthorizationException();
+        }
+
+        $filters = array_intersect_key($filters, array_flip(['status', 'search', 'date_from', 'date_to']));
+        if ($scope === Scope::OWN) {
+            $filters['owner_id'] = $actingUser['id'];
+        }
+
+        return [
+            'rows' => $this->proformas->search($filters, $limit, $offset),
+            'total' => $this->proformas->countSearch($filters),
+        ];
     }
 
     public function find(array $actingUser, int $id): array
@@ -110,40 +142,87 @@ final class ProformaService
         }
 
         $this->proformas->deleteProforma($id);
+        // Its contract link (docs/contract-finance-design.md) goes with it.
+        $this->documentLinks?->deleteForDocument('proforma', $id);
     }
 
     /** @return array<int, array{description: string, product_id: ?int, quantity: string, unit_price: string, discount_type: string, discount_value: string, line_total: string}> */
     private function validatedLines(array $input): array
     {
         $rows = (array) ($input['items'] ?? []);
+        // Stage 5.2 (L2): the document currency's money / unit-price precision.
+        $moneyDecimals = Money::decimalsFor((int) ($input['currency_id'] ?? 0));
+        $priceDecimals = Money::unitPriceDecimalsFor((int) ($input['currency_id'] ?? 0));
         $lines = [];
 
         foreach ($rows as $row) {
+            // A row = product code + product name + free description (شرح).
+            // It counts when it has a name or a description; the
+            // description column (required) falls back to the name.
+            $itemCode = mb_substr(trim((string) ($row['item_code'] ?? '')), 0, 50);
+            $itemName = mb_substr(trim((string) ($row['item_name'] ?? '')), 0, 255);
             $description = trim((string) ($row['description'] ?? ''));
-            if ($description === '') {
+            if ($description === '' && $itemName === '') {
                 continue;
             }
+            if ($description === '') {
+                $description = $itemName;
+            }
 
-            $quantity = (string) ($row['quantity'] ?? '1');
-            $unitPrice = (string) ($row['unit_price'] ?? '0');
+            // Remediation P3: normalized ("1,000" → "1000") and strictly validated
+            // before any bcmath call — malformed input is a 422, never a 500.
+            $lineNo = count($lines) + 1;
+            $quantity = AmountInput::normalize($row['quantity'] ?? '1');
+            $unitPrice = AmountInput::normalize($row['unit_price'] ?? '0');
             $discountType = in_array($row['discount_type'] ?? 'none', ['none', 'percentage', 'fixed'], true) ? $row['discount_type'] : 'none';
-            $discountValue = (string) ($row['discount_value'] ?? '0');
+            $discountValue = AmountInput::normalize($row['discount_value'] ?? '0');
+            if ($quantity === null) {
+                throw new ValidationException(['items' => [t('finance.error.line_quantity', ['line' => $lineNo])]]);
+            }
+            if ($unitPrice === null) {
+                throw new ValidationException(['items' => [t('finance.error.line_unit_price', ['line' => $lineNo])]]);
+            }
+            if ($discountValue === null) {
+                if ($discountType !== 'none') {
+                    throw new ValidationException(['items' => [t('finance.error.line_discount', ['line' => $lineNo])]]);
+                }
+                $discountValue = '0'; // no discount: the value is not used
+            }
+            // Stage 5.2 (L2): input precision — never silently truncated or rounded.
+            if (Money::fractionDigits($quantity) > Money::QUANTITY_DECIMALS) {
+                throw new ValidationException(['items' => [t('finance.error.line_quantity_precision', ['line' => $lineNo, 'max' => Money::QUANTITY_DECIMALS])]]);
+            }
+            if (Money::fractionDigits($unitPrice) > $priceDecimals) {
+                throw new ValidationException(['items' => [t('finance.error.line_unit_price_precision', ['line' => $lineNo, 'max' => $priceDecimals])]]);
+            }
+            $discountDecimals = $discountType === 'percentage' ? Money::PERCENT_DECIMALS : $moneyDecimals;
+            if ($discountType !== 'none' && Money::fractionDigits($discountValue) > $discountDecimals) {
+                throw new ValidationException(['items' => [t('finance.error.line_discount_precision', ['line' => $lineNo, 'max' => $discountDecimals])]]);
+            }
 
-            $gross = bcmul($quantity, $unitPrice, 8);
+            $gross = bcmul($quantity, $unitPrice, Money::SCALE);
+            if ($discountType === 'percentage' && bccomp($discountValue, '100', 18) > 0) {
+                throw new ValidationException(['items' => [t('finance.error.line_discount_percent', ['line' => $lineNo])]]);
+            }
+            if ($discountType === 'fixed' && bccomp($discountValue, $gross, Money::SCALE) > 0) {
+                throw new ValidationException(['items' => [t('finance.error.line_discount_fixed', ['line' => $lineNo])]]);
+            }
             $discountAmount = match ($discountType) {
-                'percentage' => bcmul($gross, bcdiv($discountValue, '100', 10), 8),
+                'percentage' => bcmul($gross, bcdiv($discountValue, '100', Money::SCALE), Money::SCALE),
                 'fixed' => $discountValue,
                 default => '0',
             };
 
-            $lineTotal = bcsub($gross, $discountAmount, 8);
-            if (bccomp($lineTotal, '0', 8) < 0) {
+            $lineTotal = bcsub($gross, $discountAmount, Money::SCALE);
+            if (bccomp($lineTotal, '0', Money::SCALE) < 0) {
                 $lineTotal = '0';
             }
 
             $lines[] = [
                 'product_id' => isset($row['product_id']) && $row['product_id'] !== '' ? (int) $row['product_id'] : null,
-                'description' => $description,
+                'item_code' => $itemCode !== '' ? $itemCode : null,
+                'item_name' => $itemName !== '' ? $itemName : null,
+                'description' => mb_substr($description, 0, 255),
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'discount_type' => $discountType,
@@ -165,6 +244,9 @@ final class ProformaService
             throw new ValidationException(['currency_id' => ['Currency is required.']]);
         }
 
+        // F1: the contact must be this organization's, the currency active (server-side).
+        $this->headerGuard->check($input['contact_id'] ?? null, $input['currency_id']);
+
         if (!in_array($input['pricing_mode'] ?? null, ['tax_inclusive', 'tax_exclusive'], true)) {
             throw new ValidationException(['pricing_mode' => ['Invalid pricing mode.']]);
         }
@@ -183,26 +265,38 @@ final class ProformaService
             'currency_id' => (int) $input['currency_id'],
             'pricing_mode' => $input['pricing_mode'],
             'tax_profile_id' => isset($input['tax_profile_id']) && $input['tax_profile_id'] !== '' ? (int) $input['tax_profile_id'] : ($profile['tax_profile_id'] ?? null),
-            'invoice_discount' => (string) ($input['invoice_discount'] ?? '0'),
+            // Stage 5.2 (L2): stored normalized ("1,000" → 1000); a malformed value is kept as typed
+            // so calculateTax() rejects it with a validation message (never stored).
+            'invoice_discount' => AmountInput::normalize($input['invoice_discount'] ?? '0') ?? (string) ($input['invoice_discount'] ?? '0'),
             'terms' => isset($input['terms']) && trim((string) $input['terms']) !== '' ? trim((string) $input['terms']) : null,
             'notes' => isset($input['notes']) && trim((string) $input['notes']) !== '' ? trim((string) $input['notes']) : null,
+            // Optional number typed by the user; shown instead of the system number.
+            'custom_number' => trim((string) ($input['custom_number'] ?? '')) !== '' ? mb_substr(trim((string) $input['custom_number']), 0, 50) : null,
         ];
     }
 
     private function calculateTax(array $lines, array $header): array
     {
+        // Stage 5.2 (L2/L3): exact scale-18 sums; the subtotal and every total round to the
+        // document currency's precision (Money / RoundingService, half-up). The invoice-level
+        // discount is a money amount: non-negative, currency precision, at most the subtotal.
+        $decimals = Money::decimalsFor((int) $header['currency_id']);
+        $discount = AmountInput::normalize($header['invoice_discount'] ?? '0');
+        if ($discount === null || Money::fractionDigits($discount) > $decimals) {
+            throw new ValidationException(['invoice_discount' => [t('finance.error.amount_precision', ['max' => $decimals])]]);
+        }
+        $exactSubtotal = '0';
+        foreach ($lines as $line) {
+            $exactSubtotal = bcadd($exactSubtotal, (string) $line['line_total'], Money::SCALE);
+        }
+        if (bccomp($discount, $exactSubtotal, Money::SCALE) > 0) {
+            throw new ValidationException(['invoice_discount' => [t('finance.error.invoice_discount_exceeds')]]);
+        }
         if ($header['tax_profile_id'] === null) {
-            // No tax profile resolved (org hasn't picked one yet, and
-            // none passed explicitly) — treat as untaxed rather than
-            // guessing; the UI should steer the org to set one on
-            // /finance/settings.
-            $subtotal = '0';
-            foreach ($lines as $line) {
-                $subtotal = bcadd($subtotal, $line['line_total'], 8);
-            }
-            $taxable = bcsub($subtotal, $header['invoice_discount'], 8);
+            // No tax profile resolved: untaxed (the UI steers the org to /finance/settings).
+            $subtotal = Money::round($exactSubtotal, $decimals);
 
-            return ['subtotal' => $subtotal, 'tax_total' => '0', 'grand_total' => $taxable];
+            return ['subtotal' => $subtotal, 'tax_total' => '0', 'grand_total' => bcsub($subtotal, $discount, Money::SCALE)];
         }
 
         $taxLines = array_map(
@@ -215,7 +309,8 @@ final class ProformaService
             $header['tax_profile_id'],
             $header['issue_date'],
             $header['pricing_mode'],
-            $header['invoice_discount']
+            $discount,
+            $decimals
         );
     }
 
@@ -244,5 +339,49 @@ final class ProformaService
         }
 
         return $proforma;
+    }
+
+    /**
+     * Deletes every id the acting user may delete; the rest are skipped
+     * (no permission, not theirs, or locked — e.g. issued / converted).
+     * Each one goes through delete() and its own checks.
+     *
+     * @param array<int|string, mixed> $ids
+     * @return array{deleted: int, skipped: int}
+     */
+    public function bulkDelete(array $actingUser, array $ids): array
+    {
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach (array_slice(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)), 0, 500) as $id) {
+            try {
+                $this->delete($actingUser, $id);
+                $deleted++;
+            } catch (AuthorizationException | NotFoundException | ValidationException) {
+                $skipped++;
+            }
+        }
+
+        return ['deleted' => $deleted, 'skipped' => $skipped];
+    }
+    /**
+     * Per-row edit/delete flags for the list page: the same checks
+     * update()/delete() apply (permission scope + document state).
+     *
+     * @return array<int, array{edit: bool, delete: bool, reason?: string}>
+     */
+    public function rowPermissions(array $actingUser, array $rows): array
+    {
+        $result = [];
+        foreach ($rows as $row) {
+            $locked = $row['converted_invoice_id'] !== null;
+            $result[(int) $row['id']] = [
+                'edit' => !$locked && $this->authorization->can($actingUser, Permission::QUOTES_EDIT, $row),
+                'delete' => !$locked && $this->authorization->can($actingUser, Permission::QUOTES_DELETE, $row),
+            ] + ($locked ? ['reason' => \App\Infrastructure\Theme\t('finance.row_locked_converted')] : []);
+        }
+
+        return $result;
     }
 }

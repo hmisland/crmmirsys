@@ -32,6 +32,21 @@ final class LeadService
         return $this->leads->search($filters);
     }
 
+    /** One page of list() — for the paginated list view. */
+    public function listPage(array $actingUser, array $filters, int $limit, int $offset): array
+    {
+        $this->authorize($actingUser, Permission::LEADS_VIEW);
+
+        return $this->leads->search($filters, $limit, $offset);
+    }
+
+    public function count(array $actingUser, array $filters = []): int
+    {
+        $this->authorize($actingUser, Permission::LEADS_VIEW);
+
+        return $this->leads->countSearch($filters);
+    }
+
     public function find(array $actingUser, int $id): array
     {
         $this->authorize($actingUser, Permission::LEADS_VIEW);
@@ -145,7 +160,7 @@ final class LeadService
 
     private function fieldsFromInput(array $input): array
     {
-        return array_filter([
+        $fields = array_filter([
             'first_name' => trim((string) $input['first_name']),
             'last_name' => $this->orNull($input, 'last_name'),
             'email' => $this->orNull($input, 'email'),
@@ -155,6 +170,13 @@ final class LeadService
             'status' => in_array($input['status'] ?? null, ['new', 'contacted', 'qualified', 'unqualified'], true)
                 ? $input['status'] : null,
         ], fn ($v) => $v !== null);
+
+        // Kept even when empty so clearing the textarea clears the column.
+        if (array_key_exists('description', $input)) {
+            $fields['description'] = $this->orNull($input, 'description');
+        }
+
+        return $fields;
     }
 
     private function orNull(array $input, string $key): ?string
@@ -187,5 +209,50 @@ final class LeadService
         }
 
         return $lead;
+    }
+
+    /**
+     * Deletes every id the acting user may delete; the rest are skipped
+     * (not theirs, already gone, or blocked by a business rule) — each
+     * one goes through delete() and its record-level permission check.
+     *
+     * @param array<int|string, mixed> $ids
+     * @return array{deleted: int, skipped: int}
+     */
+    public function bulkDelete(array $actingUser, array $ids): array
+    {
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach (array_slice(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)), 0, 500) as $id) {
+            try {
+                $this->delete($actingUser, $id);
+                $deleted++;
+            } catch (AuthorizationException | NotFoundException | ValidationException) {
+                $skipped++;
+            }
+        }
+
+        return ['deleted' => $deleted, 'skipped' => $skipped];
+    }
+
+    /**
+     * Per-row edit/delete flags for a list page — the same record-level
+     * checks update()/delete() enforce (organization scope: every row;
+     * own scope: only the user's own rows).
+     *
+     * @return array<int, array{edit: bool, delete: bool}>
+     */
+    public function rowPermissions(array $actingUser, array $rows): array
+    {
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['id']] = [
+                'edit' => $this->authorization->can($actingUser, Permission::LEADS_EDIT, $row),
+                'delete' => $this->authorization->can($actingUser, Permission::LEADS_DELETE, $row),
+            ];
+        }
+
+        return $result;
     }
 }

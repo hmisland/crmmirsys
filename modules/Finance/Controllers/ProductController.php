@@ -8,10 +8,13 @@ use App\Application\Controllers\BaseController;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Repositories\CurrencyRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
+
+use function App\Infrastructure\Theme\t;
 use Modules\Finance\Services\ProductService;
 use Modules\Finance\TaxProfileRepository;
 
@@ -26,14 +29,24 @@ final class ProductController extends BaseController
         parent::__construct($templates);
     }
 
+    /** JSON for the product picker on proforma/invoice rows: ?q= code or name. */
+    public function lookup(Request $request): Response
+    {
+        return Response::json([
+            'data' => $this->products->lookup(CurrentUser::user(), (string) $request->query('q', '')),
+        ]);
+    }
+
     public function index(Request $request): Response
     {
-        $products = $this->products->list(CurrentUser::user(), [
-            'search' => (string) $request->query('q', ''),
-        ]);
+        [$products, $pagination] = Pagination::slice($this->products->list(CurrentUser::user(), [
+            'search' => trim((string) $request->query('q', '')),
+        ]), $request);
 
         return $this->viewWithLayout('finance/products/index', 'layout', [
             'products' => $products,
+            'rowActions' => $this->products->rowPermissions(CurrentUser::user(), $products),
+            'pagination' => $pagination,
             'q' => (string) $request->query('q', ''),
         ]);
     }
@@ -108,5 +121,22 @@ final class ProductController extends BaseController
         Session::setFlash('success', 'Product deleted.');
 
         return $this->redirect('/finance/products');
+    }
+
+    /** Bulk delete from the list page; returns to the same filtered page. */
+    public function bulkDelete(Request $request): Response
+    {
+        $result = $this->products->bulkDelete(CurrentUser::user(), (array) $request->input('ids', []));
+        Session::setFlash(
+            $result['deleted'] > 0 ? 'success' : 'error',
+            t('bulk.deleted_summary', ['deleted' => $result['deleted'], 'skipped' => $result['skipped']])
+        );
+
+        $back = (string) $request->input('return_to', '/finance/products');
+        if (!str_starts_with($back, '/finance/products') || str_contains($back, '//')) {
+            $back = '/finance/products';
+        }
+
+        return $this->redirect($back);
     }
 }

@@ -41,6 +41,7 @@ final class KnowledgeModule implements ModuleInterface
 
         $filesService = new FileLibraryService(
             new FileLibraryDocumentRepository(),
+            new FileLibraryFolderRepository(),
             new FileLibraryUploaderRepository(),
             $tagService,
             new UserRepository(),
@@ -78,7 +79,14 @@ final class KnowledgeModule implements ModuleInterface
         $router->group('/files', [$auth, $module], function (Router $router) use ($filesController) {
             $router->get('', fn (Request $r) => $filesController->index($r), [new RbacMiddleware('files.view')]);
             $router->post('/upload', fn (Request $r) => $filesController->upload($r), [new CsrfMiddleware()]);
+            $router->post('/folders', fn (Request $r) => $filesController->createFolder($r), [new CsrfMiddleware()]);
+            $router->post('/folders/{id}/rename', fn (Request $r) => $filesController->renameFolder($r), [new CsrfMiddleware()]);
+            $router->post('/folders/{id}/delete', fn (Request $r) => $filesController->deleteFolder($r), [new CsrfMiddleware()]);
+            $router->post('/inbox/import', fn (Request $r) => $filesController->importInbox($r), [new CsrfMiddleware()]);
             $router->get('/{id}/download', fn (Request $r) => $filesController->download($r));
+            $router->get('/{id}/view', fn (Request $r) => $filesController->open($r));
+            $router->get('/{id}/thumb', fn (Request $r) => $filesController->thumb($r));
+            $router->post('/{id}/move', fn (Request $r) => $filesController->move($r), [new CsrfMiddleware()]);
             $router->post('/{id}/delete', fn (Request $r) => $filesController->delete($r), [new CsrfMiddleware()]);
 
             $router->get('/uploaders', fn (Request $r) => $filesController->uploaders($r), [new RbacMiddleware('files.manage_uploaders')]);

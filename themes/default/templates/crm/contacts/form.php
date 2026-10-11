@@ -37,6 +37,12 @@ foreach ($related['phones'] as $p) {
     }
 }
 
+// Contacts written only to the legacy contacts.phone/email columns
+// (e.g. by an older CSV import) have no child rows yet — show those.
+if ($contact !== null && $related['phones'] === [] && !empty($contact['phone'])) {
+    $quickMobile = (string) $contact['phone'];
+}
+
 $quickEmail = '';
 $additionalEmails = [];
 $usedEmail = false;
@@ -47,6 +53,9 @@ foreach ($related['emails'] as $em) {
     } else {
         $additionalEmails[] = $em;
     }
+}
+if ($contact !== null && $related['emails'] === [] && !empty($contact['email'])) {
+    $quickEmail = (string) $contact['email'];
 }
 
 // After a failed validation the raw submitted values are already in
@@ -65,13 +74,13 @@ $socialRows = $old['social'] ?? $related['social'];
 $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube',
     'twitter' => 'Twitter/X', 'linkedin' => 'LinkedIn', 'telegram' => 'Telegram', 'whatsapp' => 'WhatsApp', 'custom' => t('contacts.social_other')];
 ?>
-<section class="card card--form" style="max-width:680px">
+<section class="card card--form" style="max-width:680px" data-tabs>
     <h1><?= $contact !== null ? e(t('contacts.edit')) : e(t('contacts.new')) ?></h1>
 
-    <div class="tabs">
-        <button type="button" class="tab-btn active" data-tab="details"><?= e(t('contacts.tab_details')) ?></button>
-        <button type="button" class="tab-btn" data-tab="contactinfo"><?= e(t('contacts.tab_more_phones_emails')) ?></button>
-        <button type="button" class="tab-btn" data-tab="social"><?= e(t('contacts.social_networks')) ?></button>
+    <div class="tabs" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="details" aria-selected="true"><?= icon('user') ?><?= e(t('contacts.tab_details')) ?></button>
+        <button type="button" class="tab-btn" data-tab="contactinfo" aria-selected="false"><?= icon('phone') ?><?= e(t('contacts.tab_contact_channels')) ?></button>
+        <button type="button" class="tab-btn" data-tab="notes" aria-selected="false"><?= icon('message') ?><?= e(t('contacts.tab_notes_interests')) ?></button>
     </div>
 
     <form method="post" action="<?= e($action) ?>">
@@ -98,16 +107,16 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
             <input type="text" class="crm-datepicker" id="date_of_birth" name="date_of_birth" value="<?= $val('date_of_birth') ?>">
 
             <label for="mobile"><?= e(t('contacts.mobile')) ?></label>
-            <input type="text" id="mobile" name="mobile" value="<?= e($mobileVal) ?>" placeholder="09xxxxxxxxx">
+            <input type="text" id="mobile" name="mobile" value="<?= e($mobileVal) ?>" placeholder="09xxxxxxxxx" dir="ltr">
 
             <label for="email"><?= e(t('common.email')) ?></label>
             <input type="email" id="email" name="email" value="<?= e($emailVal) ?>">
 
             <label for="landline"><?= e(t('contacts.landline')) ?></label>
-            <input type="text" id="landline" name="landline" value="<?= e($landlineVal) ?>" placeholder="021xxxxxxxx">
+            <input type="text" id="landline" name="landline" value="<?= e($landlineVal) ?>" placeholder="021xxxxxxxx" dir="ltr">
 
             <label for="landline_extension"><?= e(t('contacts.extension')) ?></label>
-            <input type="text" id="landline_extension" name="landline_extension" value="<?= e($extensionVal) ?>" style="max-width:120px">
+            <input type="text" id="landline_extension" name="landline_extension" value="<?= e($extensionVal) ?>" class="field-sm">
 
             <label for="company_id"><?= e(t('common.company')) ?></label>
             <select id="company_id" name="company_id">
@@ -135,6 +144,12 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
             <label for="source"><?= e(t('leads.source')) ?></label>
             <input type="text" id="source" name="source" value="<?= $val('source') ?>">
 
+            <label for="national_id"><?= e(t('contacts.national_id')) ?></label>
+            <input type="text" id="national_id" name="national_id" value="<?= $val('national_id') ?>" maxlength="30" dir="ltr">
+
+            <label for="economic_code"><?= e(t('contacts.economic_code')) ?></label>
+            <input type="text" id="economic_code" name="economic_code" value="<?= $val('economic_code') ?>" maxlength="30" dir="ltr">
+
             <label for="address"><?= e(t('companies.address')) ?></label>
             <input type="text" id="address" name="address" value="<?= $val('address') ?>">
 
@@ -153,15 +168,12 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
             </datalist>
             <div class="field-hint"><?= e(t('contacts.city_hint')) ?></div>
 
+            <label for="postal_code"><?= e(t('contacts.postal_code')) ?></label>
+            <input type="text" id="postal_code" name="postal_code" value="<?= $val('postal_code') ?>" maxlength="20" dir="ltr">
+
             <label for="country"><?= e(t('companies.country')) ?></label>
             <input type="text" id="country" name="country" value="<?= $val('country') ?>">
 
-            <label for="description"><?= e(t('contacts.description')) ?></label>
-            <textarea id="description" name="description" rows="4"><?= $val('description') ?></textarea>
-
-            <label for="interests"><?= e(t('contacts.interests')) ?></label>
-            <input type="text" id="interests" name="interests" value="<?= e($old['interests'] ?? implode(', ', array_column($related['interests'], 'interest'))) ?>" placeholder="<?= e(t('contacts.interests_placeholder')) ?>">
-            <div class="field-hint"><?= e(t('contacts.interests_hint')) ?></div>
         </div>
 
         <div class="tab-panel" data-panel="contactinfo" hidden>
@@ -180,9 +192,9 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
                     </div>
                 <?php endforeach; ?>
             </div>
-            <button type="button" class="btn" id="add-phone">+ <?= e(t('contacts.add_another_phone')) ?></button>
+            <button type="button" class="btn" id="add-phone"><?= icon('plus') ?><?= e(t('contacts.add_another_phone')) ?></button>
 
-            <h3 style="margin-top:1.5rem"><?= e(t('contacts.additional_emails')) ?></h3>
+            <h3><?= e(t('contacts.additional_emails')) ?></h3>
             <div id="email-rows">
                 <?php foreach ($additionalEmailRows as $key => $row): ?>
                     <div class="repeat-row">
@@ -191,10 +203,8 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
                     </div>
                 <?php endforeach; ?>
             </div>
-            <button type="button" class="btn" id="add-email">+ <?= e(t('contacts.add_another_email')) ?></button>
-        </div>
+            <button type="button" class="btn" id="add-email"><?= icon('plus') ?><?= e(t('contacts.add_another_email')) ?></button>
 
-        <div class="tab-panel" data-panel="social" hidden>
             <h3><?= e(t('contacts.social_networks')) ?></h3>
             <div id="social-rows">
                 <?php foreach ($socialRows as $key => $row): ?>
@@ -211,10 +221,19 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
                     </div>
                 <?php endforeach; ?>
             </div>
-            <button type="button" class="btn" id="add-social">+ <?= e(t('contacts.add_social_network')) ?></button>
+            <button type="button" class="btn" id="add-social"><?= icon('plus') ?><?= e(t('contacts.add_social_network')) ?></button>
         </div>
 
-        <p style="margin-top:1.5rem"><button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button></p>
+        <div class="tab-panel" data-panel="notes" hidden>
+            <label for="description"><?= e(t('contacts.description')) ?></label>
+            <textarea id="description" name="description" rows="4"><?= $val('description') ?></textarea>
+
+            <label for="interests"><?= e(t('contacts.interests')) ?></label>
+            <input type="text" id="interests" name="interests" value="<?= e($old['interests'] ?? implode(', ', array_column($related['interests'], 'interest'))) ?>" placeholder="<?= e(t('contacts.interests_placeholder')) ?>">
+            <div class="field-hint"><?= e(t('contacts.interests_hint')) ?></div>
+        </div>
+
+        <p class="actions"><button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button></p>
     </form>
 </section>
 
@@ -251,16 +270,6 @@ $socialPlatforms = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtu
 
 <script>
 (function () {
-    var tabButtons = document.querySelectorAll('.tab-btn');
-    tabButtons.forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            tabButtons.forEach(function (b) { b.classList.remove('active'); });
-            document.querySelectorAll('.tab-panel').forEach(function (p) { p.hidden = true; });
-            btn.classList.add('active');
-            document.querySelector('.tab-panel[data-panel="' + btn.dataset.tab + '"]').hidden = false;
-        });
-    });
-
     var counter = <?= (int) max(count($additionalPhoneRows), count($additionalEmailRows), count($socialRows)) + 1000 ?>;
 
     function addRow(containerId, templateId) {

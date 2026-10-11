@@ -35,6 +35,7 @@ final class FinancialProfileService
             'base_currency_id' => null,
             'invoice_prefix' => 'INV-',
             'pricing_mode' => 'tax_exclusive',
+            'invoice_final_rounding' => 0,
         ];
     }
 
@@ -76,6 +77,8 @@ final class FinancialProfileService
             'base_currency_id' => $this->orNullInt($input, 'base_currency_id'),
             'invoice_prefix' => trim((string) $input['invoice_prefix']),
             'pricing_mode' => $input['pricing_mode'],
+            // Optional final invoice rounding (migration 0024): the organization default, OFF unless ticked.
+            'invoice_final_rounding' => !empty($input['invoice_final_rounding']) ? 1 : 0,
         ]);
 
         return $this->profiles->find($organizationId);

@@ -27,6 +27,12 @@ use function App\Infrastructure\Theme\badge;
 - `icon()` names = `<symbol id="i-NAME">` in the sprite. Add a symbol there
   rather than pasting SVG into a template. Arrows/chevrons mirror in RTL
   automatically.
+- `help_link('slug')` (`use function …\help_link;`) prints a "?" icon that
+  opens help-center guide `/help/{slug}` in the shared `#help-dialog`
+  popup. Put it right after a page title (`<h1>…<?= help_link('x') ?></h1>`)
+  or a field label. Guides are written by the Super Admin at `/help`;
+  their HTML may use `.help-callout` (`--tip`, `--warning`),
+  `.help-example`, `.help-flow` (step chips) and `.table-wrap`.
 - `badge()` picks a tone from the raw status value (paid/won/resolved →
   success, pending/partial → warning, cancelled/rejected → danger,
   issued/open/new → info, anything else → neutral).
@@ -55,6 +61,52 @@ use function App\Infrastructure\Theme\badge;
   `dialog.modal`, `.pagination`, `.breadcrumb`, `.empty-state`,
   `.skeleton`, `.spinner`, `.kpi`, `.settings-tile`, `.page-head`,
   `.actions` (button row).
+- **Client-side tabs**: wrap `.tabs` (`button.tab-btn[data-tab="x"]`) and
+  the panels (`.tab-panel[data-panel="x"]`, all but the first `hidden`)
+  in one `[data-tabs]` element; `app.js` switches them and opens the tab
+  holding a `.field-error` first. For page-level tabs (a tab bar card
+  followed by cards) use `.tab-group` as the wrapper and
+  `.tab-panel--stack` on each panel. `.page-stack` spaces several cards
+  inside one wrapper (e.g. a form spanning cards).
+- **Lists (required for every record list)**: action buttons in `.actions`,
+  then the filter form `form.inline-form-row.filter-bar` (search + the
+  list's own filters + "Filter" button + "Clear filters" link when
+  `$pagination->filterQuery() !== []`), then
+  `<?php include …/partials/pagination.php; ?>`, then the table. The
+  controller passes `$pagination`
+  (`App\Infrastructure\Pagination\Pagination`): `fromRequest($request,
+  $total)` + repository `LIMIT/OFFSET` for big tables, or
+  `Pagination::slice($rows, $request)` for lists already loaded whole.
+  25 rows by default (25/50/100 via `?per_page=`); page links keep the
+  active filters. `select[data-autosubmit]` submits its form on change.
+- **On-demand dialog**: `button.card.kpi[data-related-url][data-related-title]`
+  inside `.kpi-grid` (`.kpi-grid--compact` for small tiles) opens
+  `dialog#related-dialog.modal.modal--wide` (`.modal__head` +
+  `.modal__content[data-related-body]`) and loads the URL's HTML fragment
+  into it — used for the contact page's related records.
+- **Dense tables**: `.cell-clip` (single line with ellipsis),
+  `.cell-note` (minimum width for a notes column), `.table--map`
+  (tables whose cells hold full-width selects).
+- **Record profile** (first used by Client Records, reusable by any
+  record page): `.profile-head` (avatar `.avatar--lg` + title + sub-line +
+  actions), `.fact-row` / `.fact` (compact label/value strip),
+  `.record-layout` (main + aside, stacks on tablet), `.card--tabs`
+  (server-side tab bar: `<a class="tab-btn" aria-current="page">`),
+  `.event-list` + `.event__icon--{brand|success|info|warning|danger}`
+  (icon timeline), `.course-list`/`.course` with `progress.progress`
+  (native `<progress>`, no inline width), `.media-grid`/`.media-card`,
+  `.locked` (permission placeholder), `.form-grid` (multi-column
+  label/control groups inside `.card--form`), `.prose-text` (read-only
+  multi-line user text).
+- **Appointments calendar**: `.appt-toolbar` (view switch + date nav),
+  `.appt-grid` (day table) with `.appt-slot--open|busy|closed|booked`
+  cells and `.appt-slot__add` links, `.appt-chip` / `.appt-chip--{status}`
+  (one appointment as a link card), `.appt-week` / `.appt-day` (week
+  columns), `.appt-legend`, `.hours-table` / `.hours-range` (weekly
+  working-hours editor).
+- Dates/times/phones inside RTL text: wrap the value in
+  `<span class="ltr">` (inline) — putting `.ltr` on a block element also
+  flips its alignment.
 
 ## RTL / LTR rules
 

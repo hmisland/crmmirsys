@@ -8,6 +8,7 @@ use App\Application\Controllers\BaseController;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
@@ -18,14 +19,30 @@ final class FinancialPeriodController extends BaseController
     public function __construct(
         TemplateEngine $templates,
         private readonly FinancialPeriodService $periods,
+        private readonly UserRepository $users = new UserRepository(),
     ) {
         parent::__construct($templates);
     }
 
     public function index(Request $request): Response
     {
+        $periods = $this->periods->list(CurrentUser::user());
+        // Stage 5.2 (L4): who closed / reopened each period and when (financial_periods.view).
+        $history = [];
+        foreach ($this->periods->history(CurrentUser::user(), array_column($periods, 'id')) as $periodId => $events) {
+            foreach ($events as $event) {
+                $actor = !empty($event['actor_user_id']) ? $this->users->findById((int) $event['actor_user_id']) : null;
+                $history[$periodId][] = [
+                    'type' => (string) $event['type'],
+                    'at' => (string) $event['created_at'],
+                    'by' => $actor !== null ? trim($actor['first_name'] . ' ' . ($actor['last_name'] ?? '')) : '—',
+                ];
+            }
+        }
+
         return $this->viewWithLayout('finance/periods/index', 'layout', [
-            'periods' => $this->periods->list(CurrentUser::user()),
+            'periods' => $periods,
+            'history' => $history,
             'errors' => [],
             'old' => [],
         ]);

@@ -47,6 +47,23 @@ $statuses = ['new', 'contacted', 'qualified', 'unqualified'];
         </select>
         <?php endif; ?>
 
-        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
+        <label for="description"><?= e(t('leads.description')) ?></label>
+        <textarea id="description" name="description" rows="4" placeholder="<?= e(t('leads.description_hint')) ?>"><?= $val('description') ?></textarea>
+        <?php if ($fieldError('description')): ?><div class="field-error"><?= e($fieldError('description')) ?></div><?php endif; ?>
+
+        <?php if ($lead === null): ?>
+            <label for="lead-tags"><?= e(t('common.tags')) ?></label>
+            <input type="text" id="lead-tags" class="crm-tag-input" data-name="tags[]" placeholder="<?= e(t('files.add_a_tag_hint')) ?>">
+            <?php foreach ((array) ($old['tags'] ?? []) as $tag): ?>
+                <?php if (trim((string) $tag) !== ''): ?><input type="hidden" name="tags[]" value="<?= e($tag) ?>"><?php endif; ?>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <p class="field-hint"><?= e(t('leads.edit_tags_hint')) ?></p>
+        <?php endif; ?>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('common.save')) ?></button>
+            <a href="<?= e($lead === null ? '/leads' : '/leads/' . $lead['id']) ?>" class="btn"><?= icon('x') ?><?= e(t('common.cancel')) ?></a>
+        </div>
     </form>
 </section>

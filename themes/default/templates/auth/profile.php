@@ -43,6 +43,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
             <option value="fa" <?= ($user['language'] ?? '') === 'fa' ? 'selected' : '' ?>>فارسی (Persian)</option>
             <option value="ar" <?= ($user['language'] ?? '') === 'ar' ? 'selected' : '' ?>>العربية (Arabic)</option>
             <option value="tr" <?= ($user['language'] ?? '') === 'tr' ? 'selected' : '' ?>>Türkçe (Turkish)</option>
+            <option value="fr" <?= ($user['language'] ?? '') === 'fr' ? 'selected' : '' ?>>Français (French)</option>
         </select>
 
         <label for="timezone"><?= e(t('profile.timezone')) ?></label>

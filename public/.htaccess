@@ -1,5 +1,10 @@
 # Per Phase 0 §34/§67: plain Apache + PHP, no Node/Docker required.
 
+# "/" must reach the front controller (not index.html directly): the app
+# shows the landing page (index.html) to visitors and the dashboard to
+# logged-in users at the same address.
+DirectoryIndex index.php
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 

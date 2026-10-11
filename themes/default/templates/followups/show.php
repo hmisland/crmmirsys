@@ -18,6 +18,11 @@ $isOverdue = $isOpen && $followUp['due_at'] !== null && $followUp['due_at'] < da
         · <?= e(t('deals.status')) ?>: <?= badge(t('followups.status.' . $followUp['status']), $followUp['status']) ?>
         <?php if ($isOverdue): ?> · <strong class="text-danger"><?= e(t('followups.overdue')) ?></strong><?php endif; ?>
     </p>
+    <?php if (($relatedLabel ?? null) !== null): ?>
+        <p><?= e(t('followups.related_to')) ?>:
+            <?php if ($relatedLabel['url'] !== null): ?><a href="<?= e($relatedLabel['url']) ?>"><?= e($relatedLabel['name']) ?></a><?php else: ?><span><?= e($relatedLabel['name']) ?></span><?php endif; ?>
+            <span class="muted">(<?= e(t('followups.related_type.' . $relatedLabel['type'])) ?>)</span></p>
+    <?php endif; ?>
     <?php if ($followUp['due_at'] !== null): ?>
         <p><?= e(t('followups.due_at')) ?>: <?= e($followUp['due_at']) ?> (<?= e($followUp['timezone']) ?>)</p>
     <?php endif; ?>

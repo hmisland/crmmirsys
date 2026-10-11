@@ -10,6 +10,7 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Repositories\ContactRepository;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Security\CurrentUser;
@@ -58,8 +59,11 @@ final class TicketController extends BaseController
             'status' => (string) $request->query('status', ''),
         ];
 
+        [$tickets, $pagination] = Pagination::slice($this->tickets->list(CurrentUser::user(), $filters), $request);
+
         return $this->viewWithLayout('support/index', 'layout', [
-            'tickets' => $this->tickets->list(CurrentUser::user(), $filters),
+            'tickets' => $tickets,
+            'pagination' => $pagination,
             'q' => $filters['search'],
             'status' => $filters['status'],
             'statuses' => self::STATUSES,
@@ -203,6 +207,10 @@ final class TicketController extends BaseController
         $file = $request->file('file');
         $actingUser = CurrentUser::user();
 
+        // The ticket must exist in the organization and be viewable by this
+        // user (tickets.view — D2) before anything is stored: 404 / 403.
+        $this->tickets->find($actingUser, $id);
+
         if ($file !== null) {
             try {
                 $this->attachments->upload('ticket', $id, (int) $actingUser['organization_id'], (int) $actingUser['id'], $file);
@@ -219,13 +227,11 @@ final class TicketController extends BaseController
         $id = (int) $request->attribute('id');
         $attachmentId = (int) $request->attribute('attachmentId');
 
-        $match = null;
-        foreach ($this->attachments->forSubject('ticket', $id) as $row) {
-            if ((int) $row['id'] === $attachmentId) {
-                $match = $row;
-                break;
-            }
-        }
+        // The ticket must be viewable by this user (tickets.view, the ticket
+        // page's own check: 403 otherwise; missing ticket 404) and the file must
+        // be THIS ticket's (404 otherwise) — before any byte is served.
+        $this->tickets->find(CurrentUser::user(), $id);
+        $match = $this->attachments->findForSubject('ticket', $id, $attachmentId);
 
         if ($match === null) {
             throw new NotFoundException();
@@ -243,8 +249,13 @@ final class TicketController extends BaseController
 
     public function deleteAttachment(Request $request): Response
     {
-        $this->attachments->delete((int) $request->attribute('attachmentId'));
+        $id = (int) $request->attribute('id');
 
-        return $this->redirect('/support/tickets/' . (int) $request->attribute('id'));
+        // The ticket must exist in the user's organization (same check as the
+        // ticket page), and the file must be THIS ticket's — before any delete.
+        $this->tickets->find(CurrentUser::user(), $id);
+        $this->attachments->deleteFromSubject('ticket', $id, (int) $request->attribute('attachmentId'));
+
+        return $this->redirect('/support/tickets/' . $id);
     }
 }

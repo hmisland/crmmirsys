@@ -14,6 +14,12 @@ use App\Infrastructure\Security\Csrf;
         <a href="/mail/drafts" class="btn"><?= icon('file-text') ?><?= e(t('mail.drafts')) ?></a>
     </p>
 
+    <form method="get" action="/mail/trash" class="inline-form-row filter-bar">
+        <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('filters.search_mail')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
+        <?php if ($q !== ''): ?><a href="/mail/trash" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
+    </form>
+
     <h2><?= e(t('mail.inbox')) ?></h2>
     <div class="table-responsive">
     <table class="table">
@@ -40,7 +46,7 @@ use App\Infrastructure\Security\Csrf;
     </table>
     </div>
 
-    <h2 style="margin-top:1.5rem"><?= e(t('mail.sent')) ?></h2>
+    <h2 class="section-heading"><?= e(t('mail.sent')) ?></h2>
     <div class="table-responsive">
     <table class="table">
         <thead><tr><th><?= e(t('mail.subject')) ?></th><th><?= e(t('wallet.date')) ?></th><th></th></tr></thead>

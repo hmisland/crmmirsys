@@ -12,7 +12,7 @@ Phase 1 set up a `t('some.key')` passthrough stub specifically so this day would
 |---|---|
 | `Translator` — loads a locale's language file, falls back to English for any missing key, resolves RTL/LTR direction | `app/Infrastructure/Localization/Translator.php` |
 | `Locale` — per-request static holder (mirrors `CurrentUser`'s own pattern), set once in `Application::handle()` | `app/Infrastructure/Localization/Locale.php` |
-| Language files: English (the required fallback), Persian, Arabic, Turkish | `/lang/en.php`, `/lang/fa.php`, `/lang/ar.php`, `/lang/tr.php` |
+| Language files: English (the required fallback), Persian, Arabic, Turkish, French | `/lang/en.php`, `/lang/fa.php`, `/lang/ar.php`, `/lang/tr.php`, `/lang/fr.php` |
 | The real `t()` implementation, replacing the Phase 1 stub | `app/Infrastructure/Theme/functions.php` |
 | Locale resolution wired into the request lifecycle: logged-in user's own `language` → guest's session-stored choice → platform config default | `app/Core/Application.php` |
 | A language switcher in the nav, and a `/lang/switch` endpoint that persists the choice (to the user's profile if logged in, to the session if not) | `themes/default/templates/layout.php`, `app/Application/Controllers/LanguageController.php` |

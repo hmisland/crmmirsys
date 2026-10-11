@@ -44,4 +44,20 @@ use function App\Infrastructure\Theme\icon;
         <?php if ($results['leads'] === []): ?><li class="muted"><?= e(t('search.no_matches')) ?></li><?php endif; ?>
     </ul>
 </section>
+
+<?php if (($results['client_records'] ?? null) !== null): ?>
+<section class="card">
+    <h2><?= e(t('client_records.title')) ?></h2>
+    <ul>
+        <?php foreach ($results['client_records'] as $r): ?>
+            <li>
+                <a href="/client-records/<?= e($r['id']) ?>"><?= e(trim($r['contact_first_name'] . ' ' . ($r['contact_last_name'] ?? ''))) ?></a>
+                <span class="muted mono"><?= e($r['record_number']) ?></span>
+                <?php if (!empty($r['contact_phone'])): ?><span class="muted ltr"><?= e($r['contact_phone']) ?></span><?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+        <?php if ($results['client_records'] === []): ?><li class="muted"><?= e(t('search.no_matches')) ?></li><?php endif; ?>
+    </ul>
+</section>
+<?php endif; ?>
 <?php endif; ?>

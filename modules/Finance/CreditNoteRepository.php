@@ -49,15 +49,4 @@ final class CreditNoteRepository extends TenantScopedRepository
     {
         return $this->tenantInsertGetId($fields);
     }
-
-    /** No correlated subquery — safe to use tenantFindOne()'s auto-scoping. */
-    public function totalForPeriod(string $startDate, string $endDate): string
-    {
-        $row = $this->tenantFindOne(
-            'SELECT COALESCE(SUM(amount), 0) AS total FROM credit_notes WHERE issue_date BETWEEN :start_date AND :end_date',
-            ['start_date' => $startDate, 'end_date' => $endDate]
-        );
-
-        return (string) ($row['total'] ?? '0');
-    }
 }

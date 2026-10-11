@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Services;
 
+use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Infrastructure\Repositories\AttachmentRepository;
 
@@ -85,6 +86,40 @@ final class AttachmentService
         return $this->attachments->findById($attachmentId);
     }
 
+    /**
+     * The attachment only if it really belongs to $type #$id (and, via the
+     * tenant-scoped lookup, to the caller's organization); null otherwise.
+     */
+    public function findForSubject(string $type, int $id, int $attachmentId): ?array
+    {
+        $attachment = $this->attachments->findById($attachmentId);
+
+        if ($attachment === null || (string) $attachment['attachable_type'] !== $type || (int) $attachment['attachable_id'] !== $id) {
+            return null;
+        }
+
+        return $attachment;
+    }
+
+    /**
+     * Deletes the row and the stored file only after proving the attachment
+     * belongs to $type #$id; otherwise 404 and nothing (not even the file)
+     * is touched. Never trust the attachment id from a URL alone.
+     */
+    public function deleteFromSubject(string $type, int $id, int $attachmentId): void
+    {
+        if ($this->findForSubject($type, $id, $attachmentId) === null) {
+            throw new NotFoundException();
+        }
+
+        $this->delete($attachmentId);
+    }
+
+    /**
+     * Deletes by id with no parent check — only for callers that have
+     * already proven the attachment belongs to their record (ClientRecords
+     * files). Route-facing code uses deleteFromSubject().
+     */
     public function delete(int $attachmentId): void
     {
         $attachment = $this->attachments->findById($attachmentId);

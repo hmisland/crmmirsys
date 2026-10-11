@@ -90,6 +90,11 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
             <option value="tax_inclusive" <?= ($profile['pricing_mode'] ?? '') === 'tax_inclusive' ? 'selected' : '' ?>><?= e(t('finance.pricing_mode.tax_inclusive')) ?></option>
         </select>
 
+        <label class="check check--block">
+            <input type="checkbox" name="invoice_final_rounding" value="1"<?= (int) ($profile['invoice_final_rounding'] ?? 0) === 1 ? ' checked' : '' ?>>
+            <span><?= e(t('finance.final_rounding.setting')) ?><br><span class="muted"><?= e(t('finance.final_rounding.setting_hint')) ?></span></span>
+        </label>
+
         <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('profile.save_changes')) ?></button>
     </form>
 </section>

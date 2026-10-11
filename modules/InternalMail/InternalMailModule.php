@@ -87,6 +87,9 @@ final class InternalMailModule implements ModuleInterface
             $router->get('/compose', fn (Request $r) => $mailController->showCompose($r));
             $router->post('/compose', fn (Request $r) => $mailController->compose($r), [new CsrfMiddleware()]);
 
+            $router->post('/inbox/bulk-delete', fn (Request $r) => $mailController->bulkTrash($r, 'inbox'), [new CsrfMiddleware()]);
+            $router->post('/sent/bulk-delete', fn (Request $r) => $mailController->bulkTrash($r, 'sent'), [new CsrfMiddleware()]);
+            $router->post('/drafts/bulk-delete', fn (Request $r) => $mailController->bulkTrash($r, 'drafts'), [new CsrfMiddleware()]);
             $router->get('/drafts/{id}/edit', fn (Request $r) => $mailController->showEditDraft($r));
             $router->post('/drafts/{id}', fn (Request $r) => $mailController->updateDraft($r), [new CsrfMiddleware()]);
             $router->post('/drafts/{id}/delete', fn (Request $r) => $mailController->deleteDraft($r), [new CsrfMiddleware()]);
@@ -96,6 +99,8 @@ final class InternalMailModule implements ModuleInterface
 
             $router->get('/thread/{id}', fn (Request $r) => $mailController->thread($r));
             $router->post('/thread/{id}/reply', fn (Request $r) => $mailController->reply($r), [new CsrfMiddleware()]);
+            $router->get('/forward/{id}', fn (Request $r) => $mailController->showForward($r));
+            $router->post('/forward/{id}', fn (Request $r) => $mailController->forward($r), [new CsrfMiddleware()]);
 
             $router->post('/inbox/{id}/delete', fn (Request $r) => $mailController->deleteFromInbox($r), [new CsrfMiddleware()]);
             $router->post('/inbox/{id}/restore', fn (Request $r) => $mailController->restoreToInbox($r), [new CsrfMiddleware()]);

@@ -9,9 +9,12 @@ use App\Application\Services\UserManagementService;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
+
+use function App\Infrastructure\Theme\t;
 
 final class UserManagementController extends BaseController
 {
@@ -27,9 +30,23 @@ final class UserManagementController extends BaseController
     {
         $actingUser = CurrentUser::user();
 
+        $filters = [
+            'q' => trim((string) $request->query('q', '')),
+            'role_id' => (string) $request->query('role_id', ''),
+            'status' => in_array($request->query('status'), ['active', 'inactive'], true) ? (string) $request->query('status') : '',
+        ];
+        $users = array_filter($this->users->listForOrganization($actingUser), fn ($u) =>
+            ($filters['q'] === '' || mb_stripos($u['first_name'] . ' ' . $u['last_name'] . ' ' . $u['email'], $filters['q']) !== false)
+            && ($filters['role_id'] === '' || (string) $u['role_id'] === $filters['role_id'])
+            && ($filters['status'] === '' || $u['status'] === $filters['status']));
+        [$users, $pagination] = Pagination::slice($users, $request);
+
         return $this->viewWithLayout('org/users', 'layout', [
-            'users' => $this->users->listForOrganization($actingUser),
+            'users' => $users,
+            'pagination' => $pagination,
+            'filters' => $filters,
             'roles' => $this->roles->listForOrganization($actingUser),
+            'grants' => $this->users->permissionGrantsOverview($actingUser, $users),
             'errors' => [],
             'old' => [],
         ]);
@@ -42,9 +59,12 @@ final class UserManagementController extends BaseController
         try {
             $this->users->create($actingUser, $request->all());
         } catch (ValidationException $e) {
+            $users = $this->users->listForOrganization($actingUser);
+
             return $this->viewWithLayout('org/users', 'layout', [
-                'users' => $this->users->listForOrganization($actingUser),
+                'users' => $users,
                 'roles' => $this->roles->listForOrganization($actingUser),
+                'grants' => $this->users->permissionGrantsOverview($actingUser, $users),
                 'errors' => $e->errors,
                 'old' => $request->all(),
             ], 422);
@@ -64,6 +84,20 @@ final class UserManagementController extends BaseController
         $this->users->updateRole($actingUser, $targetUserId, $roleId);
 
         Session::setFlash('success', 'Role updated.');
+
+        return $this->redirect('/org/users');
+    }
+
+    public function updatePermissionGrant(Request $request): Response
+    {
+        $this->users->setPermissionGrant(
+            CurrentUser::user(),
+            (int) $request->attribute('id'),
+            (string) $request->input('permission', ''),
+            $request->input('granted') === '1'
+        );
+
+        Session::setFlash('success', t('org.access_updated'));
 
         return $this->redirect('/org/users');
     }

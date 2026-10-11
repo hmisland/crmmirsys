@@ -3,6 +3,7 @@
 /** @var array $roles */
 /** @var array $errors */
 /** @var array $old */
+/** @var array $grants user_id => [permission_key => 'role'|'granted'|'none'] */
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
@@ -12,13 +13,47 @@ use App\Infrastructure\Security\Csrf;
 use App\Infrastructure\Security\CurrentUser;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
+
+// Individually grantable permissions — only shown to admins who can
+// manage them ($grants is empty otherwise).
+$grants = $grants ?? [];
+$grantColumns = $grants === [] ? [] : [
+    'contacts.import' => t('org.grant_contacts_import'),
+    'contacts.export' => t('org.grant_contacts_export'),
+];
 ?>
 <section class="card">
     <h1><?= e(t('org.team_members')) ?></h1>
 
+    <?php if (isset($pagination)): ?>
+    <form method="get" action="/org/users" class="inline-form-row filter-bar">
+        <input type="text" name="q" value="<?= e($filters['q']) ?>" placeholder="<?= e(t('filters.search_user')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <select name="role_id" aria-label="<?= e(t('org.role')) ?>">
+            <option value=""><?= e(t('filters.all_roles')) ?></option>
+            <?php foreach ($roles as $role): ?>
+                <option value="<?= e($role['id']) ?>" <?= $filters['role_id'] === (string) $role['id'] ? 'selected' : '' ?>><?= e($role['name']) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <select name="status" aria-label="<?= e(t('deals.status')) ?>">
+            <option value=""><?= e(t('filters.all_statuses')) ?></option>
+            <?php foreach (['active', 'inactive'] as $s): ?>
+                <option value="<?= e($s) ?>" <?= $filters['status'] === $s ? 'selected' : '' ?>><?= e(t('org.user_status.' . $s)) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
+        <?php if ($pagination->filterQuery() !== []): ?><a href="/org/users" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
+    </form>
+
+    <?php include __DIR__ . '/../partials/pagination.php'; ?>
+
+    <?php endif; ?>
     <div class="table-responsive"><table class="table">
         <thead>
-            <tr><th><?= e(t('common.name')) ?></th><th><?= e(t('common.email')) ?></th><th><?= e(t('org.role')) ?></th><th><?= e(t('deals.status')) ?></th><th></th></tr>
+            <tr>
+                <th><?= e(t('common.name')) ?></th><th><?= e(t('common.email')) ?></th><th><?= e(t('org.role')) ?></th>
+                <?php foreach ($grantColumns as $grantLabel): ?><th><?= e($grantLabel) ?></th><?php endforeach; ?>
+                <th><?= e(t('deals.status')) ?></th><th></th>
+            </tr>
         </thead>
         <tbody>
         <?php foreach ($users as $user): ?>
@@ -37,6 +72,27 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
                         </select>
                     </form>
                 </td>
+                <?php foreach ($grantColumns as $permissionKey => $grantLabel): ?>
+                    <?php $grantState = $grants[(int) $user['id']][$permissionKey] ?? 'none'; ?>
+                    <td class="nowrap">
+                        <?php if ($grantState === 'role'): ?>
+                            <span class="muted"><?= e(t('org.access_via_role')) ?></span>
+                        <?php else: ?>
+                            <form method="post" action="/org/users/<?= e($user['id']) ?>/grants" class="inline-form">
+                                <?= Csrf::field() ?>
+                                <input type="hidden" name="permission" value="<?= e($permissionKey) ?>">
+                                <?php if ($grantState === 'granted'): ?>
+                                    <?= badge(t('org.access_granted'), 'active') ?>
+                                    <input type="hidden" name="granted" value="0">
+                                    <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('x') ?><?= e(t('org.access_revoke')) ?></button>
+                                <?php else: ?>
+                                    <input type="hidden" name="granted" value="1">
+                                    <button type="submit" class="link-button"><?= icon('plus') ?><?= e(t('org.access_grant')) ?></button>
+                                <?php endif; ?>
+                            </form>
+                        <?php endif; ?>
+                    </td>
+                <?php endforeach; ?>
                 <td><?= badge(t('org.user_status.' . $user['status']), $user['status']) ?></td>
                 <td>
                     <?php if ($user['status'] === 'active'): ?>

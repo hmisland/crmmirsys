@@ -82,7 +82,8 @@ $bankAccountController = new BankAccountController(
 
 $organizationController = new OrganizationController(
     $container->make(TemplateEngine::class),
-    $container->make(OrganizationService::class)
+    $container->make(OrganizationService::class),
+    $container->make(\App\Application\Services\SmsService::class)
 );
 
 $userManagementController = new UserManagementController(
@@ -132,12 +133,15 @@ $contactController = new ContactController(
     $container->make(CustomFieldService::class),
     new CompanyRepository(),
     $container->make(AttachmentService::class),
-    $container->make(ContactCategoryService::class)
+    $container->make(ContactCategoryService::class),
+    $container
 );
 
 $contactImportController = new ContactImportController(
     $container->make(TemplateEngine::class),
-    $container->make(ContactImportExportService::class)
+    $container->make(ContactImportExportService::class),
+    $container->make(ContactCategoryService::class),
+    new CompanyRepository()
 );
 
 $companyController = new CompanyController(
@@ -148,7 +152,9 @@ $companyController = new CompanyController(
     $container->make(TimelineService::class),
     $container->make(CustomFieldService::class),
     new ContactRepository(),
-    $container->make(AttachmentService::class)
+    $container->make(AttachmentService::class),
+    $container->make(\App\Application\Services\CompanyCategoryService::class),
+    $container->make(ContactService::class)
 );
 
 $leadController = new LeadController(
@@ -156,14 +162,16 @@ $leadController = new LeadController(
     $container->make(LeadService::class),
     $container->make(NoteService::class),
     $container->make(TagService::class),
-    $container->make(TimelineService::class)
+    $container->make(TimelineService::class),
+    $container->make(\App\Infrastructure\Authorization\AuthorizationEngine::class)
 );
 
 $recordSupportController = new RecordSupportController(
     $container->make(TemplateEngine::class),
     $container->make(NoteService::class),
     $container->make(TagService::class),
-    $container->make(AttachmentService::class)
+    $container->make(AttachmentService::class),
+    $container->make(\App\Infrastructure\Records\RecordTypeRegistry::class)
 );
 
 $customFieldAdminController = new CustomFieldAdminController(
@@ -173,7 +181,8 @@ $customFieldAdminController = new CustomFieldAdminController(
 
 $searchController = new SearchController(
     $container->make(TemplateEngine::class),
-    $container->make(SearchService::class)
+    $container->make(SearchService::class),
+    $container
 );
 
 // Theme static assets (see ThemeAssetController docblock for why this
@@ -228,20 +237,33 @@ $router->post('/profile/bank-accounts/{id}/delete', fn (Request $r) => $bankAcco
 // are re-checked with the specific permission they need inside the
 // Service itself (defense in depth, see RbacMiddleware's docblock).
 
+$orgSmsController = new \App\Application\Controllers\OrgSmsController(
+    $container->make(TemplateEngine::class),
+    $container->make(\App\Application\Services\SmsService::class)
+);
+
 $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     $organizationController,
     $userManagementController,
     $roleController,
     $orgStructureController,
     $orgModulesController,
-    $customFieldAdminController
+    $customFieldAdminController,
+    $orgSmsController
 ) {
     $router->get('/settings', fn (Request $r) => $organizationController->show($r), [new RbacMiddleware('organization.view')]);
-    $router->post('/settings', fn (Request $r) => $organizationController->update($r), [new CsrfMiddleware()]);
+    $router->post('/settings', fn (Request $r) => $organizationController->update($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+
+    // SMS: platform account (paid from credit) or the organization's own Kavenegar key.
+    $router->get('/sms', fn (Request $r) => $orgSmsController->index($r), [new RbacMiddleware('organization.edit')]);
+    $router->post('/sms', fn (Request $r) => $orgSmsController->save($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->post('/sms/test', fn (Request $r) => $orgSmsController->test($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->get('/logo', fn (Request $r) => $organizationController->logo($r));
 
     $router->get('/users', fn (Request $r) => $userManagementController->index($r), [new RbacMiddleware('users.view')]);
     $router->post('/users', fn (Request $r) => $userManagementController->create($r), [new CsrfMiddleware()]);
     $router->post('/users/{id}/role', fn (Request $r) => $userManagementController->updateRole($r), [new CsrfMiddleware()]);
+    $router->post('/users/{id}/grants', fn (Request $r) => $userManagementController->updatePermissionGrant($r), [new CsrfMiddleware()]);
     $router->post('/users/{id}/activate', fn (Request $r) => $userManagementController->activate($r), [new CsrfMiddleware()]);
     $router->post('/users/{id}/deactivate', fn (Request $r) => $userManagementController->deactivate($r), [new CsrfMiddleware()]);
 
@@ -291,6 +313,42 @@ $exchangeRateController = new ExchangeRateController(
 $router->get('/admin/exchange-rates', fn (Request $r) => $exchangeRateController->index($r), [new AuthMiddleware()]);
 $router->post('/admin/exchange-rates', fn (Request $r) => $exchangeRateController->update($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 
+// SMS (Kavenegar) — Super Admin status, credit, test send and log.
+$smsAdminController = new \App\Application\Controllers\SmsAdminController(
+    $container->make(TemplateEngine::class),
+    $container->make(\App\Application\Services\SmsService::class)
+);
+$router->get('/admin/sms', fn (Request $r) => $smsAdminController->index($r), [new AuthMiddleware()]);
+$router->post('/admin/sms/test', fn (Request $r) => $smsAdminController->test($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+
+// Announcements — Super Admin → org admins (one-way), read from the top-bar bell.
+$announcementController = new \App\Application\Controllers\AdminAnnouncementController(
+    $container->make(TemplateEngine::class),
+    new \App\Infrastructure\Repositories\AdminAnnouncementRepository()
+);
+$router->get('/admin/announcements', fn (Request $r) => $announcementController->index($r), [new AuthMiddleware()]);
+$router->post('/admin/announcements', fn (Request $r) => $announcementController->send($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->get('/admin/announcements/{id}', fn (Request $r) => $announcementController->show($r), [new AuthMiddleware()]);
+$router->post('/admin/announcements/{id}/delete', fn (Request $r) => $announcementController->destroy($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->get('/announcements', fn (Request $r) => $announcementController->inbox($r), [new AuthMiddleware()]);
+$router->post('/announcements/{id}/seen', fn (Request $r) => $announcementController->markSeen($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->post('/announcements/{id}/delete', fn (Request $r) => $announcementController->remove($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+
+// Help center — every signed-in user reads; only the Super Admin manages
+// (checked inside the controller). /admin/help/* is registered apart
+// from /help/{slug} so a slug can never shadow a management route.
+$helpController = new \App\Application\Controllers\HelpController(
+    $container->make(TemplateEngine::class),
+    new \App\Infrastructure\Repositories\HelpArticleRepository()
+);
+$router->get('/help', fn (Request $r) => $helpController->index($r), [new AuthMiddleware()]);
+$router->get('/help/{slug}', fn (Request $r) => $helpController->show($r), [new AuthMiddleware()]);
+$router->get('/admin/help/create', fn (Request $r) => $helpController->create($r), [new AuthMiddleware()]);
+$router->post('/admin/help', fn (Request $r) => $helpController->store($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->get('/admin/help/{id}/edit', fn (Request $r) => $helpController->edit($r), [new AuthMiddleware()]);
+$router->post('/admin/help/{id}', fn (Request $r) => $helpController->update($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->post('/admin/help/{id}/delete', fn (Request $r) => $helpController->destroy($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+
 // --- CRM Core (Phase 5) --------------------------------------------------
 // Every route requires login; the list ("view") route of each entity
 // also gets a fast RbacMiddleware pre-check — create/edit/delete are
@@ -309,6 +367,7 @@ $router->group('/contacts', [new AuthMiddleware()], function (Router $router) us
     $router->get('/import', fn (Request $r) => $contactImportController->showImport($r), [new RbacMiddleware('contacts.import')]);
     $router->post('/import/preview', fn (Request $r) => $contactImportController->preview($r), [new RbacMiddleware('contacts.import'), new CsrfMiddleware()]);
     $router->post('/import/commit', fn (Request $r) => $contactImportController->commit($r), [new RbacMiddleware('contacts.import'), new CsrfMiddleware()]);
+    $router->post('/import/rollback', fn (Request $r) => $contactImportController->rollback($r), [new RbacMiddleware('contacts.import'), new CsrfMiddleware()]);
 
     $router->get('/categories', fn (Request $r) => $contactController->categoriesPage($r), [new RbacMiddleware('contacts.manage_categories')]);
     $router->post('/categories', fn (Request $r) => $contactController->createCategory($r), [new CsrfMiddleware()]);
@@ -316,6 +375,8 @@ $router->group('/contacts', [new AuthMiddleware()], function (Router $router) us
 
     $router->get('/{id}', fn (Request $r) => $contactController->show($r));
     $router->get('/{id}/edit', fn (Request $r) => $contactController->showEdit($r));
+    $router->get('/{id}/related/{type}', fn (Request $r) => $contactController->related($r));
+    $router->post('/bulk-delete', fn (Request $r) => $contactController->bulkDelete($r), [new CsrfMiddleware()]);
     $router->post('/{id}', fn (Request $r) => $contactController->update($r), [new CsrfMiddleware()]);
     $router->post('/{id}/delete', fn (Request $r) => $contactController->delete($r), [new CsrfMiddleware()]);
 });
@@ -324,8 +385,12 @@ $router->group('/companies', [new AuthMiddleware()], function (Router $router) u
     $router->get('', fn (Request $r) => $companyController->index($r), [new RbacMiddleware('companies.view')]);
     $router->get('/create', fn (Request $r) => $companyController->showCreate($r));
     $router->post('', fn (Request $r) => $companyController->create($r), [new CsrfMiddleware()]);
+    $router->get('/categories', fn (Request $r) => $companyController->categoriesPage($r), [new RbacMiddleware('companies.manage_categories')]);
+    $router->post('/categories', fn (Request $r) => $companyController->createCategory($r), [new CsrfMiddleware()]);
+    $router->post('/categories/{id}/delete', fn (Request $r) => $companyController->deleteCategory($r), [new CsrfMiddleware()]);
     $router->get('/{id}', fn (Request $r) => $companyController->show($r));
     $router->get('/{id}/edit', fn (Request $r) => $companyController->showEdit($r));
+    $router->post('/bulk-delete', fn (Request $r) => $companyController->bulkDelete($r), [new CsrfMiddleware()]);
     $router->post('/{id}', fn (Request $r) => $companyController->update($r), [new CsrfMiddleware()]);
     $router->post('/{id}/delete', fn (Request $r) => $companyController->delete($r), [new CsrfMiddleware()]);
 });
@@ -336,6 +401,7 @@ $router->group('/leads', [new AuthMiddleware()], function (Router $router) use (
     $router->post('', fn (Request $r) => $leadController->create($r), [new CsrfMiddleware()]);
     $router->get('/{id}', fn (Request $r) => $leadController->show($r));
     $router->get('/{id}/edit', fn (Request $r) => $leadController->showEdit($r));
+    $router->post('/bulk-delete', fn (Request $r) => $leadController->bulkDelete($r), [new CsrfMiddleware()]);
     $router->post('/{id}', fn (Request $r) => $leadController->update($r), [new CsrfMiddleware()]);
     $router->post('/{id}/delete', fn (Request $r) => $leadController->delete($r), [new CsrfMiddleware()]);
     $router->post('/{id}/convert', fn (Request $r) => $leadController->convert($r), [new CsrfMiddleware()]);

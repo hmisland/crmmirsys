@@ -7,10 +7,11 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
-    <h1><?= e($pipeline['name']) ?></h1>
+    <h1><?= e($pipeline['name']) ?><?= help_link('deal-contract-sales-project') ?></h1>
     <p>
         <a href="/deals/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('deals.new')) ?></a>
         <a href="/deals" class="btn"><?= icon('list') ?><?= e(t('deals.list_view')) ?></a>

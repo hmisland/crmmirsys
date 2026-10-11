@@ -8,14 +8,20 @@ use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
+
+// Stage 5.2 (L2/L3): amounts at the proforma currency's display precision.
+$proformaCurrency = \App\Infrastructure\Finance\CurrencyPrecision::currency((int) $proforma['currency_id'])['code'] ?? null;
 ?>
 <section class="card">
-    <h1><?= e(t('proformas.title_single')) ?> #<?= e($proforma['id']) ?></h1>
+    <h1><?= e(t('proformas.title_single')) ?> <?= !empty($proforma['custom_number']) ? e($proforma['custom_number']) : '#' . e($proforma['id']) ?></h1>
     <p class="muted">
         <?= e(t('wallet.date')) ?>: <?= e($proforma['issue_date']) ?>
         <?= $proforma['expiry_date'] ? ' · ' . e(t('proformas.expires')) . ' ' . e($proforma['expiry_date']) : '' ?>
         · <?= e(t('deals.status')) ?>: <?= badge(t('proformas.status.' . $proforma['status']), $proforma['status']) ?>
     </p>
+    <?php if (($contractLink ?? null) !== null): ?>
+        <p><?= e(t('finance.contract')) ?>: <?php if ($contractLink['url'] !== null): ?><a href="<?= e($contractLink['url']) ?>"><?= e($contractLink['label']) ?></a><?php else: ?><?= e($contractLink['label']) ?><?php endif; ?></p>
+    <?php endif; ?>
     <?php if ($contact !== null): ?>
         <p><?= e(t('common.contact')) ?>: <a href="/contacts/<?= e($contact['id']) ?>"><?= e(trim($contact['first_name'] . ' ' . ($contact['last_name'] ?? ''))) ?></a></p>
     <?php endif; ?>
@@ -28,6 +34,8 @@ use App\Infrastructure\Security\Csrf;
     <?php endif; ?>
 
     <div class="actions">
+        <a href="/finance/proformas/<?= e($proforma['id']) ?>/print" class="btn" target="_blank" rel="noopener"><?= icon('file-text') ?><?= e(t('print.print_view')) ?></a>
+        <a href="/finance/proformas/<?= e($proforma['id']) ?>/pdf" class="btn"><?= icon('download') ?><?= e(t('print.download_pdf')) ?></a>
         <?php if ($proforma['converted_invoice_id'] === null): ?>
             <form method="post" action="/finance/proformas/<?= e($proforma['id']) ?>/convert" class="inline-form">
                 <?= Csrf::field() ?>
@@ -52,8 +60,8 @@ use App\Infrastructure\Security\Csrf;
             <tr>
                 <td><?= e($item['description']) ?></td>
                 <td><?= e(rtrim(rtrim((string) $item['quantity'], '0'), '.')) ?></td>
-                <td><?= e(number_format((float) $item['unit_price'], 0)) ?></td>
-                <td><?= e(number_format((float) $item['line_total'], 0)) ?></td>
+                <td><?= e(\App\Infrastructure\Theme\money($item['unit_price'], $proformaCurrency)) ?></td>
+                <td><?= e(\App\Infrastructure\Theme\money($item['line_total'], $proformaCurrency)) ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
@@ -61,10 +69,10 @@ use App\Infrastructure\Security\Csrf;
     </div>
 
     <table class="table table--compact" style="max-width:320px;margin-inline-start:auto;margin-top:1rem">
-        <tr><td><?= e(t('proformas.subtotal')) ?></td><td><?= e(number_format((float) $proforma['subtotal'], 0)) ?></td></tr>
-        <tr><td><?= e(t('proformas.invoice_discount')) ?></td><td><?= e(number_format((float) $proforma['invoice_discount'], 0)) ?></td></tr>
-        <tr><td><?= e(t('proformas.tax_total')) ?></td><td><?= e(number_format((float) $proforma['tax_total'], 0)) ?></td></tr>
-        <tr><td><strong><?= e(t('proformas.grand_total')) ?></strong></td><td><strong><?= e(number_format((float) $proforma['grand_total'], 0)) ?></strong></td></tr>
+        <tr><td><?= e(t('proformas.subtotal')) ?></td><td><?= e(\App\Infrastructure\Theme\money($proforma['subtotal'], $proformaCurrency)) ?></td></tr>
+        <tr><td><?= e(t('proformas.invoice_discount')) ?></td><td><?= e(\App\Infrastructure\Theme\money($proforma['invoice_discount'], $proformaCurrency)) ?></td></tr>
+        <tr><td><?= e(t('proformas.tax_total')) ?></td><td><?= e(\App\Infrastructure\Theme\money($proforma['tax_total'], $proformaCurrency)) ?></td></tr>
+        <tr><td><strong><?= e(t('proformas.grand_total')) ?></strong></td><td><strong><?= e(\App\Infrastructure\Theme\money($proforma['grand_total'], $proformaCurrency)) ?></strong></td></tr>
     </table>
 
     <?php if (!empty($proforma['terms']) || !empty($proforma['notes'])): ?>

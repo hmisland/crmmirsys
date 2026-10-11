@@ -16,6 +16,10 @@ use App\Core\Router;
 use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Modules\ModuleInterface;
 use App\Infrastructure\Modules\ModuleManifest;
+use App\Infrastructure\Records\RecordTypeRegistry;
+use App\Infrastructure\Records\RelatedPanelRegistry;
+use App\Infrastructure\Repositories\ContactRepository;
+use App\Infrastructure\Repositories\LeadRepository;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Followups\Controllers\FollowUpController;
@@ -69,7 +73,12 @@ final class FollowupsModule implements ModuleInterface
         $this->followUpServiceInstance = $followUpService;
         $ruleService = new FollowUpRuleService($ruleRepo, $authorization);
 
-        $this->followUpController = new FollowUpController($templates, $followUpService, new UserRepository());
+        $recordTypes = $container->make(RecordTypeRegistry::class);
+        $this->followUpController = new FollowUpController($templates, $followUpService, new UserRepository(), new ContactRepository(), new LeadRepository(), $recordTypes);
+
+        // "Follow-ups" boxes on contract and project pages, via the Core panel
+        // slot only (FollowUpPanels explains the access rules).
+        (new FollowUpPanels($followUpService, $authorization, $recordTypes, $templates))->registerAll($container->make(RelatedPanelRegistry::class));
         $this->ruleController = new FollowUpRuleController($templates, $ruleService);
 
         // The actual activation step: without this, the rule tables
@@ -97,6 +106,7 @@ final class FollowupsModule implements ModuleInterface
             $router->post('/rules/{id}/toggle', fn (Request $r) => $ruleController->toggle($r), [new RbacMiddleware('followups.manage_rules'), new CsrfMiddleware()]);
             $router->post('/rules/{id}/delete', fn (Request $r) => $ruleController->delete($r), [new RbacMiddleware('followups.manage_rules'), new CsrfMiddleware()]);
 
+            $router->post('/bulk-delete', fn (Request $r) => $followUpController->bulkDelete($r), [new RbacMiddleware('followups.delete'), new CsrfMiddleware()]);
             $router->get('/{id}', fn (Request $r) => $followUpController->show($r), [new RbacMiddleware('followups.view')]);
             $router->get('/{id}/edit', fn (Request $r) => $followUpController->showEdit($r), [new RbacMiddleware('followups.edit')]);
             $router->post('/{id}', fn (Request $r) => $followUpController->update($r), [new RbacMiddleware('followups.edit'), new CsrfMiddleware()]);

@@ -16,7 +16,8 @@ final class InvoiceItemRepository extends BaseRepository
     public function forInvoice(int $invoiceId): array
     {
         return $this->findMany(
-            'SELECT ii.*, (SELECT name FROM products WHERE products.id = ii.product_id) AS product_name
+            'SELECT ii.*, (SELECT name FROM products WHERE products.id = ii.product_id) AS product_name,
+                    (SELECT sku FROM products WHERE products.id = ii.product_id) AS product_sku
              FROM invoice_items ii WHERE ii.invoice_id = :invoice_id ORDER BY ii.position',
             ['invoice_id' => $invoiceId]
         );

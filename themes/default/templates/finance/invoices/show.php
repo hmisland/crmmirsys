@@ -9,22 +9,33 @@
 /** @var string $paymentStatus */
 /** @var string $outstanding */
 /** @var bool $canIssueCreditNote */
-/** @var array $creditNotes */
-/** @var string $totalCredited */
-/** @var string $effectiveTotal */
+/** @var bool $canViewCreditNotes credit_notes.view (Patch B) */
+/** @var bool $canCreditMore */
+/** @var array $creditNotes empty without credit_notes.view */
+/** @var string|null $totalCredited null without credit_notes.view */
+/** @var string|null $effectiveTotal null without credit_notes.view */
+/** @var string|null $cancelBlockedReason why an issued invoice can't be cancelled (translated); null = it can */
+/** @var array<int, array{at: string, by: string, description: string}> $cancellations cancel history from the timeline */
+/** @var string|null $currencyCode the invoice currency (display precision) */
+/** @var array<int, array{type: string, at: string, by: string, description: string}> $financialHistory payment / credit-note events the user may see */
+/** @var string $moneyStep smallest amount a money input accepts */
+/** @var bool $roundingDefault the organization's final-rounding default */
+/** @var int $roundingPrecision final-rounding target decimals (IRR 0) */
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\money;
 use App\Infrastructure\Security\Csrf;
+use Modules\Finance\SubmissionKeyRepository;
 
 $isDraft = $invoice['status'] === 'draft';
 ?>
 <section class="card">
     <h1>
         <?= e(t('invoices.title_single')) ?>
-        <?= $invoice['invoice_number'] !== null ? e($invoice['invoice_number']) : '#' . e($invoice['id']) . ' (' . e(t('invoices.not_issued_yet')) . ')' ?>
+        <?= !empty($invoice['custom_number']) ? e($invoice['custom_number']) : ($invoice['invoice_number'] !== null ? e($invoice['invoice_number']) : '#' . e($invoice['id']) . ' (' . e(t('invoices.not_issued_yet')) . ')') ?>
     </h1>
     <p class="muted">
         <?= e(t('proformas.issue_date')) ?>: <?= e($invoice['issue_date']) ?>
@@ -34,6 +45,9 @@ $isDraft = $invoice['status'] === 'draft';
             · <?= e(t('payments.payment_status')) ?>: <?= badge(t('payments.status.' . $paymentStatus), $paymentStatus) ?>
         <?php endif; ?>
     </p>
+    <?php if (($contractLink ?? null) !== null): ?>
+        <p><?= e(t('finance.contract')) ?>: <?php if ($contractLink['url'] !== null): ?><a href="<?= e($contractLink['url']) ?>"><?= e($contractLink['label']) ?></a><?php else: ?><?= e($contractLink['label']) ?><?php endif; ?></p>
+    <?php endif; ?>
     <?php if ($contact !== null): ?>
         <p><?= e(t('common.contact')) ?>: <a href="/contacts/<?= e($contact['id']) ?>"><?= e(trim($contact['first_name'] . ' ' . ($contact['last_name'] ?? ''))) ?></a></p>
     <?php endif; ?>
@@ -43,6 +57,8 @@ $isDraft = $invoice['status'] === 'draft';
     <?php endif; ?>
 
     <div class="actions">
+        <a href="/finance/invoices/<?= e($invoice['id']) ?>/print" class="btn" target="_blank" rel="noopener"><?= icon('file-text') ?><?= e(t('print.print_view')) ?></a>
+        <a href="/finance/invoices/<?= e($invoice['id']) ?>/pdf" class="btn"><?= icon('download') ?><?= e(t('print.download_pdf')) ?></a>
         <?php if ($isDraft): ?>
             <a href="/finance/invoices/<?= e($invoice['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
             <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/delete" class="inline-form">
@@ -52,18 +68,43 @@ $isDraft = $invoice['status'] === 'draft';
             <?php if ($canIssue): ?>
                 <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/issue" class="inline-form">
                     <?= Csrf::field() ?>
+                    <input type="hidden" name="final_rounding" value="0">
+                    <label class="check" title="<?= e(t('finance.final_rounding.issue_hint', ['decimals' => $roundingPrecision])) ?>"><input type="checkbox" name="final_rounding" value="1"<?= $roundingDefault ? ' checked' : '' ?>> <?= e(t('finance.final_rounding.issue_option', ['decimals' => $roundingPrecision])) ?></label>
                     <button type="submit" class="btn btn--primary"><?= icon('check-circle') ?><?= e(t('invoices.issue_action')) ?></button>
                 </form>
             <?php else: ?>
                 <span class="muted"><?= e(t('invoices.awaiting_approval')) ?></span>
             <?php endif; ?>
-        <?php elseif ($invoice['status'] === 'issued' && $canCancel): ?>
-            <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/cancel" class="inline-form">
-                <?= Csrf::field() ?>
-                <button type="submit" class="link-button"><?= icon('ban') ?><?= e(t('invoices.cancel_action')) ?></button>
-            </form>
+        <?php elseif ($invoice['status'] === 'issued' && $canCancel && ($cancelBlockedReason ?? null) !== null): ?>
+            <span data-tooltip="<?= e($cancelBlockedReason) ?>"><button type="button" class="link-button" disabled><?= icon('ban') ?><?= e(t('invoices.cancel_action')) ?></button></span>
         <?php endif; ?>
     </div>
+
+    <?php if ($invoice['status'] === 'issued' && $canCancel && ($cancelBlockedReason ?? null) === null): ?>
+        <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/cancel" class="inline-form-row">
+            <?= Csrf::field() ?>
+            <label for="cancel_reason"><?= e(t('invoices.cancel_reason')) ?></label>
+            <input type="text" id="cancel_reason" name="reason" maxlength="450" required>
+            <button type="submit" class="btn btn--danger" data-confirm><?= icon('ban') ?><?= e(t('invoices.cancel_action')) ?></button>
+        </form>
+    <?php elseif ($invoice['status'] === 'issued' && $canCancel): ?>
+        <p class="field-hint"><?= icon('info') ?> <?= e($cancelBlockedReason) ?></p>
+    <?php endif; ?>
+
+    <?php if ($invoice['status'] === 'cancelled' && bccomp((string) $invoice['paid_total'], '0', 8) > 0): ?>
+        <div class="alert alert--warning"><div class="alert__body">
+            <?= icon('alert-triangle') ?> <?= e(t('invoices.cancelled_with_payments')) ?>
+        </div></div>
+    <?php endif; ?>
+
+    <?php if (($cancellations ?? []) !== []): ?>
+        <h2><?= e(t('invoices.cancellation_history')) ?></h2>
+        <ul class="item-list">
+            <?php foreach ($cancellations as $c): ?>
+                <li><span class="muted"><?= e($c['at']) ?> · <?= e($c['by']) ?></span> — <?= e($c['description']) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
 </section>
 
 <section class="card">
@@ -76,8 +117,8 @@ $isDraft = $invoice['status'] === 'draft';
             <tr>
                 <td><?= e($item['description']) ?></td>
                 <td><?= e(rtrim(rtrim((string) $item['quantity'], '0'), '.')) ?></td>
-                <td><?= e(number_format((float) $item['unit_price'], 0)) ?></td>
-                <td><?= e(number_format((float) $item['line_total'], 0)) ?></td>
+                <td><?= e(money($item['unit_price'], $currencyCode)) ?></td>
+                <td><?= e(money($item['line_total'], $currencyCode)) ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
@@ -85,13 +126,17 @@ $isDraft = $invoice['status'] === 'draft';
     </div>
 
     <table class="table table--compact" style="max-width:320px;margin-inline-start:auto;margin-top:1rem">
-        <tr><td><?= e(t('proformas.subtotal')) ?></td><td><?= e(number_format((float) $invoice['subtotal'], 0)) ?></td></tr>
-        <tr><td><?= e(t('proformas.invoice_discount')) ?></td><td><?= e(number_format((float) $invoice['invoice_discount'], 0)) ?></td></tr>
-        <tr><td><?= e(t('proformas.tax_total')) ?></td><td><?= e(number_format((float) $invoice['tax_total'], 0)) ?></td></tr>
-        <tr><td><strong><?= e(t('proformas.grand_total')) ?></strong></td><td><strong><?= e(number_format((float) $invoice['grand_total'], 0)) ?></strong></td></tr>
-        <?php if (bccomp($totalCredited, '0', 8) > 0): ?>
-        <tr><td><?= e(t('credit_notes.total_credited')) ?></td><td>-<?= e(number_format((float) $totalCredited, 0)) ?></td></tr>
-        <tr><td><strong><?= e(t('credit_notes.effective_total')) ?></strong></td><td><strong><?= e(number_format((float) $effectiveTotal, 0)) ?></strong></td></tr>
+        <tr><td><?= e(t('proformas.subtotal')) ?></td><td><?= e(money($invoice['subtotal'], $currencyCode)) ?></td></tr>
+        <tr><td><?= e(t('proformas.invoice_discount')) ?></td><td><?= e(money($invoice['invoice_discount'], $currencyCode)) ?></td></tr>
+        <tr><td><?= e(t('proformas.tax_total')) ?></td><td><?= e(money($invoice['tax_total'], $currencyCode)) ?></td></tr>
+        <?php if ((int) ($invoice['final_rounding'] ?? 0) === 1): ?>
+        <tr><td><?= e(t('finance.final_rounding.before')) ?></td><td><?= e(money($invoice['unrounded_total'], $currencyCode)) ?></td></tr>
+        <tr><td><?= e(t('finance.final_rounding.adjustment')) ?></td><td><?= e(money($invoice['rounding_adjustment'], $currencyCode)) ?></td></tr>
+        <?php endif; ?>
+        <tr><td><strong><?= e(t('proformas.grand_total')) ?></strong></td><td><strong><?= e(money($invoice['grand_total'], $currencyCode)) ?></strong></td></tr>
+        <?php if ($canViewCreditNotes && bccomp($totalCredited, '0', 18) > 0): ?>
+        <tr><td><?= e(t('credit_notes.total_credited')) ?></td><td>-<?= e(money($totalCredited, $currencyCode)) ?></td></tr>
+        <tr><td><strong><?= e(t('credit_notes.effective_total')) ?></strong></td><td><strong><?= e(money($effectiveTotal, $currencyCode)) ?></strong></td></tr>
         <?php endif; ?>
     </table>
 
@@ -107,7 +152,7 @@ $isDraft = $invoice['status'] === 'draft';
 <section class="card">
     <h2><?= e(t('payments.title')) ?></h2>
     <p>
-        <?= e(t('payments.outstanding')) ?>: <strong><?= e(number_format((float) $outstanding, 0)) ?></strong>
+        <?= e(t('payments.outstanding')) ?>: <strong><?= e(money($outstanding, $currencyCode)) ?></strong>
     </p>
 
     <div class="table-responsive">
@@ -117,7 +162,7 @@ $isDraft = $invoice['status'] === 'draft';
         <?php foreach ($payments as $p): ?>
             <tr>
                 <td class="muted"><?= e($p['payment_date']) ?></td>
-                <td><?= e(number_format((float) $p['amount'], 0)) ?></td>
+                <td><?= e(money($p['amount'], $currencyCode)) ?></td>
                 <td><?= e(t('payments.method.' . $p['payment_method'])) ?></td>
                 <td class="muted"><?= e($p['payment_reference'] ?? '—') ?></td>
                 <td class="muted"><?= e(trim((string) $p['recorded_by_name'])) ?></td>
@@ -130,14 +175,15 @@ $isDraft = $invoice['status'] === 'draft';
     </table>
     </div>
 
-    <?php if ($canRecordPayment && bccomp($outstanding, '0', 8) > 0): ?>
+    <?php if ($canRecordPayment && bccomp($outstanding, '0', 18) > 0): ?>
     <div class="card--form" style="margin-top:1rem;max-width:500px;padding:0">
     <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/payments">
         <?= Csrf::field() ?>
+        <input type="hidden" name="submission_key" value="<?= e(SubmissionKeyRepository::newKey()) ?>">
         <h3><?= e(t('payments.record_a_payment')) ?></h3>
 
         <label for="amount"><?= e(t('wallet.amount')) ?></label>
-        <input type="number" id="amount" name="amount" step="0.01" min="0.01" max="<?= e($outstanding) ?>" value="<?= e($outstanding) ?>" required>
+        <input type="number" id="amount" name="amount" step="<?= e($moneyStep) ?>" min="<?= e($moneyStep) ?>" max="<?= e($outstanding) ?>" value="<?= e($outstanding) ?>" required>
 
         <label for="payment_method"><?= e(t('payments.method')) ?></label>
         <select id="payment_method" name="payment_method">
@@ -162,9 +208,12 @@ $isDraft = $invoice['status'] === 'draft';
     <?php endif; ?>
 </section>
 
+<?php $showCreditNoteForm = $canIssueCreditNote && $invoice['status'] === 'issued' && $canCreditMore; ?>
+<?php if ($canViewCreditNotes || $showCreditNoteForm): ?>
 <section class="card">
     <h2><?= e(t('credit_notes.title')) ?></h2>
 
+    <?php if ($canViewCreditNotes): ?>
     <div class="table-responsive">
     <table class="table">
         <thead><tr><th><?= e(t('invoices.number')) ?></th><th><?= e(t('wallet.date')) ?></th><th><?= e(t('wallet.amount')) ?></th><th><?= e(t('credit_notes.reason')) ?></th><th><?= e(t('payments.recorded_by')) ?></th></tr></thead>
@@ -173,7 +222,7 @@ $isDraft = $invoice['status'] === 'draft';
             <tr>
                 <td><?= e($cn['credit_note_number']) ?></td>
                 <td class="muted"><?= e($cn['issue_date']) ?></td>
-                <td><?= e(number_format((float) $cn['amount'], 0)) ?></td>
+                <td><?= e(money($cn['amount'], $currencyCode)) ?></td>
                 <td><?= e($cn['reason']) ?></td>
                 <td class="muted"><?= e(trim((string) $cn['issued_by_name'])) ?></td>
             </tr>
@@ -184,15 +233,17 @@ $isDraft = $invoice['status'] === 'draft';
         </tbody>
     </table>
     </div>
+    <?php endif; ?>
 
-    <?php if ($canIssueCreditNote && $invoice['status'] === 'issued' && bccomp($effectiveTotal, '0', 8) > 0): ?>
+    <?php if ($showCreditNoteForm): ?>
     <div class="card--form" style="margin-top:1rem;max-width:500px;padding:0">
     <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/credit-notes">
         <?= Csrf::field() ?>
+        <input type="hidden" name="submission_key" value="<?= e(SubmissionKeyRepository::newKey()) ?>">
         <h3><?= e(t('credit_notes.issue_a_credit_note')) ?></h3>
 
         <label for="cn_amount"><?= e(t('wallet.amount')) ?></label>
-        <input type="number" id="cn_amount" name="amount" step="0.01" min="0.01" max="<?= e($effectiveTotal) ?>" required>
+        <input type="number" id="cn_amount" name="amount" step="<?= e($moneyStep) ?>" min="<?= e($moneyStep) ?>"<?php if ($canViewCreditNotes): ?> max="<?= e($effectiveTotal) ?>"<?php endif; ?> required>
 
         <label for="cn_reason"><?= e(t('credit_notes.reason')) ?></label>
         <input type="text" id="cn_reason" name="reason" placeholder="<?= e(t('credit_notes.reason_placeholder')) ?>" required>
@@ -204,5 +255,27 @@ $isDraft = $invoice['status'] === 'draft';
     </form>
     </div>
     <?php endif; ?>
+</section>
+<?php endif; ?>
+<?php endif; ?>
+
+<?php if ($financialHistory !== []): ?>
+<section class="card">
+    <h2><?= icon('activity') ?><?= e(t('finance.history.title')) ?></h2>
+    <div class="table-responsive">
+    <table class="table">
+        <thead><tr><th><?= e(t('finance.history.at')) ?></th><th><?= e(t('finance.history.action')) ?></th><th><?= e(t('finance.history.details')) ?></th><th><?= e(t('finance.history.by')) ?></th></tr></thead>
+        <tbody>
+        <?php foreach ($financialHistory as $event): ?>
+            <tr>
+                <td class="muted"><span class="ltr"><?= e(substr($event['at'], 0, 16)) ?></span></td>
+                <td><?= e(t('finance.history.' . $event['type'])) ?></td>
+                <td><span class="ltr"><?= e($event['description']) ?></span></td>
+                <td class="muted"><?= e($event['by']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    </div>
 </section>
 <?php endif; ?>

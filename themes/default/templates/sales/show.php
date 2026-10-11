@@ -6,6 +6,8 @@
 /** @var array|null $company */
 /** @var array $tasks */
 /** @var array $users */
+/** @var array<string, bool> $taskCan */
+/** @var \App\Infrastructure\Theme\ThemeLoader $theme */
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
@@ -46,26 +48,12 @@ use App\Infrastructure\Security\Csrf;
 
 <section class="card">
     <h2><?= e(t('nav.tasks')) ?></h2>
-    <ul class="note-list">
+    <ul class="item-list task-list">
+        <?php $can = $taskCan; $returnTo = '/deals/' . (int) $deal['id']; ?>
         <?php foreach ($tasks as $task): ?>
-            <li>
-                <form method="post" action="/tasks/<?= e($task['id']) ?>/toggle" class="inline-form">
-                    <?= Csrf::field() ?>
-                    <input type="hidden" name="return_to" value="/deals/<?= e($deal['id']) ?>">
-                    <button type="submit" class="checkbox-toggle" title="<?= e(t('tasks.toggle_title')) ?>">
-                        <?= $task['status'] === 'completed' ? '✓' : '' ?>
-                    </button>
-                </form>
-                <a href="/tasks/<?= e($task['id']) ?>"><strong><?= e($task['title']) ?></strong></a>
-                <span class="muted"><?= $task['due_at'] ? e(t('tasks.due')) . ' ' . e($task['due_at']) : '' ?></span>
-                <form method="post" action="/tasks/<?= e($task['id']) ?>/delete" class="inline-form">
-                    <?= Csrf::field() ?>
-                    <input type="hidden" name="return_to" value="/deals/<?= e($deal['id']) ?>">
-                    <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
-                </form>
-            </li>
+            <?php include $theme->templatesPath() . '/sales/_task_row.php'; ?>
         <?php endforeach; ?>
-        <?php if ($tasks === []): ?><li class="muted"><?= e(t('tasks.empty')) ?></li><?php endif; ?>
+        <?php if ($tasks === []): ?><li class="item-list--empty"><?= e(t('tasks.empty')) ?></li><?php endif; ?>
     </ul>
 
     <form method="post" action="/tasks" class="inline-form-row">
@@ -86,3 +74,5 @@ use App\Infrastructure\Security\Csrf;
     </form>
     <p class="muted"><?= e(t('tasks.more_options_hint')) ?></p>
 </section>
+
+<?php $panelSubjectType = 'deal'; $panelSubject = $deal; include $theme->templatesPath() . '/partials/related-panels.php'; ?>

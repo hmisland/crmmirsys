@@ -25,15 +25,16 @@ in `themes/default/assets/css/app.css`.
 - No inline `style=""`, no hardcoded colors, avoid `!important`.
 - RTL/LTR: logical CSS only (`margin-inline-start`, `inset-inline-end`,
   `text-align: start`), never left/right. Must work in fa, ar (RTL) and
-  en, tr (LTR).
+  en, tr, fr (LTR).
 - New sidebar items go in the `$navGroups` model at the top of
   `themes/default/templates/layout.php`, behind the same module-access
   flag the route uses.
 
 ## Text / translations
 - Never hardcode UI text; always `e(t('key'))`.
-- Every new key must be added to all four files: `lang/en.php`,
-  `lang/fa.php`, `lang/ar.php`, `lang/tr.php` (en is the fallback).
+- Every new key must be added to all five files: `lang/en.php`,
+  `lang/fa.php`, `lang/ar.php`, `lang/tr.php`, `lang/fr.php` (en is the
+  fallback).
 
 ## Safety
 - Do not change backend logic, APIs, database schema/migrations,

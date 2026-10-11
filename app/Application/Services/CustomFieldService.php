@@ -85,6 +85,28 @@ final class CustomFieldService
     }
 
     /**
+     * Removes a definition only when no record holds a value for it
+     * any more — used by the CSV-import rollback for fields the import
+     * itself created. Returns whether it was removed.
+     */
+    public function deleteDefinitionIfUnused(int $definitionId): bool
+    {
+        $definition = $this->definitions->findById($definitionId);
+
+        if ($definition === null) {
+            return false;
+        }
+
+        if ($this->values->countForField($definition['entity_type'], $definition['field_key']) > 0) {
+            return false;
+        }
+
+        $this->definitions->deleteDefinition($definitionId);
+
+        return true;
+    }
+
+    /**
      * @param array<string, mixed> $values field_key => raw submitted value
      */
     public function saveValues(string $entityType, int $entityId, array $values): void
@@ -108,6 +130,8 @@ final class CustomFieldService
     {
         $slug = strtolower(trim((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $label), '_'));
 
-        return $slug !== '' ? $slug : 'field';
+        // Labels with no Latin letters/digits (e.g. Persian/Arabic) would
+        // all collapse to the same key — derive a stable one per label.
+        return $slug !== '' ? $slug : 'field_' . substr(md5(trim($label)), 0, 8);
     }
 }

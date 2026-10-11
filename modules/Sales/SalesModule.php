@@ -16,7 +16,10 @@ use App\Core\Middleware\RbacMiddleware;
 use App\Core\Request;
 use App\Core\Router;
 use App\Infrastructure\Authorization\AuthorizationEngine;
+use App\Infrastructure\Authorization\Permission;
 use App\Infrastructure\Modules\ModuleInterface;
+use App\Infrastructure\Records\RecordType;
+use App\Infrastructure\Records\RecordTypeRegistry;
 use App\Infrastructure\Modules\ModuleManifest;
 use App\Infrastructure\Repositories\CompanyRepository;
 use App\Infrastructure\Repositories\ContactRepository;
@@ -55,8 +58,24 @@ final class SalesModule implements ModuleInterface
             $container->make(AuthorizationEngine::class)
         );
 
+        $deals = new DealRepository();
+
+        // Sales' own record type, so other modules can link to / look up a
+        // deal through Core (RecordTypeRegistry::find()) without importing
+        // Sales. Sales knows nothing about who uses it.
+        $container->make(RecordTypeRegistry::class)->register(new RecordType(
+            key: 'deal',
+            module: 'sales',
+            viewPermission: Permission::DEALS_VIEW,
+            labelKey: 'nav.deals',
+            showPath: '/deals/{id}',
+            icon: 'briefcase',
+            finder: fn (int $id): ?array => $deals->findById($id),
+            recordSupport: false, // deals keep their own notes; /records/deal/... stays 404 as before
+        ));
+
         $dealService = new DealService(
-            new DealRepository(),
+            $deals,
             $pipelineService,
             $container->make(TimelineService::class),
             $container->make(AuthorizationEngine::class),
@@ -118,6 +137,9 @@ final class SalesModule implements ModuleInterface
             $router->get('/{id}', fn (Request $r) => $taskController->show($r));
             $router->post('/{id}', fn (Request $r) => $taskController->update($r), [new CsrfMiddleware()]);
             $router->post('/{id}/toggle', fn (Request $r) => $taskController->toggleComplete($r), [new CsrfMiddleware()]);
+            $router->post('/{id}/status', fn (Request $r) => $taskController->changeStatus($r), [new RbacMiddleware('tasks.change_status'), new CsrfMiddleware()]);
+            $router->post('/{id}/archive', fn (Request $r) => $taskController->archive($r), [new RbacMiddleware('tasks.archive'), new CsrfMiddleware()]);
+            $router->post('/{id}/unarchive', fn (Request $r) => $taskController->unarchive($r), [new RbacMiddleware('tasks.archive'), new CsrfMiddleware()]);
             $router->post('/{id}/delete', fn (Request $r) => $taskController->delete($r), [new CsrfMiddleware()]);
             $router->post('/{id}/comments', fn (Request $r) => $taskController->addComment($r), [new CsrfMiddleware()]);
             $router->post('/{id}/comments/{commentId}/delete', fn (Request $r) => $taskController->deleteComment($r), [new CsrfMiddleware()]);

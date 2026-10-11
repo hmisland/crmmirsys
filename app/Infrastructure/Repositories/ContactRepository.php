@@ -34,43 +34,64 @@ final class ContactRepository extends TenantScopedRepository
      * built explicitly here instead, qualified to `contacts`, and
      * passed to the raw (non-scoping) findMany().
      */
-    public function search(array $filters = []): array
+    public function search(array $filters = [], ?int $limit = null, int $offset = 0): array
     {
-        $orgScoped = !SuperAdminContext::isActive();
+        [$where, $params] = $this->searchConditions($filters);
 
         $sql = 'SELECT contacts.*,
                     (SELECT name FROM companies WHERE companies.id = contacts.company_id) AS company_name,
                     (SELECT name FROM contact_categories WHERE contact_categories.id = contacts.category_id) AS category_name
                 FROM contacts
-                WHERE ' . ($orgScoped ? 'contacts.organization_id = :org_id' : '1 = 1');
+                WHERE ' . $where . ' ORDER BY first_name, last_name, contacts.id';
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+        }
+
+        return $this->findMany($sql, $params);
+    }
+
+    /** Row count for the same filters as search() — for pagination. */
+    public function countSearch(array $filters = []): int
+    {
+        [$where, $params] = $this->searchConditions($filters);
+        $row = $this->findOne('SELECT COUNT(*) AS c FROM contacts WHERE ' . $where, $params);
+
+        return (int) ($row['c'] ?? 0);
+    }
+
+    /** @return array{0: string, 1: array} WHERE clause (org-scoped) and its params */
+    private function searchConditions(array $filters): array
+    {
+        $orgScoped = !SuperAdminContext::isActive();
+        $where = $orgScoped ? 'contacts.organization_id = :org_id' : '1 = 1';
         $params = $orgScoped ? ['org_id' => OrganizationContext::id()] : [];
 
         if (!empty($filters['search'])) {
-            $sql .= ' AND (first_name LIKE :search1 OR last_name LIKE :search2 OR email LIKE :search3)';
+            $where .= ' AND (contacts.first_name LIKE :search1 OR contacts.last_name LIKE :search2 OR contacts.email LIKE :search3
+                OR contacts.phone LIKE :search4 OR CONCAT(contacts.first_name, \' \', COALESCE(contacts.last_name, \'\')) LIKE :search5)';
             $like = '%' . $filters['search'] . '%';
-            $params['search1'] = $like;
-            $params['search2'] = $like;
-            $params['search3'] = $like;
+            foreach ([1, 2, 3, 4, 5] as $n) {
+                $params['search' . $n] = $like;
+            }
         }
 
         if (!empty($filters['company_id'])) {
-            $sql .= ' AND company_id = :company_id';
+            $where .= ' AND contacts.company_id = :company_id';
             $params['company_id'] = $filters['company_id'];
         }
 
         if (!empty($filters['category_id'])) {
-            $sql .= ' AND contacts.category_id = :category_id';
+            $where .= ' AND contacts.category_id = :category_id';
             $params['category_id'] = $filters['category_id'];
         }
 
         if (!empty($filters['owner_id'])) {
-            $sql .= ' AND owner_id = :owner_id';
+            $where .= ' AND contacts.owner_id = :owner_id';
             $params['owner_id'] = $filters['owner_id'];
         }
 
-        $sql .= ' ORDER BY first_name, last_name';
-
-        return $this->findMany($sql, $params);
+        return [$where, $params];
     }
 
     public function countAll(): int

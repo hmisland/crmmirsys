@@ -264,7 +264,7 @@ final class AuthService extends BaseService
             throw new ValidationException($validator->errors());
         }
 
-        $allowedLanguages = ['en', 'fa', 'ar', 'tr'];
+        $allowedLanguages = ['en', 'fa', 'ar', 'tr', 'fr'];
         $language = in_array($input['language'] ?? null, $allowedLanguages, true)
             ? $input['language']
             : null;

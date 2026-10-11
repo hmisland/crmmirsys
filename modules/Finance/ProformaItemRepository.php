@@ -22,7 +22,8 @@ final class ProformaItemRepository extends BaseRepository
     public function forProforma(int $proformaId): array
     {
         return $this->findMany(
-            'SELECT pi.*, (SELECT name FROM products WHERE products.id = pi.product_id) AS product_name
+            'SELECT pi.*, (SELECT name FROM products WHERE products.id = pi.product_id) AS product_name,
+                    (SELECT sku FROM products WHERE products.id = pi.product_id) AS product_sku
              FROM proforma_items pi WHERE pi.proforma_id = :proforma_id ORDER BY pi.position',
             ['proforma_id' => $proformaId]
         );

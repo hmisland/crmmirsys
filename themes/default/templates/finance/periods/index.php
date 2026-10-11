@@ -1,5 +1,6 @@
 <?php
 /** @var array $periods */
+/** @var array<int, list<array{type: string, at: string, by: string}>> $history period id => close / reopen events, newest first */
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
@@ -42,6 +43,30 @@ use App\Infrastructure\Security\Csrf;
     </table>
     </div>
 </section>
+
+<?php if ($history !== []): ?>
+<section class="card">
+    <h2><?= icon('activity') ?><?= e(t('finance.history.period_title')) ?></h2>
+    <div class="table-responsive">
+    <table class="table">
+        <thead><tr><th><?= e(t('periods.starts_on')) ?></th><th><?= e(t('periods.ends_on')) ?></th><th><?= e(t('finance.history.action')) ?></th><th><?= e(t('finance.history.by')) ?></th><th><?= e(t('finance.history.at')) ?></th></tr></thead>
+        <tbody>
+        <?php foreach ($periods as $p): ?>
+            <?php foreach ($history[(int) $p['id']] ?? [] as $event): ?>
+                <tr>
+                    <td><?= e($p['starts_on']) ?></td>
+                    <td><?= e($p['ends_on']) ?></td>
+                    <td><?= e(t('finance.history.' . $event['type'])) ?></td>
+                    <td><?= e($event['by']) ?></td>
+                    <td class="muted"><span class="ltr"><?= e(substr($event['at'], 0, 16)) ?></span></td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    </div>
+</section>
+<?php endif; ?>
 
 <section class="card card--form">
     <h2><?= e(t('periods.add_period')) ?></h2>

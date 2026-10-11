@@ -220,6 +220,8 @@ exchange_rates (id, source_currency_id, destination_currency_id, rate, rate_sour
 ```
 Every Finance conversion stores its own frozen snapshot directly on the invoice/payment row (`source_currency_id, destination_currency_id, source_amount, destination_amount, exchange_rate_id, rate, rate_timestamp`) — a later change to `exchange_rates` never rewrites history.
 
+*(As built — Finance Stage 5.2: `rounding_policy_id` was never implemented; rounding is half-up via `RoundingService`, lines exact, subtotal / tax lines / totals at the currency precision, plus an optional final invoice rounding per organization with a per-invoice override — see `docs/finance-stage-5-2-finalization.md`. No e-invoicing / Moadian integration exists.)*
+
 **Rounding**: a single `RoundingService` (bcmath-based, no floats, continuing the existing Wallet convention exactly) is the only place any Finance code rounds a number. `rounding_policy_id` on the org's financial profile picks the strategy (round-per-line / round-per-tax-category / round-invoice-total) — the policy is data, not an `if` chain.
 
 ---

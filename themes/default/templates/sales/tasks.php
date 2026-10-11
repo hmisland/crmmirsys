@@ -1,36 +1,48 @@
 <?php
 /** @var array $tasks */
 /** @var array $users */
+/** @var bool $archived */
+/** @var string $statusFilter */
+/** @var array<string, bool> $can */
+/** @var \App\Infrastructure\Theme\ThemeLoader $theme */
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Csrf;
+use Modules\Sales\Services\TaskService;
+
+$returnTo = '/tasks' . ($archived ? '?view=archived' : '') . ($statusFilter !== '' ? ($archived ? '&' : '?') . 'status=' . $statusFilter : '');
 ?>
 <section class="card">
-    <h1><?= e(t('tasks.my_tasks')) ?></h1>
-    <p class="muted"><?= e(t('tasks.my_tasks_hint')) ?></p>
+    <div class="card__header">
+        <div>
+            <h1><?= e(t('tasks.my_tasks')) ?></h1>
+            <p class="muted"><?= e(t($archived ? 'tasks.archive_hint' : 'tasks.my_tasks_hint')) ?></p>
+        </div>
+        <nav class="segmented" aria-label="<?= e(t('tasks.my_tasks')) ?>">
+            <a class="btn btn--sm" href="/tasks"<?= !$archived ? ' aria-current="page"' : '' ?>><?= icon('check-square') ?><?= e(t('tasks.view_active')) ?></a>
+            <a class="btn btn--sm" href="/tasks?view=archived"<?= $archived ? ' aria-current="page"' : '' ?>><?= icon('archive') ?><?= e(t('tasks.view_archived')) ?></a>
+        </nav>
+    </div>
 
-    <ul class="note-list">
+    <form method="get" action="/tasks" class="inline-form-row">
+        <?php if ($archived): ?><input type="hidden" name="view" value="archived"><?php endif; ?>
+        <select name="status" aria-label="<?= e(t('tasks.status_label')) ?>">
+            <option value=""><?= e(t('tasks.all_statuses')) ?></option>
+            <?php foreach (TaskService::STATUSES as $status): ?>
+                <option value="<?= e($status) ?>"<?= $statusFilter === $status ? ' selected' : '' ?>><?= e(t('tasks.status.' . $status)) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('tasks.filter')) ?></button>
+    </form>
+
+    <ul class="item-list task-list">
         <?php foreach ($tasks as $task): ?>
-            <li>
-                <form method="post" action="/tasks/<?= e($task['id']) ?>/toggle" class="inline-form">
-                    <?= Csrf::field() ?>
-                    <input type="hidden" name="return_to" value="/tasks">
-                    <button type="submit" class="checkbox-toggle" title="<?= e(t('tasks.toggle_title')) ?>">
-                        <?= $task['status'] === 'completed' ? '✓' : '' ?>
-                    </button>
-                </form>
-                <a href="/tasks/<?= e($task['id']) ?>"><strong><?= e($task['title']) ?></strong></a>
-                <span class="muted">
-                    <?= $task['due_at'] ? e(t('tasks.due')) . ' ' . e($task['due_at']) : e(t('tasks.no_due_date')) ?>
-                    · <?= e(t('tasks.priority.' . $task['priority'])) ?> <?= e(t('tasks.priority_suffix')) ?>
-                    <?= $task['related_type'] ? ' · ' . e(t('tasks.related.' . $task['related_type'])) . ' #' . e($task['related_id']) : '' ?>
-                </span>
-            </li>
+            <?php include $theme->templatesPath() . '/sales/_task_row.php'; ?>
         <?php endforeach; ?>
-        <?php if ($tasks === []): ?><li class="muted"><?= e(t('tasks.nothing_upcoming')) ?></li><?php endif; ?>
+        <?php if ($tasks === []): ?><li class="item-list--empty"><?= e(t($archived ? 'tasks.archive_empty' : 'tasks.nothing_upcoming')) ?></li><?php endif; ?>
     </ul>
 </section>
 

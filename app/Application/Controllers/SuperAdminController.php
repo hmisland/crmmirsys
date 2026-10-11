@@ -7,6 +7,7 @@ namespace App\Application\Controllers;
 use App\Core\Exceptions\AuthorizationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Repositories\OrganizationRepository;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Security\CurrentUser;
@@ -36,7 +37,9 @@ final class SuperAdminController extends BaseController
     {
         $this->requireSuperAdmin();
 
-        $organizations = $this->organizations->all();
+        $q = trim((string) $request->query('q', ''));
+        $organizations = array_filter($this->organizations->all(), fn ($o) => $q === '' || mb_stripos($o['name'] . ' ' . $o['slug'], $q) !== false);
+        [$organizations, $pagination] = Pagination::slice($organizations, $request);
 
         $userCounts = [];
         foreach ($organizations as $organization) {
@@ -46,6 +49,8 @@ final class SuperAdminController extends BaseController
         return $this->viewWithLayout('admin/organizations', 'layout', [
             'organizations' => $organizations,
             'userCounts' => $userCounts,
+            'pagination' => $pagination,
+            'q' => $q,
         ]);
     }
 

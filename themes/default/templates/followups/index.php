@@ -16,7 +16,7 @@ use function App\Infrastructure\Theme\icon;
     </p>
 
     <form method="get" action="/followups" class="inline-form-row">
-        <select aria-label="<?= e(t('deals.status')) ?>" name="status" onchange="this.form.submit()">
+        <select aria-label="<?= e(t('deals.status')) ?>" name="status" data-autosubmit>
             <option value=""><?= e(t('followups.all_statuses')) ?></option>
             <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>><?= e(t('followups.status.pending')) ?></option>
             <option value="scheduled" <?= $statusFilter === 'scheduled' ? 'selected' : '' ?>><?= e(t('followups.status.scheduled')) ?></option>
@@ -25,19 +25,26 @@ use function App\Infrastructure\Theme\icon;
             <option value="cancelled" <?= $statusFilter === 'cancelled' ? 'selected' : '' ?>><?= e(t('followups.status.cancelled')) ?></option>
         </select>
         <label class="check">
-            <input type="checkbox" name="overdue" value="1" <?= $overdueFilter ? 'checked' : '' ?> onchange="this.form.submit()"> <?= e(t('followups.overdue_only')) ?>
+            <input type="checkbox" name="overdue" value="1" <?= $overdueFilter ? 'checked' : '' ?>> <?= e(t('followups.overdue_only')) ?>
         </label>
+        <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
+        <?php if ($pagination->filterQuery() !== []): ?><a href="/followups" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
     </form>
+
+    <?php include __DIR__ . '/../partials/pagination.php'; ?>
+
+    <?php $bulkAction = '/followups/bulk-delete'; include __DIR__ . '/../partials/bulk-bar.php'; ?>
 
     <div class="table-responsive">
     <table class="table">
-        <thead><tr><th><?= e(t('common.name')) ?></th><th><?= e(t('followups.type')) ?></th><th><?= e(t('followups.due_at')) ?></th><th><?= e(t('followups.priority')) ?></th><th><?= e(t('deals.status')) ?></th><th><?= e(t('followups.assignee')) ?></th></tr></thead>
+        <thead><tr><th class="cell-check"><input type="checkbox" data-bulk-all aria-label="<?= e(t('bulk.select_page')) ?>" title="<?= e(t('bulk.select_page')) ?>"></th><th><?= e(t('common.name')) ?></th><th><?= e(t('followups.type')) ?></th><th><?= e(t('followups.due_at')) ?></th><th><?= e(t('followups.priority')) ?></th><th><?= e(t('deals.status')) ?></th><th><?= e(t('followups.assignee')) ?></th></tr></thead>
         <tbody>
         <?php foreach ($followUps as $f): ?>
             <?php
                 $isOverdue = $f['due_at'] !== null && in_array($f['status'], ['pending', 'scheduled', 'in_progress'], true) && $f['due_at'] < date('Y-m-d H:i:s');
             ?>
             <tr>
+                <td class="cell-check"><input type="checkbox" name="ids[]" value="<?= e($f['id']) ?>" form="bulk-form" data-bulk-item aria-label="<?= e(t('bulk.select_row')) ?>" <?= ($canDelete[(int) $f['id']] ?? false) ? '' : 'disabled' ?>></td>
                 <td><a href="/followups/<?= e($f['id']) ?>"><?= e($f['title']) ?></a><?= $f['is_automated'] ? ' <span class="muted">(' . e(t('followups.automated_badge')) . ')</span>' : '' ?></td>
                 <td><?= e(t('followups.type.' . $f['type'])) ?></td>
                 <td class="<?= $isOverdue ? 'text-danger' : 'muted' ?>"><?= e($f['due_at'] ?? '—') ?><?= $isOverdue ? ' (' . e(t('followups.overdue')) . ')' : '' ?></td>
@@ -47,7 +54,7 @@ use function App\Infrastructure\Theme\icon;
             </tr>
         <?php endforeach; ?>
         <?php if ($followUps === []): ?>
-            <tr><td colspan="6" class="muted"><?= e(t('followups.empty')) ?></td></tr>
+            <tr><td colspan="7" class="muted"><?= e(t('followups.empty')) ?></td></tr>
         <?php endif; ?>
         </tbody>
     </table>

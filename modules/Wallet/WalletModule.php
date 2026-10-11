@@ -22,6 +22,9 @@ use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Repositories\WalletPlatformSettingsRepository;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Wallet\Controllers\WalletAdminController;
+use Modules\Wallet\Controllers\WalletGiftController;
+use Modules\Wallet\Services\WalletGiftService;
+use App\Infrastructure\Repositories\OrganizationRepository;
 use Modules\Wallet\Controllers\WalletController;
 use Modules\Wallet\Controllers\WalletPlatformController;
 use Modules\Wallet\Gateways\GatewayRegistry;
@@ -39,6 +42,7 @@ final class WalletModule implements ModuleInterface
     private ?WalletController $walletController = null;
     private ?WalletAdminController $adminController = null;
     private ?WalletPlatformController $platformController = null;
+    private ?WalletGiftController $giftController = null;
     private ?WalletService $walletServiceInstance = null;
     private ?WalletSettingsService $walletSettingsServiceInstance = null;
 
@@ -96,6 +100,8 @@ final class WalletModule implements ModuleInterface
 
         $templates = $container->make(TemplateEngine::class);
 
+        $giftService = new WalletGiftService(new WalletGiftCodeRepository(), $walletService, $settingsService, $users, $authorization);
+
         $this->walletController = new WalletController(
             $templates,
             $walletService,
@@ -106,7 +112,8 @@ final class WalletModule implements ModuleInterface
             $withdrawalsRepo,
             $gateways,
             $users,
-            $container->make(BankAccountService::class)
+            $container->make(BankAccountService::class),
+            $giftService
         );
 
         $this->adminController = new WalletAdminController(
@@ -115,10 +122,13 @@ final class WalletModule implements ModuleInterface
             $adminService,
             $settingsService,
             $ledgerAccess,
-            $users
+            $users,
+            $giftService
         );
 
         $this->platformController = new WalletPlatformController($templates, $settingsService, $currencies, $container->make(BankService::class));
+
+        $this->giftController = new WalletGiftController($templates, $giftService, new OrganizationRepository());
     }
 
     public function routes(Router $router): void
@@ -137,13 +147,17 @@ final class WalletModule implements ModuleInterface
             $router->post('/withdraw', fn (Request $r) => $walletController->requestWithdrawal($r), [new CsrfMiddleware()]);
         });
 
-        $router->group('/org/wallet', [$auth, $module], function (Router $router) use ($adminController) {
+        $giftController = $this->giftController;
+        $router->group('/org/wallet', [$auth, $module], function (Router $router) use ($adminController, $giftController) {
             $router->get('', fn (Request $r) => $adminController->index($r), [new RbacMiddleware('wallet.transactions.view')]);
             $router->post('/withdrawals/{id}/approve', fn (Request $r) => $adminController->approveWithdrawal($r), [new CsrfMiddleware()]);
             $router->post('/withdrawals/{id}/reject', fn (Request $r) => $adminController->rejectWithdrawal($r), [new CsrfMiddleware()]);
             $router->post('/withdrawals/{id}/paid', fn (Request $r) => $adminController->markWithdrawalPaid($r), [new CsrfMiddleware()]);
             $router->post('/adjust', fn (Request $r) => $adminController->adjust($r), [new CsrfMiddleware()]);
             $router->post('/settings', fn (Request $r) => $adminController->updateSettings($r), [new CsrfMiddleware()]);
+            // Gift credit (org admin; wallet.adjust checked in WalletGiftService).
+            $router->post('/gift/redeem', fn (Request $r) => $giftController->redeem($r), [new CsrfMiddleware()]);
+            $router->post('/gift/send', fn (Request $r) => $giftController->send($r), [new CsrfMiddleware()]);
         });
 
         // Super Admin platform settings are NOT gated by ModuleMiddleware
@@ -152,6 +166,12 @@ final class WalletModule implements ModuleInterface
         // org uses it. Only $auth applies; the controller itself
         // checks is_super_admin directly, same pattern as
         // OrganizationModuleAdminController.
+        // Super Admin gift codes (is_super_admin checked in WalletGiftService).
+        $giftController = $this->giftController;
+        $router->get('/admin/wallet/gift-codes', fn (Request $r) => $giftController->index($r), [$auth]);
+        $router->post('/admin/wallet/gift-codes', fn (Request $r) => $giftController->generate($r), [$auth, new CsrfMiddleware()]);
+        $router->post('/admin/wallet/gift-codes/{id}/revoke', fn (Request $r) => $giftController->revoke($r), [$auth, new CsrfMiddleware()]);
+
         $router->get('/admin/wallet/settings', fn (Request $r) => $platformController->index($r), [$auth]);
         $router->post('/admin/wallet/settings', fn (Request $r) => $platformController->update($r), [$auth, new CsrfMiddleware()]);
         $router->post('/admin/wallet/banks', fn (Request $r) => $platformController->addBank($r), [$auth, new CsrfMiddleware()]);

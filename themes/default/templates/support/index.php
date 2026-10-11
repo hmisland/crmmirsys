@@ -12,7 +12,12 @@ use function App\Infrastructure\Theme\icon;
 <section class="card">
     <h1><?= e(t('tickets.title')) ?></h1>
 
-    <form method="get" action="/support/tickets" class="inline-form-row">
+    <div class="actions">
+        <a href="/support/tickets/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('tickets.new')) ?></a>
+        <a href="/support/tickets/board" class="btn"><?= icon('kanban') ?><?= e(t('deals.board_view')) ?></a>
+    </div>
+
+    <form method="get" action="/support/tickets" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('tickets.search_placeholder')) ?>">
         <select aria-label="<?= e(t('deals.status')) ?>" name="status">
             <option value=""><?= e(t('leads.all_statuses')) ?></option>
@@ -20,10 +25,11 @@ use function App\Infrastructure\Theme\icon;
                 <option value="<?= e($s) ?>" <?= $status === $s ? 'selected' : '' ?>><?= e(t('tickets.status.' . $s)) ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
-        <a href="/support/tickets/board" class="btn"><?= icon('kanban') ?><?= e(t('deals.board_view')) ?></a>
-        <a href="/support/tickets/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('tickets.new')) ?></a>
+        <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
+        <?php if ($pagination->filterQuery() !== []): ?><a href="/support/tickets" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
     </form>
+
+    <?php include __DIR__ . '/../partials/pagination.php'; ?>
 
     <div class="table-responsive">
     <table class="table">

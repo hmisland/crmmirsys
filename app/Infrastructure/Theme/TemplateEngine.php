@@ -19,8 +19,15 @@ namespace App\Infrastructure\Theme;
  */
 final class TemplateEngine
 {
-    public function __construct(private readonly ThemeLoader $theme)
-    {
+    /**
+     * $relatedPanels is handed to every template (like $theme) so
+     * partials/related-panels.php can render module-contributed panels
+     * on a record page; optional, so existing constructions still work.
+     */
+    public function __construct(
+        private readonly ThemeLoader $theme,
+        private readonly ?\App\Infrastructure\Records\RelatedPanelRegistry $relatedPanels = null,
+    ) {
         require_once __DIR__ . '/functions.php';
     }
 
@@ -33,6 +40,7 @@ final class TemplateEngine
         }
 
         $data['theme'] = $this->theme;
+        $data['relatedPanels'] = $this->relatedPanels;
 
         return $this->includeIsolated($file, $data);
     }

@@ -5,10 +5,19 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
     <h1><?= e(t('admin.all_organizations')) ?></h1>
     <p class="muted"><?= e(t('admin.platform_wide_view')) ?></p>
+
+    <form method="get" action="/admin/organizations" class="inline-form-row filter-bar">
+        <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('filters.search_organization')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
+        <?php if ($pagination->filterQuery() !== []): ?><a href="/admin/organizations" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
+    </form>
+
+    <?php include __DIR__ . '/../partials/pagination.php'; ?>
 
     <div class="table-responsive">
     <table class="table">

@@ -27,6 +27,7 @@ if ($rows === []) {
 
     <form method="post" action="<?= e($action) ?>">
         <?= Csrf::field() ?>
+        <?php include __DIR__ . '/../_contract_source.php'; ?>
 
         <label for="contact_id"><?= e(t('common.contact')) ?></label>
         <select id="contact_id" name="contact_id">
@@ -37,6 +38,11 @@ if ($rows === []) {
                 </option>
             <?php endforeach; ?>
         </select>
+        <?php if ($fieldError('contact_id')): ?><div class="field-error"><?= e($fieldError('contact_id')) ?></div><?php endif; ?>
+
+        <label for="custom_number"><?= e(t('finance.custom_number')) ?></label>
+        <input type="text" id="custom_number" name="custom_number" value="<?= $val('custom_number') ?>" maxlength="50" dir="ltr" class="field-md">
+        <div class="field-hint"><?= e(t('finance.custom_number_hint')) ?></div>
 
         <label for="issue_date"><?= e(t('proformas.issue_date')) ?></label>
         <input type="text" class="crm-datepicker" id="issue_date" name="issue_date" value="<?= $val('issue_date', date('Y-m-d')) ?>" required>
@@ -68,32 +74,7 @@ if ($rows === []) {
             <?php endforeach; ?>
         </select>
 
-        <h3 style="margin-top:1.5rem"><?= e(t('proformas.line_items')) ?></h3>
-        <div id="item-rows">
-            <?php foreach ($rows as $key => $row): ?>
-                <div class="repeat-row proforma-item-row" style="flex-wrap:wrap">
-                    <select name="items[<?= e($key) ?>][product_id]" class="proforma-product-select">
-                        <option value=""><?= e(t('proformas.free_text_line')) ?></option>
-                        <?php foreach ($products as $p): ?>
-                            <option value="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>" data-price="<?= e($p['price']) ?>"
-                                <?= (string) ($row['product_id'] ?? '') === (string) $p['id'] ? 'selected' : '' ?>><?= e($p['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <input type="text" name="items[<?= e($key) ?>][description]" value="<?= e($row['description'] ?? '') ?>" placeholder="<?= e(t('contacts.description')) ?>" class="proforma-description" style="flex:2;min-width:160px">
-                    <input type="number" name="items[<?= e($key) ?>][quantity]" value="<?= e($row['quantity'] ?? '1') ?>" step="0.01" min="0" placeholder="<?= e(t('proformas.qty')) ?>" style="width:90px">
-                    <input type="number" name="items[<?= e($key) ?>][unit_price]" value="<?= e($row['unit_price'] ?? '0') ?>" step="0.01" min="0" placeholder="<?= e(t('proformas.unit_price')) ?>" class="proforma-unit-price" style="width:120px">
-                    <select name="items[<?= e($key) ?>][discount_type]" style="width:110px">
-                        <option value="none" <?= ($row['discount_type'] ?? 'none') === 'none' ? 'selected' : '' ?>><?= e(t('proformas.discount_none')) ?></option>
-                        <option value="percentage" <?= ($row['discount_type'] ?? '') === 'percentage' ? 'selected' : '' ?>><?= e(t('proformas.discount_percent')) ?></option>
-                        <option value="fixed" <?= ($row['discount_type'] ?? '') === 'fixed' ? 'selected' : '' ?>><?= e(t('proformas.discount_fixed')) ?></option>
-                    </select>
-                    <input type="number" name="items[<?= e($key) ?>][discount_value]" value="<?= e($row['discount_value'] ?? '0') ?>" step="0.01" min="0" style="width:90px">
-                    <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
-                </div>
-            <?php endforeach; ?>
-        </div>
-        <button type="button" class="btn" id="add-item"><?= icon('plus') ?><?= e(t('proformas.add_line')) ?></button>
-        <?php if ($fieldError('items')): ?><div class="field-error"><?= e($fieldError('items')) ?></div><?php endif; ?>
+        <?php include __DIR__ . '/../_line-items.php'; ?>
 
         <label for="invoice_discount"><?= e(t('proformas.invoice_discount')) ?></label>
         <input type="number" id="invoice_discount" name="invoice_discount" step="0.01" min="0" value="<?= $val('invoice_discount', '0') ?>">
@@ -109,61 +90,4 @@ if ($rows === []) {
     </form>
 </section>
 
-<template id="item-row-template">
-    <div class="repeat-row proforma-item-row" style="flex-wrap:wrap">
-        <select name="items[__INDEX__][product_id]" class="proforma-product-select">
-            <option value=""><?= e(t('proformas.free_text_line')) ?></option>
-            <?php foreach ($products as $p): ?>
-                <option value="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>" data-price="<?= e($p['price']) ?>"><?= e($p['name']) ?></option>
-            <?php endforeach; ?>
-        </select>
-        <input type="text" name="items[__INDEX__][description]" placeholder="<?= e(t('contacts.description')) ?>" class="proforma-description" style="flex:2;min-width:160px">
-        <input type="number" name="items[__INDEX__][quantity]" value="1" step="0.01" min="0" placeholder="<?= e(t('proformas.qty')) ?>" style="width:90px">
-        <input type="number" name="items[__INDEX__][unit_price]" value="0" step="0.01" min="0" placeholder="<?= e(t('proformas.unit_price')) ?>" class="proforma-unit-price" style="width:120px">
-        <select name="items[__INDEX__][discount_type]" style="width:110px">
-            <option value="none"><?= e(t('proformas.discount_none')) ?></option>
-            <option value="percentage"><?= e(t('proformas.discount_percent')) ?></option>
-            <option value="fixed"><?= e(t('proformas.discount_fixed')) ?></option>
-        </select>
-        <input type="number" name="items[__INDEX__][discount_value]" value="0" step="0.01" min="0" style="width:90px">
-        <button type="button" class="link-button remove-row"><?= icon('x') ?><?= e(t('common.remove')) ?></button>
-    </div>
-</template>
 
-<script>
-(function () {
-    var counter = <?= (int) count($rows) + 1000 ?>;
-
-    document.getElementById('add-item').addEventListener('click', function () {
-        var template = document.getElementById('item-row-template');
-        var html = template.innerHTML.split('__INDEX__').join(String(counter++));
-        var wrapper = document.createElement('div');
-        wrapper.innerHTML = html.trim();
-        document.getElementById('item-rows').appendChild(wrapper.firstElementChild);
-    });
-
-    document.addEventListener('click', function (e) {
-        if (e.target.classList.contains('remove-row')) {
-            var rows = document.querySelectorAll('.proforma-item-row');
-            if (rows.length > 1) {
-                e.target.closest('.proforma-item-row').remove();
-            }
-        }
-    });
-
-    // Picking a product fills in its name and price — still fully
-    // editable afterward, this is just a convenient starting point.
-    document.addEventListener('change', function (e) {
-        if (e.target.classList.contains('proforma-product-select')) {
-            var row = e.target.closest('.proforma-item-row');
-            var option = e.target.options[e.target.selectedIndex];
-            var descriptionInput = row.querySelector('.proforma-description');
-            var priceInput = row.querySelector('.proforma-unit-price');
-            if (option.value !== '') {
-                descriptionInput.value = option.dataset.name || '';
-                priceInput.value = option.dataset.price || '0';
-            }
-        }
-    });
-})();
-</script>

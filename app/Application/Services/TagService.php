@@ -6,6 +6,7 @@ namespace App\Application\Services;
 
 use App\Infrastructure\Repositories\TagRepository;
 use App\Infrastructure\Validation\Validator;
+use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 
 final class TagService
@@ -39,14 +40,31 @@ final class TagService
         $this->timeline->record($type, $id, 'tag_added', "Tagged \"{$tag['name']}\"", $actorUserId);
     }
 
+    /**
+     * taggables has no organization_id, so the tag itself (tenant-scoped
+     * lookup) is the isolation boundary: a tag outside the caller's
+     * organization is never detached — not even from its own records.
+     */
     public function detach(string $type, int $id, int $tagId, int $actorUserId): void
     {
         $tag = $this->tags->findById($tagId);
-        $this->tags->detach($tagId, $type, $id);
 
-        if ($tag !== null) {
-            $this->timeline->record($type, $id, 'tag_removed', "Removed tag \"{$tag['name']}\"", $actorUserId);
+        if ($tag === null) {
+            return;
         }
+
+        $this->tags->detach($tagId, $type, $id);
+        $this->timeline->record($type, $id, 'tag_removed', "Removed tag \"{$tag['name']}\"", $actorUserId);
+    }
+
+    /** Route-facing detach: 404 (before any write) unless the tag is the caller's organization's. */
+    public function detachFromSubject(string $type, int $id, int $tagId, int $actorUserId): void
+    {
+        if ($this->tags->findById($tagId) === null) {
+            throw new NotFoundException();
+        }
+
+        $this->detach($type, $id, $tagId, $actorUserId);
     }
 
     /**

@@ -43,6 +43,7 @@ $labelFor = fn (string $type) => match ($type) {
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>
+    <p><a href="/mail/forward/<?= e($msg['id']) ?>" class="btn btn--sm"><?= icon('forward') ?><?= e(t('mail.forward')) ?></a></p>
 </section>
 <?php endforeach; ?>
 
@@ -56,7 +57,8 @@ $labelFor = fn (string $type) => match ($type) {
         <label class="check check--spaced">
             <input type="checkbox" name="notify" value="1"> <?= e(t('mail.notify_checkbox_short')) ?>
         </label>
-        <br>
-        <button type="submit" class="btn btn--primary" style="margin-top:0.5rem"><?= icon('reply') ?><?= e(t('mail.send_reply')) ?></button>
+        <div class="form-actions">
+            <button type="submit" class="btn btn--primary"><?= icon('reply') ?><?= e(t('mail.send_reply')) ?></button>
+        </div>
     </form>
 </section>

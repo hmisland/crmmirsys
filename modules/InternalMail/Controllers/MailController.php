@@ -10,6 +10,7 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Config\Config;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Security\CurrentUser;
@@ -17,6 +18,8 @@ use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\InternalMail\Services\MessageService;
 use Modules\Notification\Services\NotificationDispatchService;
+
+use function App\Infrastructure\Theme\t;
 
 final class MailController extends BaseController
 {
@@ -31,30 +34,73 @@ final class MailController extends BaseController
 
     public function inbox(Request $request): Response
     {
+        $q = trim((string) $request->query('q', ''));
+        $unread = $request->query('unread') === '1';
+        $items = array_filter($this->messages->inbox(CurrentUser::user()), fn ($i) => (!$unread || !$i['is_read']) && $this->matches($q, [$i['subject'] ?? '', $i['sender_name'] ?? '']));
+        [$items, $pagination] = Pagination::slice($items, $request);
+
         return $this->viewWithLayout('mail/inbox', 'layout', [
-            'items' => $this->messages->inbox(CurrentUser::user()),
+            'items' => $items,
+            'pagination' => $pagination,
+            'q' => $q,
+            'unread' => $unread,
         ]);
     }
 
     public function sent(Request $request): Response
     {
+        $q = trim((string) $request->query('q', ''));
+        $items = array_filter($this->messages->sent(CurrentUser::user()), fn ($i) => $this->matches($q, [$i['subject'] ?? '', $i['sender_name'] ?? '']));
+        [$items, $pagination] = Pagination::slice($items, $request);
+
         return $this->viewWithLayout('mail/sent', 'layout', [
-            'items' => $this->messages->sent(CurrentUser::user()),
+            'items' => $items,
+            'pagination' => $pagination,
+            'q' => $q,
         ]);
     }
 
     public function drafts(Request $request): Response
     {
+        $q = trim((string) $request->query('q', ''));
+        $items = array_filter($this->messages->drafts(CurrentUser::user()), fn ($i) => $this->matches($q, [$i['subject'] ?? '', $i['sender_name'] ?? '']));
+        [$items, $pagination] = Pagination::slice($items, $request);
+
         return $this->viewWithLayout('mail/drafts', 'layout', [
-            'items' => $this->messages->drafts(CurrentUser::user()),
+            'items' => $items,
+            'pagination' => $pagination,
+            'q' => $q,
         ]);
     }
 
     public function trash(Request $request): Response
     {
+        $q = trim((string) $request->query('q', ''));
+        $folders = $this->messages->trash(CurrentUser::user());
+        foreach ($folders as $key => $rows) {
+            $folders[$key] = array_values(array_filter($rows, fn ($i) => $this->matches($q, [$i['subject'] ?? '', $i['sender_name'] ?? ''])));
+        }
+
         return $this->viewWithLayout('mail/trash', 'layout', [
-            'folders' => $this->messages->trash(CurrentUser::user()),
+            'folders' => $folders,
+            'q' => $q,
         ]);
+    }
+
+    /** Case-insensitive "contains" over a few text fields; an empty query matches everything. */
+    private function matches(string $q, array $fields): bool
+    {
+        if ($q === '') {
+            return true;
+        }
+
+        foreach ($fields as $field) {
+            if (mb_stripos((string) $field, $q) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function showCompose(Request $request): Response
@@ -75,7 +121,7 @@ final class MailController extends BaseController
             } catch (ValidationException $e) {
                 return $this->composeForm(null, $e->errors, $request->all(), [$linkableType, $linkableId]);
             }
-            Session::setFlash('success', 'Draft saved.');
+            Session::setFlash('success', t('mail.flash.draft_saved'));
 
             return $this->redirect('/mail/drafts/' . $draft['id'] . '/edit');
         }
@@ -86,7 +132,7 @@ final class MailController extends BaseController
             return $this->composeForm(null, $e->errors, $request->all(), [$linkableType, $linkableId]);
         }
 
-        Session::setFlash('success', 'Message sent.');
+        Session::setFlash('success', t('mail.flash.sent'));
 
         $this->maybeNotify($actingUser, array_merge($to, $cc, $bcc), (int) $message['id'], $request->input('notify') === '1');
 
@@ -127,7 +173,7 @@ final class MailController extends BaseController
                 return $this->composeForm($this->messages->findDraft($actingUser, $id), $e->errors, $request->all());
             }
 
-            Session::setFlash('success', 'Message sent.');
+            Session::setFlash('success', t('mail.flash.sent'));
             $this->maybeNotify($actingUser, array_merge($to, $cc, $bcc), (int) $message['id'], $request->input('notify') === '1');
 
             return $this->redirect('/mail/thread/' . $message['id']);
@@ -138,7 +184,7 @@ final class MailController extends BaseController
         } catch (ValidationException $e) {
             return $this->composeForm($this->messages->findDraft($actingUser, $id), $e->errors, $request->all());
         }
-        Session::setFlash('success', 'Draft saved.');
+        Session::setFlash('success', t('mail.flash.draft_saved'));
 
         return $this->redirect('/mail/drafts/' . $id . '/edit');
     }
@@ -146,7 +192,7 @@ final class MailController extends BaseController
     public function deleteAttachment(Request $request): Response
     {
         $this->messages->removeAttachment(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Attachment removed.');
+        Session::setFlash('success', t('mail.flash.attachment_removed'));
 
         return $this->redirect($request->input('return_to', '/mail/drafts'));
     }
@@ -168,7 +214,7 @@ final class MailController extends BaseController
     public function deleteDraft(Request $request): Response
     {
         $this->messages->deleteDraft(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Draft deleted.');
+        Session::setFlash('success', t('mail.flash.draft_deleted'));
 
         return $this->redirect('/mail/drafts');
     }
@@ -199,16 +245,57 @@ final class MailController extends BaseController
             $result = $this->messages->reply(CurrentUser::user(), $rootId, (string) $request->input('body', ''), $request->files('attachments'));
             $this->maybeNotify(CurrentUser::user(), $result['recipientIds'], (int) $result['message']['id'], $request->input('notify') === '1');
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not send reply.');
+            Session::setFlash('error', t((string) (array_values($e->errors)[0][0] ?? 'mail.error.reply_failed')));
         }
 
         return $this->redirect('/mail/thread/' . $rootId);
     }
 
+    /** Compose form prefilled with "Fwd:" subject, the quoted original and its attachments (all ticked). */
+    public function showForward(Request $request): Response
+    {
+        $source = $this->messages->forwardSource(CurrentUser::user(), (int) $request->attribute('id'));
+        $original = $source['message'];
+
+        $old = [
+            'subject' => 'Fwd: ' . preg_replace('/^(Fwd: )+/', '', (string) $original['subject']),
+            'body' => "\n\n---------- " . t('mail.forwarded_message') . " ----------\n"
+                . t('mail.from') . ': ' . $source['sender_name'] . "\n"
+                . t('mail.forward_date') . ': ' . $original['created_at'] . "\n"
+                . t('mail.subject') . ': ' . $original['subject'] . "\n\n"
+                . $original['body'],
+            'forward_attachments' => array_column($source['attachments'], 'id'),
+        ];
+
+        return $this->composeForm(null, [], $old, [null, null], [], $source);
+    }
+
+    public function forward(Request $request): Response
+    {
+        $actingUser = CurrentUser::user();
+        $messageId = (int) $request->attribute('id');
+        [$to, $cc, $bcc] = $this->parseRecipients($request);
+        $attachmentIds = array_map('intval', (array) $request->input('forward_attachments', []));
+
+        try {
+            $message = $this->messages->forward($actingUser, $messageId, $to, $cc, $bcc, (string) $request->input('subject', ''), (string) $request->input('body', ''), $attachmentIds, $request->files('attachments'));
+        } catch (ValidationException $e) {
+            $old = $request->all();
+            $old['forward_attachments'] = $attachmentIds;
+
+            return $this->composeForm(null, $e->errors, $old, [null, null], [], $this->messages->forwardSource($actingUser, $messageId));
+        }
+
+        Session::setFlash('success', t('mail.forward_sent'));
+        $this->maybeNotify($actingUser, array_merge($to, $cc, $bcc), (int) $message['id'], $request->input('notify') === '1');
+
+        return $this->redirect('/mail/thread/' . $message['id']);
+    }
+
     public function deleteFromInbox(Request $request): Response
     {
         $this->messages->deleteFromInbox(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Moved to trash.');
+        Session::setFlash('success', t('mail.flash.trashed'));
 
         return $this->redirect('/mail');
     }
@@ -216,7 +303,7 @@ final class MailController extends BaseController
     public function restoreToInbox(Request $request): Response
     {
         $this->messages->restoreToInbox(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Restored.');
+        Session::setFlash('success', t('mail.flash.restored'));
 
         return $this->redirect('/mail/trash');
     }
@@ -224,15 +311,34 @@ final class MailController extends BaseController
     public function deleteFromSent(Request $request): Response
     {
         $this->messages->deleteFromSent(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Moved to trash.');
+        Session::setFlash('success', t('mail.flash.trashed'));
 
         return $this->redirect('/mail/sent');
+    }
+
+    /** Bulk "move to trash" from the inbox/sent/drafts list; returns to the same page. */
+    public function bulkTrash(Request $request, string $folder): Response
+    {
+        $home = ['inbox' => '/mail', 'sent' => '/mail/sent', 'drafts' => '/mail/drafts'][$folder];
+
+        $result = $this->messages->bulkTrash(CurrentUser::user(), $folder, (array) $request->input('ids', []));
+        Session::setFlash(
+            $result['deleted'] > 0 ? 'success' : 'error',
+            t('mail.bulk_summary', ['deleted' => $result['deleted'], 'skipped' => $result['skipped']])
+        );
+
+        $back = (string) $request->input('return_to', $home);
+        if (!str_starts_with($back, '/mail') || str_contains($back, '//')) {
+            $back = $home;
+        }
+
+        return $this->redirect($back);
     }
 
     public function restoreToSent(Request $request): Response
     {
         $this->messages->restoreToSent(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Restored.');
+        Session::setFlash('success', t('mail.flash.restored'));
 
         return $this->redirect('/mail/trash');
     }
@@ -271,7 +377,7 @@ final class MailController extends BaseController
         return [$type, (int) $id];
     }
 
-    private function composeForm(?array $draft, array $errors, array $old, array $linkable = [null, null], array $attachments = []): Response
+    private function composeForm(?array $draft, array $errors, array $old, array $linkable = [null, null], array $attachments = [], ?array $forward = null): Response
     {
         $actingUser = CurrentUser::user();
 
@@ -286,6 +392,7 @@ final class MailController extends BaseController
             'linkableType' => $draft['linkable_type'] ?? $linkable[0],
             'linkableId' => $draft['linkable_id'] ?? $linkable[1],
             'attachments' => $attachments,
+            'forward' => $forward,
         ], $errors === [] ? 200 : 422);
     }
 

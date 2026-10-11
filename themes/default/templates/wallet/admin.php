@@ -46,6 +46,40 @@ use App\Infrastructure\Security\Csrf;
     </div>
 </section>
 
+<?php if ($canGift ?? false): ?>
+<section class="card card--form">
+    <h2><?= e(t('wallet_gift.redeem_title')) ?></h2>
+    <p class="muted"><?= e(t('wallet_gift.redeem_hint')) ?></p>
+    <form method="post" action="/org/wallet/gift/redeem">
+        <?= Csrf::field() ?>
+        <label for="gift_code"><?= e(t('wallet_gift.code')) ?></label>
+        <input type="text" id="gift_code" name="code" required dir="ltr" autocomplete="off" placeholder="GIFT-XXXX-XXXX-XXXX" class="field-md">
+        <button type="submit" class="btn btn--primary"><?= icon('check') ?><?= e(t('wallet_gift.redeem')) ?></button>
+    </form>
+</section>
+
+<section class="card card--form">
+    <h2><?= e(t('wallet_gift.send_title')) ?></h2>
+    <p class="muted"><?= e(t('wallet_gift.send_hint')) ?></p>
+    <form method="post" action="/org/wallet/gift/send">
+        <?= Csrf::field() ?>
+        <label for="gift_recipient"><?= e(t('wallet_gift.recipient')) ?></label>
+        <select id="gift_recipient" name="recipient_user_id" required>
+            <option value=""><?= e(t('wallet_gift.choose_recipient')) ?></option>
+            <?php foreach ($users as $u): ?>
+                <?php if ((int) $u['id'] === (int) \App\Infrastructure\Security\CurrentUser::id() || ($u['status'] ?? 'active') !== 'active') { continue; } ?>
+                <option value="<?= e($u['id']) ?>"><?= e(trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? '')) . ' — ' . $u['email']) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <label for="gift_amount"><?= e(t('wallet.amount')) ?></label>
+        <input type="number" id="gift_amount" name="amount" min="1" step="0.001" required>
+        <label for="gift_note"><?= e(t('wallet_gift.note')) ?></label>
+        <input type="text" id="gift_note" name="note" maxlength="200">
+        <button type="submit" class="btn btn--primary" data-confirm="<?= e(t('wallet_gift.send_confirm')) ?>"><?= icon('send') ?><?= e(t('wallet_gift.send')) ?></button>
+    </form>
+</section>
+<?php endif; ?>
+
 <section class="card card--form">
     <h2><?= e(t('wallet.manual_adjustment')) ?></h2>
     <form method="post" action="/org/wallet/adjust">
@@ -106,6 +140,7 @@ use App\Infrastructure\Security\Csrf;
 
 <section class="card">
     <h2><?= e(t('wallet.org_transactions')) ?></h2>
+    <?php include __DIR__ . '/_ledger-filter.php'; ?>
     <div class="table-responsive">
     <table class="table">
         <thead><tr><th><?= e(t('wallet.date')) ?></th><th><?= e(t('wallet.user')) ?></th><th><?= e(t('wallet.type')) ?></th><th><?= e(t('wallet.amount')) ?></th><th><?= e(t('contacts.description')) ?></th></tr></thead>

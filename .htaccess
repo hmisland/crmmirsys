@@ -10,6 +10,13 @@
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Other domains added to this cPanel account (e.g. mirsys.ir, whose
+    # folder sits inside this one) are separate sites: never send them
+    # into the CRM.
+    RewriteCond %{HTTP_HOST} ^(www\.)?mirsys\.ir$ [NC]
+    RewriteRule ^ - [L]
+
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteRule ^(.*)$ /public/$1 [L]
 </IfModule>

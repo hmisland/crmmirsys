@@ -12,7 +12,9 @@ use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Authorization\Permission;
 use App\Infrastructure\Config\Config;
 use App\Infrastructure\Logging\LoggerInterface;
+use App\Infrastructure\Repositories\RolePermissionRepository;
 use App\Infrastructure\Repositories\RoleRepository;
+use App\Infrastructure\Repositories\UserPermissionGrantRepository;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Security\PasswordHasher;
 use App\Infrastructure\Validation\Validator;
@@ -31,6 +33,8 @@ final class UserManagementService extends BaseService
         private readonly UserRepository $users,
         private readonly RoleRepository $roles,
         private readonly AuthorizationEngine $authorization,
+        private readonly UserPermissionGrantRepository $grants,
+        private readonly RolePermissionRepository $rolePermissions,
     ) {
         parent::__construct($logger, $events);
     }
@@ -111,6 +115,65 @@ final class UserManagementService extends BaseService
         $this->users->updateStatus($targetUserId, $active ? 'active' : 'inactive');
 
         return $this->users->findById($targetUserId);
+    }
+
+    /**
+     * For the team members page: per user, per grantable permission —
+     * 'role' (already comes with their role), 'granted' (individual
+     * grant) or 'none'. Empty when the acting user can't manage grants.
+     *
+     * @return array<int, array<string, string>> user_id => [permission_key => state]
+     */
+    public function permissionGrantsOverview(array $actingUser, array $users): array
+    {
+        if (!$this->canManageGrants($actingUser)) {
+            return [];
+        }
+
+        $grants = $this->grants->allInOrganization((int) $actingUser['organization_id']);
+        $overview = [];
+
+        foreach ($users as $user) {
+            foreach (Permission::USER_GRANTABLE as $key) {
+                $viaRole = $user['role_id'] !== null && $this->rolePermissions->findForRole((int) $user['role_id'], $key) !== null;
+                $overview[(int) $user['id']][$key] = $viaRole
+                    ? 'role'
+                    : (in_array($key, $grants[(int) $user['id']] ?? [], true) ? 'granted' : 'none');
+            }
+        }
+
+        return $overview;
+    }
+
+    public function canManageGrants(array $actingUser): bool
+    {
+        return $this->authorization->can($actingUser, Permission::ROLES_ASSIGN);
+    }
+
+    /**
+     * Grants or revokes one of Permission::USER_GRANTABLE for a single
+     * teammate. The acting admin must hold the permission themselves —
+     * nobody can hand out access they don't have.
+     */
+    public function setPermissionGrant(array $actingUser, int $targetUserId, string $permissionKey, bool $granted): void
+    {
+        $this->authorize($actingUser, Permission::ROLES_ASSIGN);
+
+        if (!in_array($permissionKey, Permission::USER_GRANTABLE, true)) {
+            throw new ValidationException(['permission' => ['This permission cannot be granted individually.']]);
+        }
+
+        $this->authorize($actingUser, $permissionKey);
+        $target = $this->requireSameOrganizationUser($actingUser, $targetUserId);
+        $organizationId = (int) $target['organization_id'];
+
+        if ($granted) {
+            $this->grants->grant($organizationId, $targetUserId, $permissionKey, (int) $actingUser['id']);
+        } else {
+            $this->grants->revoke($organizationId, $targetUserId, $permissionKey);
+        }
+
+        $this->authorization->forgetGrants();
     }
 
     private function authorize(array $actingUser, string $permission): void

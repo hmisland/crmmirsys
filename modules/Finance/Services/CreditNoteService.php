@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\Finance\Services;
 
+use App\Application\Services\TimelineService;
 use App\Core\Exceptions\AuthorizationException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Authorization\Permission;
+use Modules\Finance\AmountInput;
 use Modules\Finance\CreditNoteNumberSeriesRepository;
 use Modules\Finance\CreditNoteRepository;
+use Modules\Finance\DuplicateSubmission;
 use Modules\Finance\InvoiceRepository;
+use Modules\Finance\LockConflict;
+use Modules\Finance\Money;
+use Modules\Finance\SubmissionKeyRepository;
+
+use function App\Infrastructure\Theme\t;
 
 final class CreditNoteService
 {
@@ -21,6 +29,9 @@ final class CreditNoteService
         private readonly InvoiceRepository $invoices,
         private readonly AuthorizationEngine $authorization,
         private readonly FinancialPeriodService $financialPeriods,
+        private readonly SubmissionKeyRepository $submissionKeys = new SubmissionKeyRepository(),
+        // Stage 5.2 (L4): the audit event, written inside the same transaction as the record.
+        private readonly ?TimelineService $timeline = null,
     ) {
     }
 
@@ -60,9 +71,15 @@ final class CreditNoteService
             throw new ValidationException(['reason' => ['A reason is required for every credit note.']]);
         }
 
-        $amount = (string) ($input['amount'] ?? '');
-        if (!is_numeric($amount) || bccomp($amount, '0', 18) <= 0) {
+        // Remediation P3: "1,000" accepted, "1e3" / "abc" / negatives refused (422, not 500).
+        $amount = AmountInput::normalize($input['amount'] ?? '') ?? '';
+        if ($amount === '' || bccomp($amount, '0', 18) <= 0) {
             throw new ValidationException(['amount' => ['Amount must be a positive number.']]);
+        }
+        // Stage 5.2 (L2): at most the invoice currency's money precision (IRR 3) — never truncated.
+        $decimals = Money::decimalsFor((int) $invoice['currency_id']);
+        if (Money::fractionDigits($amount) > $decimals) {
+            throw new ValidationException(['amount' => [t('finance.error.amount_precision', ['max' => $decimals])]]);
         }
 
         $issueDate = (string) ($input['issue_date'] ?? date('Y-m-d'));
@@ -72,40 +89,69 @@ final class CreditNoteService
 
         $organizationId = (int) $actingUser['organization_id'];
 
-        return $this->invoices->transaction(function () use ($organizationId, $actingUser, $invoiceId, $amount, $reason, $issueDate) {
-            // Re-check the creditable amount inside the transaction,
-            // against a fresh read — the same "never trust a
-            // pre-transaction read" discipline as recording a
-            // payment, so two credit notes issued in quick
-            // succession can't both pass a stale check.
-            $lockedInvoice = $this->invoices->lockForUpdate($invoiceId);
-            $alreadyCredited = $this->creditNotes->totalCreditedForInvoice($invoiceId);
-            $creditable = bcsub($lockedInvoice['grand_total'], $alreadyCredited, 8);
+        // Stage 5.2 (L1): submission key first (lock order key → document → period → series).
+        $key = SubmissionKeyRepository::keyFrom($input);
+        try {
+            return LockConflict::guard(fn () => $this->invoices->transaction(function () use ($organizationId, $actingUser, $invoiceId, $amount, $reason, $issueDate, $key) {
+                if ($key !== null && !$this->submissionKeys->claim(SubmissionKeyRepository::SCOPE_CREDIT_NOTE, $key, (int) $actingUser['id'])) {
+                    throw new DuplicateSubmission();
+                }
+                // Re-check the creditable amount inside the transaction,
+                // against a fresh read — the same "never trust a
+                // pre-transaction read" discipline as recording a
+                // payment, so two credit notes issued in quick
+                // succession can't both pass a stale check.
+                $lockedInvoice = $this->invoices->lockForUpdate($invoiceId);
+                // Stage 5.2 (L5): lock order document → period (shared) → number series, the
+                // same in every financial write; close() only ever takes the period row.
+                $this->financialPeriods->assertOpenForWrite($issueDate, 'issue_date', 'This date falls inside a closed financial period.');
+                $alreadyCredited = $this->creditNotes->totalCreditedForInvoice($invoiceId);
+                $creditable = bcsub($lockedInvoice['grand_total'], $alreadyCredited, Money::SCALE);
 
-            if (bccomp($amount, $creditable, 8) > 0) {
-                throw new ValidationException(['amount' => ['This amount is more than what can still be credited (' . $creditable . ') — a credit note cannot exceed the invoice\'s own total, minus any already credited.']]);
-            }
+                if (bccomp($amount, $creditable, Money::SCALE) > 0) {
+                    throw new ValidationException(['amount' => ['This amount is more than what can still be credited (' . rtrim(rtrim($creditable, '0'), '.') . ') — a credit note cannot exceed the invoice\'s own total, minus any already credited.']]);
+                }
 
-            $series = $this->numberSeries->lockForUpdate($organizationId);
-            if ($series === null) {
-                $series = $this->numberSeries->createDefault($organizationId);
-            }
+                $series = $this->numberSeries->lockForUpdate($organizationId);
+                if ($series === null) {
+                    $series = $this->numberSeries->createDefault($organizationId);
+                }
 
-            $sequence = (int) $series['next_sequence'];
-            $creditNoteNumber = $series['prefix'] . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
-            $this->numberSeries->advance($organizationId, $sequence + 1);
+                $sequence = (int) $series['next_sequence'];
+                $creditNoteNumber = $series['prefix'] . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
+                $this->numberSeries->advance($organizationId, $sequence + 1);
 
-            $id = $this->creditNotes->create([
-                'invoice_id' => $invoiceId,
-                'credit_note_number' => $creditNoteNumber,
-                'issue_date' => $issueDate,
-                'reason' => $reason,
-                'amount' => $amount,
-                'issued_by_user_id' => $actingUser['id'],
-            ]);
+                $id = $this->creditNotes->create([
+                    'invoice_id' => $invoiceId,
+                    'credit_note_number' => $creditNoteNumber,
+                    'issue_date' => $issueDate,
+                    'reason' => $reason,
+                    'amount' => $amount,
+                    'issued_by_user_id' => $actingUser['id'],
+                ]);
 
-            return ['id' => $id, 'credit_note_number' => $creditNoteNumber];
-        });
+                if ($key !== null) {
+                    $this->submissionKeys->attach(SubmissionKeyRepository::SCOPE_CREDIT_NOTE, $key, $id);
+                }
+                // Stage 5.2 (L4): same transaction as the credit note (and its number).
+                $this->timeline?->record(
+                    'invoice',
+                    $invoiceId,
+                    'credit_note_issued',
+                    'Credit note ' . $creditNoteNumber . ': ' . Money::plain($amount) . ', dated ' . $issueDate
+                        . ' — credited ' . Money::plain($alreadyCredited) . ' → ' . Money::plain(bcadd($alreadyCredited, $amount, Money::SCALE)),
+                    (int) $actingUser['id']
+                );
+
+                return ['id' => $id, 'credit_note_number' => $creditNoteNumber];
+            }));
+        } catch (DuplicateSubmission) {
+            $original = $this->submissionKeys->original(SubmissionKeyRepository::SCOPE_CREDIT_NOTE, (string) $key, (int) $actingUser['id'])
+                ?? throw new ValidationException(['submission_key' => [t('finance.error.already_submitted')]]);
+            $row = array_values(array_filter($this->creditNotes->forInvoice($invoiceId), fn (array $c) => (int) $c['id'] === $original))[0] ?? null;
+
+            return ['id' => $original, 'credit_note_number' => $row['credit_note_number'] ?? null, 'duplicate' => true];
+        }
     }
 
     private function requireInvoice(int $id): array

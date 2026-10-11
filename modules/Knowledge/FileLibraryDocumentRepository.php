@@ -31,13 +31,10 @@ final class FileLibraryDocumentRepository extends TenantScopedRepository
         foreach (array_values($ids) as $i => $id) {
             $key = "id{$i}";
             $placeholders[] = ":{$key}";
-            $params[$key] = $id;
+            $params[$key] = (int) $id;
         }
 
-        return $this->tenantFindMany(
-            'SELECT * FROM file_library_documents WHERE id IN (' . implode(',', $placeholders) . ') ORDER BY created_at DESC',
-            $params
-        );
+        return $this->listWhere('file_library_documents.id IN (' . implode(',', $placeholders) . ')', $params);
     }
 
     /**
@@ -47,16 +44,52 @@ final class FileLibraryDocumentRepository extends TenantScopedRepository
      */
     public function all(): array
     {
+        return $this->listWhere('1 = 1', []);
+    }
+
+    /** Documents directly inside $folderId (NULL = top level). */
+    public function inFolder(?int $folderId): array
+    {
+        return $folderId === null
+            ? $this->listWhere('file_library_documents.folder_id IS NULL', [])
+            : $this->listWhere('file_library_documents.folder_id = :folder_id', ['folder_id' => $folderId]);
+    }
+
+    /** Title / original filename contains $term, across all folders. */
+    public function searchByName(string $term): array
+    {
+        $like = '%' . addcslashes($term, '%_\\') . '%';
+
+        return $this->listWhere(
+            '(file_library_documents.title LIKE :term1 OR file_library_documents.original_filename LIKE :term2)',
+            ['term1' => $like, 'term2' => $like]
+        );
+    }
+
+    public function hasDocumentsInFolder(int $folderId): bool
+    {
+        return $this->tenantFindOne('SELECT id FROM file_library_documents WHERE folder_id = :folder_id LIMIT 1', ['folder_id' => $folderId]) !== null;
+    }
+
+    public function moveToFolder(int $id, ?int $folderId): void
+    {
+        $this->tenantUpdate(['folder_id' => $folderId], 'id = :id', ['id' => $id]);
+    }
+
+    private function listWhere(string $condition, array $params): array
+    {
         $orgScoped = !SuperAdminContext::isActive();
-        $where = $orgScoped ? 'file_library_documents.organization_id = :org_id' : '1 = 1';
-        $params = $orgScoped ? ['org_id' => OrganizationContext::id()] : [];
+        $where = ($orgScoped ? 'file_library_documents.organization_id = :org_id AND ' : '') . $condition;
+        if ($orgScoped) {
+            $params['org_id'] = OrganizationContext::id();
+        }
 
         return $this->findMany(
             "SELECT file_library_documents.*,
                 (SELECT CONCAT(first_name, ' ', COALESCE(last_name, '')) FROM users WHERE users.id = file_library_documents.uploaded_by_user_id) AS uploader_name
              FROM file_library_documents
              WHERE {$where}
-             ORDER BY file_library_documents.created_at DESC",
+             ORDER BY file_library_documents.created_at DESC, file_library_documents.id DESC",
             $params
         );
     }

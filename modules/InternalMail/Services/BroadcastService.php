@@ -59,7 +59,7 @@ final class BroadcastService
         }
 
         if ($recipientIds === []) {
-            throw new ValidationException(['recipients' => ['No other team members to send to yet.']]);
+            throw new ValidationException(['recipients' => ['mail.error.no_team_members']]);
         }
 
         return $this->messages->compose($actingUser, $recipientIds, [], [], $subject, $body);
@@ -71,10 +71,10 @@ final class BroadcastService
         $this->authorize($actingUser, Permission::MAIL_BROADCAST_CUSTOMERS);
 
         if (trim($subject) === '') {
-            throw new ValidationException(['subject' => ['Subject is required.']]);
+            throw new ValidationException(['subject' => ['mail.error.subject_required']]);
         }
         if (trim($body) === '') {
-            throw new ValidationException(['body' => ['Message cannot be empty.']]);
+            throw new ValidationException(['body' => ['mail.error.body_required']]);
         }
 
         $contacts = $this->contacts->search([]);
@@ -96,7 +96,7 @@ final class BroadcastService
         }
 
         if ($sent === 0 && $failed === 0) {
-            throw new ValidationException(['recipients' => ['No contacts with a valid email address yet.']]);
+            throw new ValidationException(['recipients' => ['mail.error.no_customer_emails']]);
         }
 
         $this->broadcastLog->create((int) $actingUser['id'], trim($subject), trim($body), $sent, $failed);

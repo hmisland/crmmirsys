@@ -8,6 +8,7 @@ use App\Application\Controllers\BaseController;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Repositories\CompanyRepository;
 use App\Infrastructure\Repositories\ContactRepository;
 use App\Infrastructure\Repositories\UserRepository;
@@ -49,10 +50,16 @@ final class DealController extends BaseController
 
     public function index(Request $request): Response
     {
-        $deals = $this->deals->list(CurrentUser::user(), ['search' => (string) $request->query('q', '')]);
+        $status = in_array($request->query('status'), ['open', 'won', 'lost'], true) ? (string) $request->query('status') : '';
+        [$deals, $pagination] = Pagination::slice($this->deals->list(CurrentUser::user(), [
+            'search' => trim((string) $request->query('q', '')),
+            'status' => $status,
+        ]), $request);
 
         return $this->viewWithLayout('sales/index', 'layout', [
             'deals' => $deals,
+            'pagination' => $pagination,
+            'status' => $status,
             'q' => (string) $request->query('q', ''),
         ]);
     }
@@ -111,6 +118,7 @@ final class DealController extends BaseController
             'contact' => $contact,
             'company' => $company,
             'tasks' => $this->tasks->forSubject('deal', $id),
+            'taskCan' => $this->tasks->capabilities(CurrentUser::user()),
             'users' => $this->users->findAllInOrganization((int) CurrentUser::user()['organization_id']),
         ]);
     }

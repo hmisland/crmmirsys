@@ -9,6 +9,7 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Authorization\Permission;
+use App\Infrastructure\Repositories\CompanyCategoryRepository;
 use App\Infrastructure\Repositories\CompanyRepository;
 use App\Infrastructure\Repositories\ContactRepository;
 use App\Infrastructure\Validation\Validator;
@@ -20,6 +21,7 @@ final class CompanyService
         private readonly ContactRepository $contacts,
         private readonly TimelineService $timeline,
         private readonly AuthorizationEngine $authorization,
+        private readonly CompanyCategoryRepository $categories = new CompanyCategoryRepository(),
     ) {
     }
 
@@ -28,6 +30,21 @@ final class CompanyService
         $this->authorize($actingUser, Permission::COMPANIES_VIEW);
 
         return $this->companies->search($filters);
+    }
+
+    /** One page of list() — for the paginated list view. */
+    public function listPage(array $actingUser, array $filters, int $limit, int $offset): array
+    {
+        $this->authorize($actingUser, Permission::COMPANIES_VIEW);
+
+        return $this->companies->search($filters, $limit, $offset);
+    }
+
+    public function count(array $actingUser, array $filters = []): int
+    {
+        $this->authorize($actingUser, Permission::COMPANIES_VIEW);
+
+        return $this->companies->countSearch($filters);
     }
 
     public function find(array $actingUser, int $id): array
@@ -82,33 +99,82 @@ final class CompanyService
         $this->companies->deleteCompany($id);
     }
 
+    /**
+     * On create, empty fields are simply left out. On update, only fields
+     * the form actually sent are written — an empty one as NULL, so
+     * clearing a field really clears it, while a partial form (e.g. the
+     * custom-fields form on the company page) leaves the rest untouched.
+     */
     private function fieldsFromInput(array $input, ?int $ownerIdIfNew): array
     {
-        $fields = array_filter([
+        $fields = [
             'name' => trim((string) $input['name']),
+            'category_id' => $this->categoryIdFromInput($input),
+            'brand' => $this->orNull($input, 'brand', 150),
+            'national_id' => $this->orNull($input, 'national_id', 30),
+            'economic_code' => $this->orNull($input, 'economic_code', 30),
+            'registration_number' => $this->orNull($input, 'registration_number', 50),
+            'ceo_name' => $this->orNull($input, 'ceo_name', 150),
             'website' => $this->orNull($input, 'website'),
             'email' => $this->orNull($input, 'email'),
-            'phone' => $this->orNull($input, 'phone'),
+            'phone' => $this->orNull($input, 'phone', 50),
             'address' => $this->orNull($input, 'address'),
-            'country' => $this->orNull($input, 'country'),
-            'city' => $this->orNull($input, 'city'),
-            'industry' => $this->orNull($input, 'industry'),
+            'country' => $this->orNull($input, 'country', 100),
+            'city' => $this->orNull($input, 'city', 100),
+            'industry' => $this->orNull($input, 'industry', 100),
             'employees_count' => isset($input['employees_count']) && $input['employees_count'] !== ''
-                ? (int) $input['employees_count'] : null,
-        ], fn ($v) => $v !== null);
+                ? max(0, (int) $input['employees_count']) : null,
+            'description' => $this->orNull($input, 'description', 65000),
+        ];
 
         if ($ownerIdIfNew !== null) {
+            $fields = array_filter($fields, fn ($v) => $v !== null);
             $fields['owner_id'] = $ownerIdIfNew;
+
+            return $fields;
         }
 
-        return $fields;
+        return array_intersect_key($fields, $input + ['name' => true]);
     }
 
-    private function orNull(array $input, string $key): ?string
+    /** A category of this organization (tenant-scoped lookup), or null. */
+    private function categoryIdFromInput(array $input): ?int
+    {
+        $id = (int) ($input['category_id'] ?? 0);
+
+        return $id > 0 && $this->categories->findById($id) !== null ? $id : null;
+    }
+
+    /**
+     * Links existing contacts to the company. Each contact needs the
+     * acting user's edit permission on that contact; others are skipped.
+     *
+     * @param array<int|string, mixed> $contactIds
+     * @return array{assigned: int, skipped: int}
+     */
+    public function assignContacts(array $actingUser, int $companyId, array $contactIds): array
+    {
+        $assigned = 0;
+        $skipped = 0;
+        foreach (array_unique(array_filter(array_map('intval', $contactIds))) as $contactId) {
+            $contact = $this->contacts->findById($contactId);
+            if ($contact === null || !$this->authorization->can($actingUser, Permission::CONTACTS_EDIT, $contact)) {
+                $skipped++;
+                continue;
+            }
+            $this->contacts->updateContact($contactId, ['company_id' => $companyId]);
+            $this->timeline->record('contact', $contactId, 'updated', 'Linked to a company', (int) $actingUser['id']);
+            $assigned++;
+        }
+
+        return ['assigned' => $assigned, 'skipped' => $skipped];
+    }
+
+    private function orNull(array $input, string $key, int $maxLength = 255): ?string
     {
         $value = isset($input[$key]) ? trim((string) $input[$key]) : '';
 
-        return $value === '' ? null : $value;
+        return $value === '' ? null : mb_substr($value, 0, $maxLength);
     }
 
     private function authorize(array $actingUser, string $permission): void
@@ -134,5 +200,50 @@ final class CompanyService
         }
 
         return $company;
+    }
+
+    /**
+     * Deletes every id the acting user may delete; the rest are skipped
+     * (not theirs, already gone, or blocked by a business rule) — each
+     * one goes through delete() and its record-level permission check.
+     *
+     * @param array<int|string, mixed> $ids
+     * @return array{deleted: int, skipped: int}
+     */
+    public function bulkDelete(array $actingUser, array $ids): array
+    {
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach (array_slice(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)), 0, 500) as $id) {
+            try {
+                $this->delete($actingUser, $id);
+                $deleted++;
+            } catch (AuthorizationException | NotFoundException | ValidationException) {
+                $skipped++;
+            }
+        }
+
+        return ['deleted' => $deleted, 'skipped' => $skipped];
+    }
+
+    /**
+     * Per-row edit/delete flags for a list page — the same record-level
+     * checks update()/delete() enforce (organization scope: every row;
+     * own scope: only the user's own rows).
+     *
+     * @return array<int, array{edit: bool, delete: bool}>
+     */
+    public function rowPermissions(array $actingUser, array $rows): array
+    {
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['id']] = [
+                'edit' => $this->authorization->can($actingUser, Permission::COMPANIES_EDIT, $row),
+                'delete' => $this->authorization->can($actingUser, Permission::COMPANIES_DELETE, $row),
+            ];
+        }
+
+        return $result;
     }
 }

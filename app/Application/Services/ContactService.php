@@ -48,6 +48,21 @@ final class ContactService
         return $this->contacts->search($filters);
     }
 
+    /** One page of list() plus the total row count, for the paginated contacts list. */
+    public function listPage(array $actingUser, array $filters, int $limit, int $offset): array
+    {
+        $this->authorize($actingUser, Permission::CONTACTS_VIEW);
+
+        return $this->contacts->search($filters, $limit, $offset);
+    }
+
+    public function count(array $actingUser, array $filters): int
+    {
+        $this->authorize($actingUser, Permission::CONTACTS_VIEW);
+
+        return $this->contacts->countSearch($filters);
+    }
+
     public function find(array $actingUser, int $id): array
     {
         $this->authorize($actingUser, Permission::CONTACTS_VIEW);
@@ -293,6 +308,9 @@ final class ContactService
             'company_id' => isset($input['company_id']) && $input['company_id'] !== '' ? (int) $input['company_id'] : null,
             'category_id' => isset($input['category_id']) && $input['category_id'] !== '' ? (int) $input['category_id'] : null,
             'position' => $this->orNull($input, 'position'),
+            'national_id' => $this->orNull($input, 'national_id'),
+            'economic_code' => $this->orNull($input, 'economic_code'),
+            'postal_code' => $this->orNull($input, 'postal_code'),
             'address' => $this->orNull($input, 'address'),
             'country' => $this->orNull($input, 'country'),
             'city' => $this->orNull($input, 'city'),
@@ -332,5 +350,50 @@ final class ContactService
         }
 
         return $contact;
+    }
+
+    /**
+     * Deletes every id the acting user may delete; the rest are skipped
+     * (not theirs, already gone, or blocked by a business rule) — each
+     * one goes through delete() and its record-level permission check.
+     *
+     * @param array<int|string, mixed> $ids
+     * @return array{deleted: int, skipped: int}
+     */
+    public function bulkDelete(array $actingUser, array $ids): array
+    {
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach (array_slice(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)), 0, 500) as $id) {
+            try {
+                $this->delete($actingUser, $id);
+                $deleted++;
+            } catch (AuthorizationException | NotFoundException | ValidationException) {
+                $skipped++;
+            }
+        }
+
+        return ['deleted' => $deleted, 'skipped' => $skipped];
+    }
+
+    /**
+     * Per-row edit/delete flags for a list page — the same record-level
+     * checks update()/delete() enforce (organization scope: every row;
+     * own scope: only the user's own rows).
+     *
+     * @return array<int, array{edit: bool, delete: bool}>
+     */
+    public function rowPermissions(array $actingUser, array $rows): array
+    {
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['id']] = [
+                'edit' => $this->authorization->can($actingUser, Permission::CONTACTS_EDIT, $row),
+                'delete' => $this->authorization->can($actingUser, Permission::CONTACTS_DELETE, $row),
+            ];
+        }
+
+        return $result;
     }
 }

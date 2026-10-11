@@ -85,6 +85,25 @@ final class NotificationCreditService
     }
 
     /**
+     * Gives back an amount deducted for a send that then failed at the
+     * provider (recorded as a 'refund' transaction).
+     */
+    public function refund(int $organizationId, string $amount, string $note): void
+    {
+        if (bccomp($amount, '0', 18) <= 0) {
+            return;
+        }
+
+        $this->credits->ensureRow($organizationId);
+        $this->credits->transaction(function () use ($organizationId, $amount, $note) {
+            $current = $this->credits->lockForUpdate($organizationId);
+            $newBalance = bcadd($current['balance'] ?? '0', $amount, 18);
+            $this->credits->updateBalance($organizationId, $newBalance);
+            $this->transactions->record('refund', $amount, $newBalance, 'sms', null, $note, null);
+        });
+    }
+
+    /**
      * Deducts the cost of ONE notification if there's enough balance;
      * returns false (deducting nothing) if there isn't — the caller
      * treats that as "skip this send," never as an error that stops

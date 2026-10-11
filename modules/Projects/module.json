@@ -1,0 +1,9 @@
+{
+    "key": "projects",
+    "name": "Projects",
+    "version": "0.1.0",
+    "type": "addon",
+    "is_core": false,
+    "dependencies": [],
+    "bootstrap": "Modules\\Projects\\ProjectsModule"
+}

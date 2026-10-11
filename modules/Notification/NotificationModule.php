@@ -23,11 +23,13 @@ use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Notification\Controllers\NotificationController;
 use Modules\Notification\Controllers\NotificationPlatformController;
 use Modules\Notification\Gateways\BaleGateway;
-use Modules\Notification\Gateways\NullSmsGateway;
+use Modules\Notification\Gateways\SmsServiceGateway;
+use App\Application\Services\SmsService;
 use Modules\Notification\Services\NotificationCreditService;
 use Modules\Notification\Services\NotificationDispatchService;
 use Modules\Notification\Services\NotificationRecipientService;
 use Modules\Notification\Services\NotificationSettingsService;
+use Modules\Notification\Services\NotificationSmsBilling;
 use Modules\Wallet\Services\WalletService;
 use Modules\Wallet\Services\WalletSettingsService;
 use Modules\Wallet\WalletLedgerRepository;
@@ -90,7 +92,12 @@ final class NotificationModule implements ModuleInterface
 
         $baleConfig = (array) Config::get('notifications.bale', []);
         $bale = new BaleGateway((string) ($baleConfig['bot_token'] ?? ''));
-        $sms = new NullSmsGateway();
+        // SMS goes through the core SmsService (Kavenegar). This module
+        // also pays for every platform-account SMS in the app, from the
+        // organization's prepaid credit.
+        $smsService = $container->make(SmsService::class);
+        $smsService->setBilling(new NotificationSmsBilling($creditService, new NotificationPlatformSettingsRepository()));
+        $sms = new SmsServiceGateway($smsService);
 
         $this->dispatchService = new NotificationDispatchService(
             new NotificationRecipientRepository(),

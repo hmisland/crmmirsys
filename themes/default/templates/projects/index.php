@@ -1,0 +1,83 @@
+<?php
+/** @var array $projects */
+/** @var array<int, array{edit: bool, delete: bool, reason: string}> $rowActions */
+/** @var \App\Infrastructure\Pagination\Pagination $pagination */
+/** @var string $q */
+/** @var string $status */
+/** @var bool $mine */
+/** @var array $partyFilter */
+/** @var bool $canCreate */
+/** @var bool $canManageSettings */
+/** @var \App\Infrastructure\Localization\LocaleFormatter $fmt */
+
+use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\icon;
+
+include __DIR__ . '/_helpers.php';
+?>
+<section class="card">
+    <h1><?= e(t('projects.title')) ?></h1>
+
+    <?php if ($canCreate || $canManageSettings): ?>
+    <div class="actions">
+        <?php if ($canCreate): ?>
+            <a href="/projects/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('projects.new')) ?></a>
+        <?php endif; ?>
+        <?php if ($canManageSettings): ?>
+            <a href="/projects/settings" class="btn"><?= icon('settings') ?><?= e(t('projects.settings_title')) ?></a>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <form method="get" action="/projects" class="inline-form-row filter-bar">
+        <?php foreach ($partyFilter as $partyKey => $partyId): ?>
+            <input type="hidden" name="<?= e($partyKey) ?>" value="<?= e($partyId) ?>">
+        <?php endforeach; ?>
+        <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('projects.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <select name="status" aria-label="<?= e(t('projects.status')) ?>">
+            <option value=""><?= e(t('projects.all_statuses')) ?></option>
+            <?php foreach (['draft', 'planned', 'active', 'on_hold', 'completed', 'cancelled'] as $s): ?>
+                <option value="<?= e($s) ?>" <?= $status === $s ? 'selected' : '' ?>><?= e(t('projects.status.' . $s)) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <label class="check"><input type="checkbox" name="mine" value="1" <?= $mine ? 'checked' : '' ?>> <?= e(t('projects.only_mine')) ?></label>
+        <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
+        <?php if ($pagination->filterQuery() !== []): ?><a href="/projects" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
+    </form>
+
+    <?php include __DIR__ . '/../partials/pagination.php'; ?>
+
+    <div class="table-responsive">
+    <table class="table">
+        <thead><tr>
+            <th><?= e(t('projects.name')) ?></th>
+            <th><?= e(t('projects.party')) ?></th>
+            <th><?= e(t('projects.manager')) ?></th>
+            <th><?= e(t('projects.status')) ?></th>
+            <th><?= e(t('projects.period')) ?></th>
+            <th><span class="visually-hidden"><?= e(t('contacts.row_actions')) ?></span></th>
+        </tr></thead>
+        <tbody>
+        <?php foreach ($projects as $p): ?>
+            <?php $actions = $rowActions[(int) $p['id']] ?? ['edit' => false, 'delete' => false]; ?>
+            <tr>
+                <td>
+                    <a href="/projects/<?= e($p['id']) ?>"><?= e($p['name']) ?></a>
+                    <div class="muted text-sm"><span class="ltr"><?= e($p['code']) ?></span></div>
+                </td>
+                <td><?= e($projectParty($p)) ?></td>
+                <td><?= e(trim((string) ($p['owner_name'] ?? '')) ?: '—') ?></td>
+                <td><?= badge(t('projects.status.' . $p['status']), $projectTone($p['status'])) ?></td>
+                <td class="nowrap"><?= e($fmt->date($p['start_date'])) ?> – <?= e($fmt->date($p['expected_end_date'])) ?></td>
+                <td class="actions-cell"><?php $editUrl = '/projects/' . $p['id'] . '/edit'; $deleteUrl = '/projects/' . $p['id'] . '/delete'; include __DIR__ . '/../partials/row-actions.php'; ?></td>
+            </tr>
+        <?php endforeach; ?>
+        <?php if ($projects === []): ?>
+            <tr><td colspan="6" class="muted"><?= e(t('projects.empty')) ?></td></tr>
+        <?php endif; ?>
+        </tbody>
+    </table>
+    </div>
+</section>

@@ -2,13 +2,16 @@
 /** @var array $organization */
 /** @var array $errors */
 /** @var array<string, bool> $enabledModules */
+/** @var array $old */
+/** @var bool $canEdit */
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
-$fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
+$fieldError = fn (string $field) => isset($errors[$field]) ? t($errors[$field][0]) : null;
+$profileValue = fn (string $field): string => (string) ($old[$field] ?? $organization[$field] ?? '');
 ?>
 <div class="page-head">
     <div>
@@ -62,6 +65,15 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
     </section>
     <?php endif; ?>
 
+    <?php if ($smsAvailable ?? false): ?>
+    <section class="card settings-tile">
+        <h2><span class="kpi__icon kpi__icon--info"><?= icon('message') ?></span><?= e(t('org_sms.title')) ?></h2>
+        <div class="settings-tile__links">
+            <a href="/org/sms"><?= icon('settings') ?><?= e(t('org_sms.settings_link')) ?></a>
+        </div>
+    </section>
+    <?php endif; ?>
+
     <?php if ($enabledModules['notifications']): ?>
     <section class="card settings-tile">
         <h2><span class="kpi__icon kpi__icon--warning"><?= icon('bell') ?></span><?= e(t('notif.admin_title')) ?></h2>
@@ -96,8 +108,12 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
 <section class="card card--form">
     <h2><?= e(t('org.general')) ?></h2>
 
-    <form method="post" action="/org/settings">
+    <?php if (!$canEdit): ?>
+        <p class="locked"><?= icon('lock') ?><?= e(t('org.settings_read_only')) ?></p>
+    <?php endif; ?>
+    <form method="post" action="/org/settings" enctype="multipart/form-data">
         <?= Csrf::field() ?>
+        <fieldset class="form-stack fieldset--plain"<?= $canEdit ? '' : ' disabled' ?>>
 
         <label for="name"><?= e(t('common.name')) ?></label>
         <input type="text" id="name" name="name" value="<?= e($organization['name']) ?>" required>
@@ -109,11 +125,55 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
             <option value="fa" <?= $organization['default_language'] === 'fa' ? 'selected' : '' ?>>فارسی (Persian)</option>
             <option value="ar" <?= $organization['default_language'] === 'ar' ? 'selected' : '' ?>>العربية (Arabic)</option>
             <option value="tr" <?= $organization['default_language'] === 'tr' ? 'selected' : '' ?>>Türkçe (Turkish)</option>
+            <option value="fr" <?= $organization['default_language'] === 'fr' ? 'selected' : '' ?>>Français (French)</option>
         </select>
 
         <label for="default_timezone"><?= e(t('org.default_timezone')) ?></label>
         <input type="text" id="default_timezone" name="default_timezone" value="<?= e($organization['default_timezone']) ?>">
 
-        <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('profile.save_changes')) ?></button>
+        <h3 class="form-section-title"><?= e(t('org.seller_profile')) ?></h3>
+        <p class="field-hint"><?= e(t('org.seller_profile_hint')) ?></p>
+
+        <div class="form-grid">
+            <div>
+                <label for="national_id"><?= e(t('org.national_id')) ?></label>
+                <input type="text" id="national_id" name="national_id" value="<?= e($profileValue('national_id')) ?>" maxlength="30" dir="ltr">
+            </div>
+            <div>
+                <label for="economic_code"><?= e(t('org.economic_code')) ?></label>
+                <input type="text" id="economic_code" name="economic_code" value="<?= e($profileValue('economic_code')) ?>" maxlength="30" dir="ltr">
+            </div>
+            <div>
+                <label for="registration_number"><?= e(t('org.registration_number')) ?></label>
+                <input type="text" id="registration_number" name="registration_number" value="<?= e($profileValue('registration_number')) ?>" maxlength="50" dir="ltr">
+            </div>
+            <div>
+                <label for="phone"><?= e(t('common.phone')) ?></label>
+                <input type="tel" id="phone" name="phone" value="<?= e($profileValue('phone')) ?>" maxlength="50">
+            </div>
+            <div>
+                <label for="postal_code"><?= e(t('org.postal_code')) ?></label>
+                <input type="text" id="postal_code" name="postal_code" value="<?= e($profileValue('postal_code')) ?>" maxlength="20" dir="ltr">
+            </div>
+        </div>
+
+        <label for="address"><?= e(t('org.address')) ?></label>
+        <textarea id="address" name="address" rows="2" maxlength="500"><?= e($profileValue('address')) ?></textarea>
+
+        <label for="logo"><?= e(t('org.logo')) ?></label>
+        <?php if (!empty($organization['logo_path'])): ?>
+            <div class="logo-preview">
+                <img src="/org/logo?v=<?= e(md5((string) $organization['logo_path'])) ?>" alt="<?= e(t('org.logo')) ?>">
+                <label class="check"><input type="checkbox" name="remove_logo" value="1"> <?= e(t('org.remove_logo')) ?></label>
+            </div>
+        <?php endif; ?>
+        <input type="file" id="logo" name="logo" accept="image/png,image/jpeg">
+        <?php if ($fieldError('logo')): ?><div class="field-error"><?= e($fieldError('logo')) ?></div><?php endif; ?>
+        <p class="field-hint"><?= e(t('org.logo_hint')) ?></p>
+
+        <?php if ($canEdit): ?>
+            <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('profile.save_changes')) ?></button>
+        <?php endif; ?>
+        </fieldset>
     </form>
 </section>

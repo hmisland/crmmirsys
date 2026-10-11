@@ -9,6 +9,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Repositories\RolePermissionRepository;
+use App\Infrastructure\Repositories\UserPermissionGrantRepository;
 use App\Infrastructure\Security\CurrentUser;
 
 /**
@@ -39,7 +40,7 @@ final class RbacMiddleware implements MiddlewareInterface
             throw new AuthorizationException();
         }
 
-        $engine = new AuthorizationEngine(new RolePermissionRepository());
+        $engine = new AuthorizationEngine(new RolePermissionRepository(), new UserPermissionGrantRepository());
 
         if (!$engine->can($user, $this->permission)) {
             throw new AuthorizationException();

@@ -6,6 +6,7 @@ namespace Modules\Followups\Listeners;
 
 use App\Core\Events\EventInterface;
 use App\Core\Events\ListenerInterface;
+use App\Infrastructure\Repositories\UserRepository;
 use Modules\Followups\FollowUpReminderRepository;
 use Modules\Followups\FollowUpRuleExecutionRepository;
 use Modules\Followups\FollowUpRuleRepository;
@@ -31,6 +32,7 @@ final class FollowUpRuleEngineListener implements ListenerInterface
         private readonly FollowUpRuleExecutionRepository $executions,
         private readonly FollowUpReminderRepository $reminders,
         private readonly FollowUpService $followUps,
+        private readonly UserRepository $users = new UserRepository(),
     ) {
     }
 
@@ -98,6 +100,17 @@ final class FollowUpRuleEngineListener implements ListenerInterface
             'specific_user' => isset($action['assign_to_user_id']) ? (int) $action['assign_to_user_id'] : $event->actorUserId,
             default => $event->actorUserId,
         };
+
+        // D1 (docs/hardening-patch-design.md): a rule's fixed assignee must be an
+        // active user of the EVENT's organization; anything else (another
+        // organization's user, unknown, deactivated) falls back to the actor —
+        // the same default as "deal_owner". Rule data itself is not changed.
+        if ($ownerId !== null && $ownerId !== $event->actorUserId) {
+            $user = $this->users->findById($ownerId);
+            if ($user === null || (int) $user['organization_id'] !== $event->organizationId || ($user['status'] ?? '') !== 'active') {
+                $ownerId = $event->actorUserId;
+            }
+        }
 
         if ($ownerId === null) {
             // No sensible owner to assign — skip rather than violate

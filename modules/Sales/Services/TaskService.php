@@ -25,6 +25,8 @@ final class TaskService
 {
     private const ALLOWED_RELATED_TYPES = ['contact', 'company', 'lead', 'deal'];
 
+    /** Workflow order (also the order shown in the UI). Archiving is a separate flag, not a status. */
+    public const STATUSES = ['pending', 'in_progress', 'on_hold', 'completed', 'rejected', 'cancelled'];
     public function __construct(
         private readonly TaskRepository $tasks,
         private readonly NoteService $notes,
@@ -41,6 +43,31 @@ final class TaskService
     public function upcomingForUser(int $userId): array
     {
         return $this->tasks->upcomingForUser($userId);
+    }
+
+    /** "My tasks": all statuses (finished ones stay visible), or the archive. */
+    public function forUser(array $actingUser, bool $archived, ?string $status = null): array
+    {
+        $this->authorize($actingUser, Permission::TASKS_VIEW);
+
+        return $this->tasks->forUser((int) $actingUser['id'], $archived, in_array($status, self::STATUSES, true) ? $status : null);
+    }
+
+    /**
+     * Blanket (list-level) capabilities for templates, so a button is
+     * only shown when the action would be allowed. The services still
+     * re-check every action against the specific task.
+     *
+     * @return array{change_status: bool, archive: bool, delete: bool, edit: bool}
+     */
+    public function capabilities(array $actingUser): array
+    {
+        return [
+            'change_status' => $this->authorization->can($actingUser, Permission::TASKS_CHANGE_STATUS),
+            'archive' => $this->authorization->can($actingUser, Permission::TASKS_ARCHIVE),
+            'delete' => $this->authorization->can($actingUser, Permission::TASKS_DELETE),
+            'edit' => $this->authorization->can($actingUser, Permission::TASKS_EDIT),
+        ];
     }
 
     public function find(array $actingUser, int $id): array
@@ -120,17 +147,51 @@ final class TaskService
         return $this->tasks->findById($id);
     }
 
+    /** The list checkbox: done ↔ pending. The task stays in the list (struck through when done). */
     public function toggleComplete(array $actingUser, int $id): array
     {
         $task = $this->requireTask($id);
-        $this->authorizeRecord($actingUser, Permission::TASKS_EDIT, $task);
 
-        $completing = $task['status'] !== 'completed';
+        return $this->changeStatus($actingUser, $id, $task['status'] === 'completed' ? 'pending' : 'completed');
+    }
+
+    public function changeStatus(array $actingUser, int $id, string $status): array
+    {
+        $task = $this->requireTask($id);
+        $this->authorizeRecord($actingUser, Permission::TASKS_CHANGE_STATUS, $task);
+
+        if (!in_array($status, self::STATUSES, true)) {
+            throw new ValidationException(['status' => ['tasks.invalid_status']]);
+        }
 
         $this->tasks->updateTask($id, [
-            'status' => $completing ? 'completed' : 'pending',
-            'completed_at' => $completing ? date('Y-m-d H:i:s') : null,
+            'status' => $status,
+            // completed_at is "when it was finished"; it only stays set while the task is completed.
+            'completed_at' => $status === 'completed' ? ($task['completed_at'] ?? date('Y-m-d H:i:s')) : null,
         ]);
+
+        return $this->tasks->findById($id);
+    }
+
+    /** Archive hides a task from the working lists without changing its status; restorable. */
+    public function archive(array $actingUser, int $id): array
+    {
+        $task = $this->requireTask($id);
+        $this->authorizeRecord($actingUser, Permission::TASKS_ARCHIVE, $task);
+
+        if ($task['archived_at'] === null) {
+            $this->tasks->updateTask($id, ['archived_at' => date('Y-m-d H:i:s'), 'archived_by_user_id' => (int) $actingUser['id']]);
+        }
+
+        return $this->tasks->findById($id);
+    }
+
+    public function unarchive(array $actingUser, int $id): array
+    {
+        $task = $this->requireTask($id);
+        $this->authorizeRecord($actingUser, Permission::TASKS_ARCHIVE, $task);
+
+        $this->tasks->updateTask($id, ['archived_at' => null, 'archived_by_user_id' => null]);
 
         return $this->tasks->findById($id);
     }
@@ -158,9 +219,11 @@ final class TaskService
         return $this->notes->add('task', $taskId, (int) $actingUser['id'], $body);
     }
 
-    public function deleteComment(int $noteId): void
+    /** The task must exist (in the user's organization) and be viewable; the note must be THIS task's. */
+    public function deleteComment(array $actingUser, int $taskId, int $noteId): void
     {
-        $this->notes->delete($noteId);
+        $this->find($actingUser, $taskId);
+        $this->notes->deleteFromSubject('task', $taskId, $noteId);
     }
 
     // --- Attachments (reused, subject type 'task') -----------------------
@@ -178,9 +241,24 @@ final class TaskService
         return $this->attachments->upload('task', $taskId, (int) $actingUser['organization_id'], (int) $actingUser['id'], $file);
     }
 
-    public function deleteAttachment(int $attachmentId): void
+    /** The task must exist (in the user's organization) and be viewable; the file must be THIS task's. */
+    public function deleteAttachment(array $actingUser, int $taskId, int $attachmentId): void
     {
-        $this->attachments->delete($attachmentId);
+        $this->find($actingUser, $taskId);
+        $this->attachments->deleteFromSubject('task', $taskId, $attachmentId);
+    }
+
+    /**
+     * The attachment for a download, only when the user may view the task
+     * (find(): tasks.view + the OWN creator/assignee rule — the task page's
+     * own check) AND the file really belongs to this task. Authorization
+     * failure → AuthorizationException; anything else → null (404).
+     */
+    public function attachmentForDownload(array $actingUser, int $taskId, int $attachmentId): ?array
+    {
+        $this->find($actingUser, $taskId);
+
+        return $this->attachments->findForSubject('task', $taskId, $attachmentId);
     }
 
     public function attachmentPath(array $attachment): string

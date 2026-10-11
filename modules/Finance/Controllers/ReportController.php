@@ -7,6 +7,8 @@ namespace Modules\Finance\Controllers;
 use App\Application\Controllers\BaseController;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Localization\Locale;
+use App\Infrastructure\Localization\LocaleFormatter;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Finance\Services\ReportService;
@@ -25,8 +27,11 @@ final class ReportController extends BaseController
         $startDate = (string) $request->query('start_date', date('Y-m-01'));
         $endDate = (string) $request->query('end_date', date('Y-m-d'));
 
+        $translator = Locale::get();
+
         return $this->viewWithLayout('finance/reports/index', 'layout', [
             'summary' => $this->reports->summary(CurrentUser::user(), $startDate, $endDate),
+            'fmt' => new LocaleFormatter($translator !== null ? $translator->locale() : 'en'),
         ]);
     }
 }

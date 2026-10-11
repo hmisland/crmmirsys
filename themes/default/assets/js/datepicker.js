@@ -225,15 +225,16 @@
         hidden.type = 'hidden';
         hidden.name = input.name;
         input.removeAttribute('name');
-        input.readOnly = true;
         input.autocomplete = 'off';
+        input.inputMode = 'decimal'; // phone keypad with a separator key; any non-digit separates y/m/d
         input.parentNode.insertBefore(hidden, input.nextSibling);
 
         var initialIso = input.value.trim();
         hidden.value = initialIso;
 
         var popup = null;
-        var viewYear, viewMonth, viewMode = 'days'; // viewMode: 'days' | 'months'
+        var viewYear, viewMonth, viewMode = 'days'; // viewMode: 'days' | 'months' | 'years'
+        var yearPageStart = 0;
 
         function setIso(iso) {
             hidden.value = iso;
@@ -257,7 +258,56 @@
         function closePopup() {
             if (popup) { popup.remove(); popup = null; }
             document.removeEventListener('click', onOutsideClick, true);
+            window.removeEventListener('scroll', positionPopup, true);
+            window.removeEventListener('resize', positionPopup);
         }
+
+        // Typed dates (in the calendar currently shown): "1405/07/13",
+        // "1405-7-13", Persian/Arabic digits — year, month, day order.
+        // Returns a Gregorian ISO date, '' for an empty field, or null
+        // when the text isn't a valid date.
+        function parseTyped(text) {
+            var t = String(text).trim()
+                .replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 1776); })
+                .replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 1632); });
+            if (t === '') return '';
+            var m = t.match(/^(\d{3,4})\D+(\d{1,2})\D+(\d{1,2})$/);
+            if (!m) return null;
+            var y = parseInt(m[1], 10), mo = parseInt(m[2], 10), d = parseInt(m[3], 10);
+            if (mo < 1 || mo > 12 || d < 1 || d > Calendars[system].monthLength(y, mo)) return null;
+            var g = Calendars[system].toGregorian(y, mo, d);
+            return g.gy + '-' + pad(g.gm) + '-' + pad(g.gd);
+        }
+
+        function applyTyped(final) {
+            var iso = parseTyped(input.value);
+            if (iso === null) {
+                if (final) {
+                    // Not a date: put back the last valid value.
+                    setIso(hidden.value);
+                }
+                input.setCustomValidity(final ? '' : 'invalid');
+                return;
+            }
+            input.setCustomValidity('');
+            if (iso !== hidden.value) {
+                hidden.value = iso;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (final) setIso(iso);
+            if (popup && iso) {
+                var cur = currentPartsOrToday();
+                viewYear = cur.y; viewMonth = cur.m; viewMode = 'days';
+                renderCalendar();
+            }
+        }
+
+        input.addEventListener('input', function () { applyTyped(false); });
+        input.addEventListener('blur', function () { applyTyped(true); });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); applyTyped(true); closePopup(); }
+            if (e.key === 'Escape') closePopup();
+        });
 
         function onOutsideClick(e) {
             if (popup && !popup.contains(e.target) && e.target !== input) closePopup();
@@ -312,18 +362,36 @@
             label.type = 'button';
             label.className = 'crm-datepicker__label';
 
-            if (viewMode === 'months') {
-                // Year-stepping mode: prev/next move a whole year at a
-                // time, and the label (now just the year) clicks back
-                // to the month grid — this is the quick-jump view so
-                // reaching a date years away doesn't take dozens of
-                // single-month clicks.
-                label.textContent = String(viewYear);
+            // Month and year are separate buttons: the month opens a list
+            // of the 12 months, the year a page of 12 years — so a date
+            // far away is two clicks, not dozens of single-month steps.
+            var monthBtn = document.createElement('button');
+            monthBtn.type = 'button';
+            monthBtn.className = 'crm-datepicker__label' + (viewMode === 'months' ? ' is-open' : '');
+            monthBtn.textContent = Calendars[system].monthNames[viewMonth - 1];
+            monthBtn.addEventListener('click', function () { viewMode = viewMode === 'months' ? 'days' : 'months'; renderCalendar(); });
+            var yearBtn = document.createElement('button');
+            yearBtn.type = 'button';
+            yearBtn.className = 'crm-datepicker__label' + (viewMode === 'years' ? ' is-open' : '');
+            yearBtn.textContent = String(viewYear);
+            yearBtn.addEventListener('click', function () {
+                viewMode = viewMode === 'years' ? 'days' : 'years';
+                yearPageStart = viewYear - 5;
+                renderCalendar();
+            });
+            label.className = 'crm-datepicker__labels';
+            label = document.createElement('span');
+            label.className = 'crm-datepicker__labels';
+            label.appendChild(monthBtn);
+            label.appendChild(yearBtn);
+
+            if (viewMode === 'years') {
+                prev.addEventListener('click', function () { yearPageStart -= 12; renderCalendar(); });
+                next.addEventListener('click', function () { yearPageStart += 12; renderCalendar(); });
+            } else if (viewMode === 'months') {
                 prev.addEventListener('click', function () { viewYear--; renderCalendar(); });
                 next.addEventListener('click', function () { viewYear++; renderCalendar(); });
-                label.addEventListener('click', function () { viewMode = 'days'; renderCalendar(); });
             } else {
-                label.textContent = Calendars[system].monthNames[viewMonth - 1] + ' ' + viewYear;
                 prev.addEventListener('click', function () {
                     viewMonth--;
                     if (viewMonth < 1) { viewMonth = 12; viewYear--; }
@@ -334,16 +402,14 @@
                     if (viewMonth > 12) { viewMonth = 1; viewYear++; }
                     renderCalendar();
                 });
-                // Clicking the "March 1403" label jumps to the
-                // year/month quick-picker instead of paging one month
-                // at a time to reach a far-off date.
-                label.addEventListener('click', function () { viewMode = 'months'; renderCalendar(); });
             }
 
             header.appendChild(prev); header.appendChild(label); header.appendChild(next);
             popup.appendChild(header);
 
-            if (viewMode === 'months') {
+            if (viewMode === 'years') {
+                renderYearsGrid();
+            } else if (viewMode === 'months') {
                 renderMonthsGrid();
             } else {
                 renderDaysGrid();
@@ -352,7 +418,7 @@
             var todayBtn = document.createElement('button');
             todayBtn.type = 'button';
             todayBtn.className = 'crm-datepicker__today';
-            todayBtn.textContent = 'Today';
+            todayBtn.textContent = ({ fa: 'امروز', ar: 'اليوم', tr: 'Bugün', fr: 'Aujourd’hui' })[document.documentElement.lang] || 'Today';
             todayBtn.addEventListener('click', function () { viewMode = 'days'; goToToday(); });
             popup.appendChild(todayBtn);
         }
@@ -397,14 +463,48 @@
             popup.appendChild(grid);
         }
 
+        function renderYearsGrid() {
+            var grid = document.createElement('div');
+            grid.className = 'crm-datepicker__grid crm-datepicker__grid--months';
+            for (var y = yearPageStart; y < yearPageStart + 12; y++) {
+                var cell = document.createElement('button');
+                cell.type = 'button';
+                cell.textContent = String(y);
+                if (y === viewYear) cell.className = 'selected';
+                (function (yy) {
+                    cell.addEventListener('click', function () {
+                        viewYear = yy;
+                        viewMode = 'months';
+                        renderCalendar();
+                    });
+                })(y);
+                grid.appendChild(cell);
+            }
+            popup.appendChild(grid);
+        }
+
+        // Fixed to the viewport, never wider than it, opened above the
+        // field when there's no room below (small phones, fields near the
+        // bottom), and kept in place while the page scrolls.
         function positionPopup() {
+            if (!popup) return;
             var rect = input.getBoundingClientRect();
+            var vw = document.documentElement.clientWidth;
+            var vh = window.innerHeight;
+            var width = Math.min(260, vw - 16);
             popup.style.position = 'fixed';
-            popup.style.top = (rect.bottom + 4) + 'px';
+            popup.style.width = width + 'px';
+            popup.style.maxHeight = (vh - 16) + 'px';
+            var height = popup.offsetHeight;
+            var top = rect.bottom + 4;
+            if (top + height > vh - 8) {
+                top = rect.top - height - 4 >= 8 ? rect.top - height - 4 : Math.max(8, vh - height - 8);
+            }
+            popup.style.top = top + 'px';
             // Anchor to the input's start edge: its right edge in RTL locales.
             var isRtl = window.getComputedStyle(input).direction === 'rtl';
-            var left = isRtl ? rect.right - 260 : rect.left;
-            popup.style.left = Math.max(4, Math.min(left, window.innerWidth - 268)) + 'px';
+            var left = isRtl ? rect.right - width : rect.left;
+            popup.style.left = Math.max(8, Math.min(left, vw - width - 8)) + 'px';
         }
 
         function openPopup() {
@@ -417,6 +517,8 @@
             document.body.appendChild(popup);
             positionPopup();
             document.addEventListener('click', onOutsideClick, true);
+            window.addEventListener('scroll', positionPopup, true);
+            window.addEventListener('resize', positionPopup);
         }
 
         input.addEventListener('focus', openPopup);

@@ -8,9 +8,15 @@ use App\Application\Services\CustomFieldService;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Modules\ModuleAccessResolver;
+use App\Infrastructure\Repositories\ModuleRepository;
+use App\Infrastructure\Repositories\OrganizationModuleRepository;
+use App\Infrastructure\Repositories\UserModuleOverrideRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
+
+use function App\Infrastructure\Theme\t;
 
 final class CustomFieldAdminController extends BaseController
 {
@@ -23,13 +29,24 @@ final class CustomFieldAdminController extends BaseController
 
     public function index(Request $request): Response
     {
+        $entityTypes = self::ENTITY_TYPES;
+
+        // Client Records (optional module) keeps its industry-specific
+        // intake fields here too — only offered when the module is
+        // available to this organization.
+        $clientRecordsEnabled = (new ModuleAccessResolver(new ModuleRepository(), new OrganizationModuleRepository(), new UserModuleOverrideRepository()))
+            ->resolvedForUser('client_records', CurrentUser::user());
+        if ($clientRecordsEnabled) {
+            $entityTypes['client_record'] = t('client_records.title');
+        }
+
         $definitions = [];
-        foreach (array_keys(self::ENTITY_TYPES) as $type) {
+        foreach (array_keys($entityTypes) as $type) {
             $definitions[$type] = $this->customFields->definitionsFor($type);
         }
 
         return $this->viewWithLayout('org/custom-fields', 'layout', [
-            'entityTypes' => self::ENTITY_TYPES,
+            'entityTypes' => $entityTypes,
             'definitions' => $definitions,
             'errors' => [],
         ]);

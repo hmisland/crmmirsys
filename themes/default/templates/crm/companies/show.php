@@ -1,5 +1,6 @@
 <?php
 /** @var array $company */
+/** @var array|null $category */
 /** @var array $contacts */
 /** @var array $notes */
 /** @var array $tags */
@@ -15,13 +16,40 @@ use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 ?>
+<?php
+$facts = array_filter([
+    ['tag', t('companies.category'), $category['name'] ?? null, false],
+    ['user', t('companies.ceo_name'), $company['ceo_name'] ?? null, false],
+    ['key', t('companies.national_id'), $company['national_id'] ?? null, true],
+    ['key', t('companies.economic_code'), $company['economic_code'] ?? null, true],
+    ['clipboard', t('companies.registration_number'), $company['registration_number'] ?? null, true],
+    ['phone', t('common.phone'), $company['phone'] ?? null, true],
+    ['mail', t('common.email'), $company['email'] ?? null, true],
+    ['globe', t('companies.website'), $company['website'] ?? null, true],
+    ['briefcase', t('companies.industry'), $company['industry'] ?? null, false],
+    ['users', t('companies.employees'), $company['employees_count'] ?? null, false],
+    ['building', t('companies.address'), trim(implode('، ', array_filter([$company['country'] ?? '', $company['city'] ?? '', $company['address'] ?? '']))), false],
+], fn ($f) => $f[2] !== null && $f[2] !== '');
+?>
 <section class="card">
     <h1><?= e($company['name']) ?></h1>
-    <p class="muted">
-        <?= $company['website'] ? e($company['website']) . ' · ' : '' ?>
-        <?= $company['industry'] ? e($company['industry']) . ' · ' : '' ?>
-        <?= e($company['city'] ?? '') ?>
-    </p>
+    <?php if (!empty($company['brand'])): ?>
+        <p class="muted"><?= e(t('companies.brand')) ?>: <strong><?= e($company['brand']) ?></strong></p>
+    <?php endif; ?>
+    <?php if ($facts !== []): ?>
+        <dl class="fact-row">
+            <?php foreach ($facts as [$factIcon, $factLabel, $factValue, $factLtr]): ?>
+                <div class="fact">
+                    <dt><?= icon($factIcon) ?><?= e($factLabel) ?></dt>
+                    <dd<?= $factLtr ? ' class="ltr"' : '' ?>><?= e((string) $factValue) ?></dd>
+                </div>
+            <?php endforeach; ?>
+        </dl>
+    <?php endif; ?>
+    <?php if (!empty($company['description'])): ?>
+        <h2><?= e(t('companies.description')) ?></h2>
+        <p><?= nl2br(e($company['description'])) ?></p>
+    <?php endif; ?>
     <div class="actions">
         <a href="/companies/<?= e($company['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
         <form method="post" action="/companies/<?= e($company['id']) ?>/delete" class="inline-form">
@@ -58,6 +86,10 @@ use App\Infrastructure\Security\Csrf;
 <?php endif; ?>
 
 <?php
+$panelSubjectType = 'company';
+$panelSubject = $company;
+include $theme->templatesPath() . '/partials/related-panels.php';
+
 $type = 'company';
 $id = (int) $company['id'];
 include $theme->templatesPath() . '/crm/_record_support.php';

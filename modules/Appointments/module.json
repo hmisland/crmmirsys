@@ -1,0 +1,9 @@
+{
+    "key": "appointments",
+    "name": "Appointments",
+    "version": "1.0.0",
+    "type": "optional",
+    "is_core": false,
+    "dependencies": [],
+    "bootstrap": "Modules\\Appointments\\AppointmentsModule"
+}

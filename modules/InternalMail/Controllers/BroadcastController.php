@@ -13,6 +13,8 @@ use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\InternalMail\Services\BroadcastService;
 
+use function App\Infrastructure\Theme\t;
+
 final class BroadcastController extends BaseController
 {
     public function __construct(TemplateEngine $templates, private readonly BroadcastService $broadcast)
@@ -31,9 +33,9 @@ final class BroadcastController extends BaseController
     {
         try {
             $this->broadcast->broadcastToTeam(CurrentUser::user(), (string) $request->input('subject', ''), (string) $request->input('body', ''));
-            Session::setFlash('success', 'Message sent to your whole team.');
+            Session::setFlash('success', t('mail.flash.sent_to_team'));
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not send.');
+            Session::setFlash('error', t((string) (array_values($e->errors)[0][0] ?? 'mail.error.send_failed')));
         }
 
         return $this->redirect('/mail/broadcast');
@@ -43,13 +45,13 @@ final class BroadcastController extends BaseController
     {
         try {
             $result = $this->broadcast->broadcastToCustomers(CurrentUser::user(), (string) $request->input('subject', ''), (string) $request->input('body', ''));
-            $message = "Sent to {$result['recipient_count']} customer(s).";
+            $message = t('mail.flash.sent_to_customers', ['count' => $result['recipient_count']]);
             if ($result['failed_count'] > 0) {
-                $message .= " {$result['failed_count']} failed to send.";
+                $message .= ' ' . t('mail.flash.customers_failed', ['count' => $result['failed_count']]);
             }
             Session::setFlash('success', $message);
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not send.');
+            Session::setFlash('error', t((string) (array_values($e->errors)[0][0] ?? 'mail.error.send_failed')));
         }
 
         return $this->redirect('/mail/broadcast');

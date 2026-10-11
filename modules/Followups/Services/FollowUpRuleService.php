@@ -11,6 +11,8 @@ use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Authorization\Permission;
 use Modules\Followups\FollowUpRuleRepository;
 
+use function App\Infrastructure\Theme\t;
+
 final class FollowUpRuleService
 {
     public function __construct(
@@ -70,25 +72,25 @@ final class FollowUpRuleService
     {
         $name = trim((string) ($input['name'] ?? ''));
         if ($name === '') {
-            throw new ValidationException(['name' => ['Name is required.']]);
+            throw new ValidationException(['name' => [t('followups.error.rule_name_required')]]);
         }
 
         $eventType = trim((string) ($input['event_type'] ?? ''));
         if ($eventType === '') {
-            throw new ValidationException(['event_type' => ['Event type is required.']]);
+            throw new ValidationException(['event_type' => [t('followups.error.rule_event_required')]]);
         }
 
         $actionConfig = trim((string) ($input['action_configuration_json'] ?? ''));
         if ($actionConfig === '') {
-            throw new ValidationException(['action_configuration_json' => ['Action configuration is required.']]);
+            throw new ValidationException(['action_configuration_json' => [t('followups.error.rule_action_required')]]);
         }
         if (json_decode($actionConfig, true) === null && $actionConfig !== 'null') {
-            throw new ValidationException(['action_configuration_json' => ['Must be valid JSON.']]);
+            throw new ValidationException(['action_configuration_json' => [t('followups.error.rule_action_json')]]);
         }
 
         $conditions = trim((string) ($input['conditions_json'] ?? ''));
         if ($conditions !== '' && json_decode($conditions, true) === null) {
-            throw new ValidationException(['conditions_json' => ['Must be valid JSON, or left empty for no conditions.']]);
+            throw new ValidationException(['conditions_json' => [t('followups.error.rule_conditions_json')]]);
         }
 
         return [

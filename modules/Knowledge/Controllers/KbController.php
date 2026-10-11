@@ -8,6 +8,7 @@ use App\Application\Controllers\BaseController;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
@@ -27,8 +28,11 @@ final class KbController extends BaseController
             'category_id' => (string) $request->query('category_id', ''),
         ];
 
+        [$articles, $pagination] = Pagination::slice($this->kb->list(CurrentUser::user(), $filters), $request);
+
         return $this->viewWithLayout('kb/index', 'layout', [
-            'articles' => $this->kb->list(CurrentUser::user(), $filters),
+            'articles' => $articles,
+            'pagination' => $pagination,
             'categories' => $this->kb->categories(),
             'q' => $filters['search'],
             'categoryId' => $filters['category_id'],

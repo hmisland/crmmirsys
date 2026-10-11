@@ -18,12 +18,40 @@ final class TaskRepository extends TenantScopedRepository
         return $this->tenantFindOne('SELECT * FROM tasks WHERE id = :id', ['id' => $id]);
     }
 
+    /** A record's tasks (e.g. a deal's), archived ones excluded; finished ones sink to the bottom. */
     public function forSubject(string $relatedType, int $relatedId): array
     {
         return $this->tenantFindMany(
-            'SELECT * FROM tasks WHERE related_type = :type AND related_id = :id ORDER BY due_at IS NULL, due_at',
+            "SELECT * FROM tasks WHERE related_type = :type AND related_id = :id AND archived_at IS NULL
+             ORDER BY status IN ('completed', 'rejected', 'cancelled'), due_at IS NULL, due_at",
             ['type' => $relatedType, 'id' => $relatedId]
         );
+    }
+
+    /**
+     * The "My tasks" page: every task assigned to the user (primary or
+     * additional assignee), in any status — completed ones stay visible
+     * (struck through) instead of vanishing. $archived switches between
+     * the working list and the archive.
+     */
+    public function forUser(int $userId, bool $archived, ?string $status = null): array
+    {
+        $sql = 'SELECT * FROM tasks
+                WHERE archived_at IS ' . ($archived ? 'NOT NULL' : 'NULL') . '
+                  AND (assigned_to_user_id = :user_id1
+                       OR id IN (SELECT task_id FROM task_assignees WHERE user_id = :user_id2))';
+        $params = ['user_id1' => $userId, 'user_id2' => $userId];
+
+        if ($status !== null) {
+            $sql .= ' AND status = :status';
+            $params['status'] = $status;
+        }
+
+        $sql .= $archived
+            ? ' ORDER BY archived_at DESC'
+            : " ORDER BY status IN ('completed', 'rejected', 'cancelled'), due_at IS NULL, due_at, id DESC";
+
+        return $this->tenantFindMany($sql . ' LIMIT 500', $params);
     }
 
     /**
@@ -37,11 +65,11 @@ final class TaskRepository extends TenantScopedRepository
     public function upcomingForUser(int $userId, int $limit = 20): array
     {
         return $this->tenantFindMany(
-            'SELECT * FROM tasks
-             WHERE status = "pending"
+            "SELECT * FROM tasks
+             WHERE status IN ('pending', 'in_progress', 'on_hold') AND archived_at IS NULL
                AND (assigned_to_user_id = :user_id1
                     OR id IN (SELECT task_id FROM task_assignees WHERE user_id = :user_id2))
-             ORDER BY due_at IS NULL, due_at LIMIT ' . max(1, min(100, $limit)),
+             ORDER BY due_at IS NULL, due_at LIMIT " . max(1, min(100, $limit)),
             ['user_id1' => $userId, 'user_id2' => $userId]
         );
     }

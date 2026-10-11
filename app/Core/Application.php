@@ -38,7 +38,14 @@ use App\Infrastructure\Mail\LogMailer;
 use App\Infrastructure\Mail\MailerInterface;
 use App\Infrastructure\Mail\PhpMailMailer;
 use App\Infrastructure\Mail\SmtpMailer;
+use App\Infrastructure\Modules\ModuleAccessResolver;
+use App\Infrastructure\Modules\ModuleGate;
 use App\Infrastructure\Modules\ModuleRegistry;
+use App\Infrastructure\Modules\ModuleServiceRegistrar;
+use App\Infrastructure\Authorization\Permission;
+use App\Infrastructure\Records\RecordType;
+use App\Infrastructure\Records\RecordTypeRegistry;
+use App\Infrastructure\Records\RelatedPanelRegistry;
 use App\Infrastructure\Repositories\AttachmentRepository;
 use App\Infrastructure\Repositories\AuthTokenRepository;
 use App\Infrastructure\Repositories\CompanyRepository;
@@ -63,6 +70,15 @@ use App\Infrastructure\Repositories\TagRepository;
 use App\Infrastructure\Repositories\TeamRepository;
 use App\Infrastructure\Repositories\TimelineEventRepository;
 use App\Infrastructure\Repositories\UserModuleOverrideRepository;
+use App\Infrastructure\Repositories\UserPermissionGrantRepository;
+use App\Infrastructure\Repositories\SmsLogRepository;
+use App\Infrastructure\Repositories\OrganizationSmsSettingsRepository;
+use App\Infrastructure\Sms\KavenegarSmsSender;
+use App\Infrastructure\Sms\SmsProviderDefinition;
+use App\Infrastructure\Sms\SmsProviderRegistry;
+use App\Application\Services\SmsService;
+use App\Infrastructure\Repositories\ContactImportBatchRepository;
+use App\Infrastructure\Repositories\ContactLinkRepository;
 use App\Infrastructure\Repositories\BankRepository;
 use App\Infrastructure\Repositories\ContactCategoryRepository;
 use App\Infrastructure\Repositories\UserBankAccountRepository;
@@ -125,7 +141,34 @@ final class Application
 
         $this->container->singleton(ThemeLoader::class, fn () => new ThemeLoader($this->basePath . '/themes'));
 
-        $this->container->singleton(TemplateEngine::class, fn (Container $c) => new TemplateEngine($c->make(ThemeLoader::class)));
+        $this->container->singleton(TemplateEngine::class, fn (Container $c) => new TemplateEngine(
+            $c->make(ThemeLoader::class),
+            $c->make(RelatedPanelRegistry::class)
+        ));
+
+        // Extension points modules plug into from their register()
+        // (docs/module-extension-points.md). Access is always decided by
+        // the existing ModuleAccessResolver + AuthorizationEngine.
+        $this->container->singleton(ModuleGate::class, fn (Container $c) => ModuleGate::fromCore(
+            new ModuleAccessResolver(new ModuleRepository(), new OrganizationModuleRepository(), new UserModuleOverrideRepository()),
+            $c->make(AuthorizationEngine::class)
+        ));
+
+        $this->container->singleton(RecordTypeRegistry::class, function (Container $c) {
+            $registry = new RecordTypeRegistry($c->make(ModuleGate::class), $c->make(LoggerInterface::class));
+            $registry->register(new RecordType('contact', null, Permission::CONTACTS_VIEW, 'nav.contacts', '/contacts/{id}', 'users'));
+            $registry->register(new RecordType('company', null, Permission::COMPANIES_VIEW, 'nav.companies', '/companies/{id}', 'building'));
+            $registry->register(new RecordType('lead', null, Permission::LEADS_VIEW, 'nav.leads', '/leads/{id}', 'target'));
+
+            return $registry;
+        });
+
+        $this->container->singleton(RelatedPanelRegistry::class, fn (Container $c) => new RelatedPanelRegistry(
+            $c->make(ModuleGate::class),
+            $c->make(LoggerInterface::class)
+        ));
+
+        $this->container->singleton(ModuleServiceRegistrar::class, fn (Container $c) => new ModuleServiceRegistrar($c->make(LoggerInterface::class)));
 
         $this->container->singleton(MailerInterface::class, fn () => match (Config::get('mail.driver', 'log')) {
             'php_mail' => new PhpMailMailer(
@@ -152,10 +195,13 @@ final class Application
             $c->make(LoggerInterface::class),
             $c->make(EventBus::class),
             new OrganizationRepository(),
+            $c->make(AuthorizationEngine::class),
+            $this->basePath . '/storage',
         ));
 
         $this->container->singleton(AuthorizationEngine::class, fn () => new AuthorizationEngine(
-            new RolePermissionRepository()
+            new RolePermissionRepository(),
+            new UserPermissionGrantRepository()
         ));
 
         $this->container->singleton(AuthService::class, fn (Container $c) => new AuthService(
@@ -179,6 +225,11 @@ final class Application
             $c->make(AuthorizationEngine::class)
         ));
 
+        $this->container->singleton(\App\Application\Services\CompanyCategoryService::class, fn (Container $c) => new \App\Application\Services\CompanyCategoryService(
+            new \App\Infrastructure\Repositories\CompanyCategoryRepository(),
+            $c->make(AuthorizationEngine::class)
+        ));
+
         $this->container->singleton(BankService::class, fn () => new BankService(
             new BankRepository()
         ));
@@ -189,6 +240,8 @@ final class Application
             new UserRepository(),
             new RoleRepository(),
             $c->make(AuthorizationEngine::class),
+            new UserPermissionGrantRepository(),
+            new RolePermissionRepository(),
         ));
 
         $this->container->singleton(RoleService::class, fn (Container $c) => new RoleService(
@@ -282,6 +335,46 @@ final class Application
             $c->make(AuthorizationEngine::class),
         ));
 
+        // SMS providers, per country/language — like payment gateways.
+        // A provider for another country = one SmsSenderInterface class +
+        // one register() call here; its credential fields then show up in
+        // Organization settings → SMS for organizations in that language.
+        $this->container->singleton(SmsProviderRegistry::class, function () {
+            $registry = new SmsProviderRegistry();
+            $registry->register(new SmsProviderDefinition(
+                key: 'kavenegar',
+                label: 'Kavenegar (کاوه‌نگار)',
+                languages: ['fa'],
+                countries: ['IR'],
+                fields: [
+                    'api_key' => ['label' => 'sms_field.api_key', 'secret' => true, 'required' => true, 'hint' => 'sms_field.kavenegar_api_key_hint'],
+                    'sender' => ['label' => 'sms_field.sender', 'required' => true, 'hint' => 'sms_field.kavenegar_sender_hint'],
+                    'sender_international' => ['label' => 'sms_field.sender_international', 'hint' => 'sms_field.kavenegar_sender_international_hint'],
+                ],
+                factory: fn (array $c) => new KavenegarSmsSender(
+                    (string) ($c['api_key'] ?? ''),
+                    (string) ($c['sender'] ?? ''),
+                    (string) ($c['sender_international'] ?? '')
+                ),
+                signupUrl: 'https://kavenegar.com/',
+            ));
+
+            return $registry;
+        });
+
+        // SMS from anywhere in the app: $container->make(SmsService::class).
+        // Platform account = config sms.platform (Kavenegar from .env);
+        // organizations may switch to their own account at /org/sms;
+        // billing for platform sends is attached by the Notification
+        // module (setBilling()).
+        $this->container->singleton(SmsService::class, fn (Container $c) => new SmsService(
+            $c->make(SmsProviderRegistry::class),
+            (array) Config::get('sms.platform', []),
+            new SmsLogRepository(),
+            new OrganizationSmsSettingsRepository(),
+            new OrganizationRepository()
+        ));
+
         $this->container->singleton(ContactImportExportService::class, fn (Container $c) => new ContactImportExportService(
             new ContactRepository(),
             new CompanyRepository(),
@@ -289,6 +382,12 @@ final class Application
             $c->make(TagService::class),
             $c->make(TimelineService::class),
             $c->make(AuthorizationEngine::class),
+            new ContactPhoneRepository(),
+            new ContactEmailRepository(),
+            new ContactCategoryRepository(),
+            new ContactImportBatchRepository(),
+            new ContactLinkRepository(),
+            $this->basePath . '/storage/cache/contact-imports',
         ));
     }
 
@@ -340,6 +439,11 @@ final class Application
             /** @var \App\Infrastructure\Modules\ModuleInterface $module */
             $module = new $manifest->bootstrapClass();
             $module->register($container);
+
+            // New modules expose services through ProvidesServices
+            // instead of adding another instanceof block below.
+            $container->make(ModuleServiceRegistrar::class)->registerModule($container, $manifest->key, $module);
+
             $module->routes($router);
 
             // A narrow, explicit exception to "Core doesn't know about
@@ -421,6 +525,11 @@ final class Application
                 if ($invoiceService !== null) {
                     $container->singleton(\Modules\Finance\Services\InvoiceService::class, fn () => $invoiceService);
                 }
+
+                $paymentService = $module->paymentService();
+                if ($paymentService !== null) {
+                    $container->singleton(\Modules\Finance\Services\PaymentService::class, fn () => $paymentService);
+                }
             }
 
             if ($module instanceof \Modules\Followups\FollowupsModule) {
@@ -442,6 +551,7 @@ final class Application
         OrganizationContext::reset();
         CurrentUser::reset();
         Locale::reset();
+        $this->container->make(ModuleGate::class)->reset();
 
         // Resolves "who is logged in" (if anyone) for EVERY request,
         // not just routes that require login. This used to only

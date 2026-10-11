@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Authorization;
 
 use App\Infrastructure\Repositories\RolePermissionRepository;
+use App\Infrastructure\Repositories\UserPermissionGrantRepository;
 
 /**
  * Per Phase 0 §10–11/§17: the ONLY place scope logic is evaluated —
@@ -14,8 +15,13 @@ use App\Infrastructure\Repositories\RolePermissionRepository;
  */
 final class AuthorizationEngine
 {
-    public function __construct(private readonly RolePermissionRepository $rolePermissions)
-    {
+    /** @var array<string, bool> "userId|permissionKey" => granted, per request */
+    private array $grantCache = [];
+
+    public function __construct(
+        private readonly RolePermissionRepository $rolePermissions,
+        private readonly ?UserPermissionGrantRepository $grants = null,
+    ) {
     }
 
     /**
@@ -31,14 +37,43 @@ final class AuthorizationEngine
         }
 
         $roleId = $user['role_id'] ?? null;
+        $row = $roleId !== null ? $this->rolePermissions->findForRole((int) $roleId, $permissionKey) : null;
 
-        if ($roleId === null) {
-            return null;
+        if ($row !== null) {
+            return Scope::from($row['scope']);
         }
 
-        $row = $this->rolePermissions->findForRole((int) $roleId, $permissionKey);
+        // A role without the permission can still be topped up per
+        // user — only for the short Permission::USER_GRANTABLE list,
+        // and always at organization scope.
+        return $this->hasUserGrant($user, $permissionKey) ? Scope::ORGANIZATION : null;
+    }
 
-        return $row === null ? null : Scope::from($row['scope']);
+    private function hasUserGrant(array $user, string $permissionKey): bool
+    {
+        if ($this->grants === null || !in_array($permissionKey, Permission::USER_GRANTABLE, true)
+            || empty($user['id']) || empty($user['organization_id'])) {
+            return false;
+        }
+
+        $cacheKey = $user['id'] . '|' . $permissionKey;
+
+        if (!isset($this->grantCache[$cacheKey])) {
+            try {
+                $this->grantCache[$cacheKey] = $this->grants->has((int) $user['organization_id'], (int) $user['id'], $permissionKey);
+            } catch (\PDOException) {
+                // Table not migrated yet on this install — no grants.
+                $this->grantCache[$cacheKey] = false;
+            }
+        }
+
+        return $this->grantCache[$cacheKey];
+    }
+
+    /** Drops the per-request grant cache after a grant/revoke. */
+    public function forgetGrants(): void
+    {
+        $this->grantCache = [];
     }
 
     /**

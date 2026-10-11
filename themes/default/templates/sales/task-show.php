@@ -5,6 +5,7 @@
 /** @var array $comments */
 /** @var array $attachments */
 /** @var array $errors */
+/** @var array<string, bool> $can */
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
@@ -31,14 +32,42 @@ $assigneeIds = array_column($assignees, 'id');
         <?php if ($assignees === []): ?><span class="muted"><?= e(t('tasks.nobody_yet')) ?></span><?php endif; ?>
     </p>
 
-    <form method="post" action="/tasks/<?= e($task['id']) ?>/toggle" class="inline-form">
-        <?= Csrf::field() ?>
-        <button type="submit" class="btn"><?= $task['status'] === 'completed' ? e(t('tasks.mark_pending')) : e(t('tasks.mark_complete')) ?></button>
-    </form>
-    <form method="post" action="/tasks/<?= e($task['id']) ?>/delete" class="inline-form">
-        <?= Csrf::field() ?>
-        <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('tasks.delete_task')) ?></button>
-    </form>
+    <?php if ($task['archived_at'] !== null): ?>
+        <div class="alert alert--info"><div class="alert__body"><?= e(t('tasks.archived_notice')) ?></div></div>
+    <?php endif; ?>
+
+    <div class="actions">
+        <?php if ($can['change_status'] && $task['archived_at'] === null): ?>
+            <form method="post" action="/tasks/<?= e($task['id']) ?>/toggle" class="inline-form">
+                <?= Csrf::field() ?>
+                <input type="hidden" name="return_to" value="/tasks/<?= e($task['id']) ?>">
+                <button type="submit" class="btn<?= $task['status'] === 'completed' ? '' : ' btn--primary' ?>"><?= icon($task['status'] === 'completed' ? 'undo' : 'check') ?><?= $task['status'] === 'completed' ? e(t('tasks.mark_pending')) : e(t('tasks.mark_complete')) ?></button>
+            </form>
+            <form method="post" action="/tasks/<?= e($task['id']) ?>/status" class="inline-form-row">
+                <?= Csrf::field() ?>
+                <input type="hidden" name="return_to" value="/tasks/<?= e($task['id']) ?>">
+                <select name="status" aria-label="<?= e(t('tasks.change_status')) ?>">
+                    <?php foreach (\Modules\Sales\Services\TaskService::STATUSES as $status): ?>
+                        <option value="<?= e($status) ?>"<?= $task['status'] === $status ? ' selected' : '' ?>><?= e(t('tasks.status.' . $status)) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn"><?= icon('refresh') ?><?= e(t('tasks.change_status')) ?></button>
+            </form>
+        <?php endif; ?>
+        <?php if ($can['archive']): ?>
+            <form method="post" action="/tasks/<?= e($task['id']) ?>/<?= $task['archived_at'] !== null ? 'unarchive' : 'archive' ?>" class="inline-form">
+                <?= Csrf::field() ?>
+                <input type="hidden" name="return_to" value="/tasks/<?= e($task['id']) ?>">
+                <button type="submit" class="btn btn--ghost"><?= icon($task['archived_at'] !== null ? 'undo' : 'archive') ?><?= e(t($task['archived_at'] !== null ? 'tasks.unarchive' : 'tasks.archive')) ?></button>
+            </form>
+        <?php endif; ?>
+        <?php if ($can['delete']): ?>
+            <form method="post" action="/tasks/<?= e($task['id']) ?>/delete" class="inline-form">
+                <?= Csrf::field() ?>
+                <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('tasks.delete_task')) ?></button>
+            </form>
+        <?php endif; ?>
+    </div>
 </section>
 
 <section class="card card--form">

@@ -11,7 +11,13 @@ use App\Core\Exceptions\ValidationException;
 use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Authorization\Permission;
 use App\Infrastructure\Authorization\Scope;
+use App\Infrastructure\Repositories\DepartmentRepository;
+use App\Infrastructure\Repositories\OrganizationContext;
+use App\Infrastructure\Repositories\TeamRepository;
+use App\Infrastructure\Repositories\UserRepository;
 use Modules\Followups\FollowUpRepository;
+
+use function App\Infrastructure\Theme\t;
 
 final class FollowUpService
 {
@@ -19,10 +25,20 @@ final class FollowUpService
     private const PRIORITIES = ['low', 'normal', 'high', 'urgent'];
     private const OPEN_STATUSES = ['pending', 'scheduled', 'in_progress'];
 
+    /**
+     * The only record types a follow-up may relate to. The service accepts
+     * just the type string; the record itself is validated by the caller
+     * (FollowUpController: Core repositories / RecordTypeRegistry::find()).
+     */
+    public const RELATED_TYPES = ['contact', 'lead', 'deal', 'contract', 'project'];
+
     public function __construct(
         private readonly FollowUpRepository $followUps,
         private readonly AuthorizationEngine $authorization,
         private readonly TimelineService $timeline,
+        private readonly UserRepository $users = new UserRepository(),
+        private readonly TeamRepository $teams = new TeamRepository(),
+        private readonly DepartmentRepository $departments = new DepartmentRepository(),
     ) {
     }
 
@@ -88,7 +104,7 @@ final class FollowUpService
         $followUp = $this->requireFollowUp($id);
         $this->authorizeRecord($actingUser, Permission::FOLLOWUPS_EDIT, $followUp);
 
-        $fields = $this->validatedFields($input);
+        $fields = $this->validatedFields($input, $followUp);
         $this->followUps->updateFollowUp($id, $fields);
         $this->timeline->record((string) ($fields['related_type'] ?? 'follow_up'), $fields['related_id'] ?? $id, 'follow_up_updated', 'Follow-up "' . $fields['title'] . '" updated', (int) $actingUser['id']);
 
@@ -101,6 +117,47 @@ final class FollowUpService
         $this->authorizeRecord($actingUser, Permission::FOLLOWUPS_DELETE, $followUp);
 
         $this->followUps->deleteFollowUp($id);
+    }
+
+    /**
+     * Deletes every id the acting user may delete; the rest are skipped
+     * (not theirs or already gone) — each one goes through delete() and
+     * its record-level permission check.
+     *
+     * @param array<int|string, mixed> $ids
+     * @return array{deleted: int, skipped: int}
+     */
+    public function bulkDelete(array $actingUser, array $ids): array
+    {
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach (array_slice(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)), 0, 500) as $id) {
+            try {
+                $this->delete($actingUser, $id);
+                $deleted++;
+            } catch (AuthorizationException | NotFoundException) {
+                $skipped++;
+            }
+        }
+
+        return ['deleted' => $deleted, 'skipped' => $skipped];
+    }
+
+    /**
+     * Per-row delete flag for the list page — the same record-level
+     * check delete() enforces.
+     *
+     * @return array<int, bool>
+     */
+    public function deletableIds(array $actingUser, array $rows): array
+    {
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['id']] = $this->authorization->can($actingUser, Permission::FOLLOWUPS_DELETE, $row);
+        }
+
+        return $result;
     }
 
     public function complete(array $actingUser, int $id): array
@@ -131,7 +188,7 @@ final class FollowUpService
         $this->authorizeRecord($actingUser, Permission::FOLLOWUPS_EDIT, $followUp);
 
         if ($dueAt === '') {
-            throw new ValidationException(['due_at' => ['A new due date/time is required.']]);
+            throw new ValidationException(['due_at' => [t('followups.error.due_at_required')]]);
         }
 
         $this->followUps->updateFollowUp($id, ['due_at' => $dueAt, 'status' => in_array($followUp['status'], self::OPEN_STATUSES, true) ? $followUp['status'] : 'pending']);
@@ -166,29 +223,86 @@ final class FollowUpService
         }
     }
 
-    private function validatedFields(array $input): array
+    /** @param array|null $current the stored follow-up on update (null on create) */
+    private function validatedFields(array $input, ?array $current = null): array
     {
         $title = trim((string) ($input['title'] ?? ''));
         if ($title === '') {
-            throw new ValidationException(['title' => ['Title is required.']]);
+            throw new ValidationException(['title' => [t('followups.error.title_required')]]);
         }
 
-        $type = in_array($input['type'] ?? 'task', self::TYPES, true) ? $input['type'] : 'task';
-        $priority = in_array($input['priority'] ?? 'normal', self::PRIORITIES, true) ? $input['priority'] : 'normal';
+        $relatedType = isset($input['related_type']) && $input['related_type'] !== '' ? (string) $input['related_type'] : null;
+        if ($relatedType !== null && !in_array($relatedType, self::RELATED_TYPES, true)) {
+            throw new ValidationException(['related' => [t('followups.related_invalid')]]);
+        }
+
+        // A missing, empty or unknown type/priority never reaches the NOT NULL
+        // columns: on create it falls back to the defaults (task / normal, the
+        // columns' own defaults); on update it keeps the stored value, so an
+        // edit never silently resets it.
+        $type = $this->allowedOr($input['type'] ?? null, self::TYPES, (string) ($current['type'] ?? 'task'));
+        $priority = $this->allowedOr($input['priority'] ?? null, self::PRIORITIES, (string) ($current['priority'] ?? 'normal'));
+
+        [$assigneeId, $teamId, $departmentId] = $this->validatedPeople($input, $current);
 
         return [
             'title' => $title,
             'description' => isset($input['description']) && trim((string) $input['description']) !== '' ? trim((string) $input['description']) : null,
             'type' => $type,
             'priority' => $priority,
-            'assignee_user_id' => isset($input['assignee_user_id']) && $input['assignee_user_id'] !== '' ? (int) $input['assignee_user_id'] : null,
-            'team_id' => isset($input['team_id']) && $input['team_id'] !== '' ? (int) $input['team_id'] : null,
-            'department_id' => isset($input['department_id']) && $input['department_id'] !== '' ? (int) $input['department_id'] : null,
+            'assignee_user_id' => $assigneeId,
+            'team_id' => $teamId,
+            'department_id' => $departmentId,
             'due_at' => isset($input['due_at']) && $input['due_at'] !== '' ? $input['due_at'] : null,
             'timezone' => isset($input['timezone']) && $input['timezone'] !== '' ? $input['timezone'] : 'Asia/Tehran',
-            'related_type' => isset($input['related_type']) && $input['related_type'] !== '' ? $input['related_type'] : null,
+            'related_type' => $relatedType,
             'related_id' => isset($input['related_id']) && $input['related_id'] !== '' ? (int) $input['related_id'] : null,
         ];
+    }
+
+    /**
+     * assignee_user_id / team_id / department_id must belong to the caller's
+     * organization (G4): an assignee is an ACTIVE user of the organization —
+     * except the one already saved on this follow-up, which may be kept as is;
+     * team and department go through tenant-scoped repositories (another
+     * organization's id is "not found"). Lists show the assignee's name, so an
+     * unchecked id would surface another organization's user. Empty = none.
+     *
+     * @return array{0: ?int, 1: ?int, 2: ?int}
+     */
+    private function validatedPeople(array $input, ?array $current): array
+    {
+        $id = fn (string $key): ?int => isset($input[$key]) && $input[$key] !== '' && $input[$key] !== null ? (int) $input[$key] : null;
+        [$assigneeId, $teamId, $departmentId] = [$id('assignee_user_id'), $id('team_id'), $id('department_id')];
+        $errors = [];
+
+        if ($assigneeId !== null) {
+            $kept = $current !== null && $assigneeId === (int) ($current['assignee_user_id'] ?? 0);
+            $user = $assigneeId > 0 ? $this->users->findById($assigneeId) : null;
+            $valid = $user !== null && (int) $user['organization_id'] === OrganizationContext::id()
+                && ($kept || ($user['status'] ?? '') === 'active');
+            if (!$valid) {
+                $errors['assignee_user_id'][] = t('followups.error.invalid_assignee');
+            }
+        }
+        if ($teamId !== null && ($teamId <= 0 || $this->teams->findById($teamId) === null)) {
+            $errors['team_id'][] = t('followups.error.invalid_team');
+        }
+        if ($departmentId !== null && ($departmentId <= 0 || $this->departments->findById($departmentId) === null)) {
+            $errors['department_id'][] = t('followups.error.invalid_department');
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
+        return [$assigneeId, $teamId, $departmentId];
+    }
+
+    /** $value when it is one of $allowed, else $fallback. */
+    private function allowedOr(mixed $value, array $allowed, string $fallback): string
+    {
+        return is_string($value) && in_array($value, $allowed, true) ? $value : $fallback;
     }
 
     private function authorizeRecord(array $actingUser, string $permission, array $record): void

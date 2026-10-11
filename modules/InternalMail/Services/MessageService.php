@@ -208,10 +208,10 @@ final class MessageService
     private function send(array $actingUser, ?int $threadId, array $to, array $cc, array $bcc, string $subject, string $body, ?string $linkableType, ?int $linkableId, ?int $reuseMessageId = null, array $files = []): array
     {
         if (trim($subject) === '') {
-            throw new ValidationException(['subject' => ['Subject is required.']]);
+            throw new ValidationException(['subject' => ['mail.error.subject_required']]);
         }
         if (trim($body) === '') {
-            throw new ValidationException(['body' => ['Message cannot be empty.']]);
+            throw new ValidationException(['body' => ['mail.error.body_required']]);
         }
 
         $organizationId = (int) $actingUser['organization_id'];
@@ -232,7 +232,7 @@ final class MessageService
         $validBcc = $validate($bcc);
 
         if ($validTo === [] && $validCc === [] && $validBcc === []) {
-            throw new ValidationException(['recipients' => ['Choose at least one recipient in your organization.']]);
+            throw new ValidationException(['recipients' => ['mail.error.recipients_required']]);
         }
 
         $fields = [
@@ -271,6 +271,90 @@ final class MessageService
         $this->storeAttachments($actingUser, $messageId, $files);
 
         return $this->messages->findById($messageId);
+    }
+
+    /**
+     * A sent message the user took part in (any message of a thread they
+     * are on), with its sender's name and attachments — the source of a
+     * forward. Drafts can't be forwarded.
+     *
+     * @return array{message: array, sender_name: string, attachments: array}
+     */
+    public function forwardSource(array $actingUser, int $messageId): array
+    {
+        $this->authorize($actingUser, Permission::MAIL_SEND);
+
+        $message = $this->messages->findById($messageId);
+        if ($message === null || $message['status'] !== 'sent') {
+            throw new NotFoundException('Message not found.');
+        }
+        $this->requireParticipant($actingUser, $this->rootIdFor($messageId));
+
+        $sender = $this->users->findById((int) $message['sender_user_id']);
+
+        return [
+            'message' => $message,
+            'sender_name' => $sender !== null ? trim($sender['first_name'] . ' ' . ($sender['last_name'] ?? '')) : '',
+            'attachments' => $this->attachments->forMessage($messageId),
+        ];
+    }
+
+    /**
+     * Sends a forward as a new conversation. $attachmentIds picks which of
+     * the original message's attachments go along (copied, so deleting
+     * either message never affects the other); $files are new uploads.
+     *
+     * @param int[] $to @param int[] $cc @param int[] $bcc @param int[] $attachmentIds
+     */
+    public function forward(array $actingUser, int $messageId, array $to, array $cc, array $bcc, string $subject, string $body, array $attachmentIds, array $files = []): array
+    {
+        $source = $this->forwardSource($actingUser, $messageId);
+        $original = $source['message'];
+
+        $message = $this->send(
+            $actingUser, null, $to, $cc, $bcc, $subject, $body,
+            $original['linkable_type'], $original['linkable_id'] !== null ? (int) $original['linkable_id'] : null,
+            null, $files
+        );
+
+        $wanted = array_map('intval', $attachmentIds);
+        foreach ($source['attachments'] as $attachment) {
+            if (in_array((int) $attachment['id'], $wanted, true)) {
+                $this->copyAttachment($actingUser, $attachment, (int) $message['id']);
+            }
+        }
+
+        return $message;
+    }
+
+    /** Copies a stored attachment file under a new random name and links the copy to another message. */
+    private function copyAttachment(array $actingUser, array $attachment, int $messageId): void
+    {
+        $source = $this->absoluteAttachmentPath($attachment);
+        if (!is_file($source)) {
+            return; // file missing on disk: forward the message anyway
+        }
+
+        $organizationId = (int) $actingUser['organization_id'];
+        $orgDir = rtrim($this->storageRoot, '/') . '/' . $organizationId;
+        if (!is_dir($orgDir)) {
+            mkdir($orgDir, 0755, true);
+        }
+
+        $extension = strtolower(pathinfo((string) $attachment['original_filename'], PATHINFO_EXTENSION));
+        $storedName = bin2hex(random_bytes(16)) . ($extension !== '' ? '.' . $extension : '');
+        if (!copy($source, $orgDir . '/' . $storedName)) {
+            return;
+        }
+
+        $this->attachments->create([
+            'message_id' => $messageId,
+            'filename' => $organizationId . '/' . $storedName,
+            'original_filename' => $attachment['original_filename'],
+            'mime_type' => $attachment['mime_type'],
+            'size' => (int) $attachment['size'],
+            'uploaded_by_user_id' => $actingUser['id'],
+        ]);
     }
 
     public function attachmentsFor(int $messageId): array
@@ -334,7 +418,7 @@ final class MessageService
             }
 
             if ((int) $file['size'] > self::MAX_ATTACHMENT_BYTES) {
-                throw new ValidationException(['attachments' => ['Each attachment must be 25 MB or smaller.']]);
+                throw new ValidationException(['attachments' => ['mail.error.attachment_too_large']]);
             }
 
             $originalName = (string) $file['name'];
@@ -345,7 +429,7 @@ final class MessageService
             $storedPath = $orgDir . '/' . $storedName;
 
             if (!move_uploaded_file($file['tmp_name'], $storedPath)) {
-                throw new ValidationException(['attachments' => ['Could not save one of the attached files.']]);
+                throw new ValidationException(['attachments' => ['mail.error.attachment_failed']]);
             }
 
             $this->attachments->create([
@@ -395,6 +479,35 @@ final class MessageService
             throw new AuthorizationException();
         }
         $this->messages->restoreBySender($messageId);
+    }
+
+    /**
+     * Moves many messages of one folder (inbox|sent|drafts) to the trash.
+     * Each id goes through the single-item method and its own check;
+     * ids the user may not touch are skipped.
+     *
+     * @param array<int|string, mixed> $ids
+     * @return array{deleted: int, skipped: int}
+     */
+    public function bulkTrash(array $actingUser, string $folder, array $ids): array
+    {
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach (array_slice(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)), 0, 500) as $id) {
+            try {
+                match ($folder) {
+                    'inbox' => $this->deleteFromInbox($actingUser, $id),
+                    'sent' => $this->deleteFromSent($actingUser, $id),
+                    'drafts' => $this->deleteDraft($actingUser, $id),
+                };
+                $deleted++;
+            } catch (AuthorizationException | NotFoundException) {
+                $skipped++;
+            }
+        }
+
+        return ['deleted' => $deleted, 'skipped' => $skipped];
     }
 
     private function rootIdFor(int $messageId): int

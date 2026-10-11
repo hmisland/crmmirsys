@@ -23,8 +23,14 @@ storage/cache/*
 # --- Dev tooling ---
 vendor/
 .claude/settings.local.json
+.claude/launch.json
 .phpunit.result.cache
 .idea/
 .vscode/
 Thumbs.db
 desktop.ini
+
+# --- Local dev config & database dumps ---
+.env.local
+*.sql
+.dev-credentials

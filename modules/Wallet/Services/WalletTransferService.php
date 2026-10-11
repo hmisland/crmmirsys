@@ -57,15 +57,26 @@ final class WalletTransferService
         $senderWallet = $this->wallet->getOrCreateWallet($organizationId, $senderId, $currencyId);
         $recipientWallet = $this->wallet->getOrCreateWallet($organizationId, $recipientUserId, $currencyId);
 
-        $this->wallet->debit(
-            (int) $senderWallet['id'],
-            $totalDebit,
-            'transfer_out',
-            'user',
-            $recipientUserId,
-            'Transfer to ' . trim($recipient['first_name'] . ' ' . ($recipient['last_name'] ?? '')),
-            $senderId
-        );
+        // Fail early (before any ledger line) when amount + fee isn't covered.
+        if (bccomp((string) $senderWallet['balance'], $totalDebit, 18) < 0) {
+            throw new ValidationException(['amount' => ['Insufficient balance.']]);
+        }
+
+        $recipientName = trim($recipient['first_name'] . ' ' . ($recipient['last_name'] ?? ''));
+
+        // The transferred amount and the fee are separate ledger lines so
+        // the report shows exactly what the recipient got and what the fee was.
+        $this->wallet->debit((int) $senderWallet['id'], $amount, 'transfer_out', 'user', $recipientUserId, 'Transfer to ' . $recipientName, $senderId);
+
+        if (bccomp($fee, '0', 18) > 0) {
+            try {
+                $this->wallet->debit((int) $senderWallet['id'], $fee, 'transfer_fee', 'user', $recipientUserId, 'Transfer fee: ' . $recipientName, $senderId);
+            } catch (\Throwable $e) {
+                $this->wallet->credit((int) $senderWallet['id'], $amount, 'reversal', 'user', $recipientUserId, 'Reversed failed transfer', $senderId);
+
+                throw $e;
+            }
+        }
 
         try {
             $this->wallet->credit(
@@ -83,17 +94,18 @@ final class WalletTransferService
             throw $e;
         }
 
-        // The fee itself isn't credited anywhere in this pass — it's
-        // simply removed from circulation for the sender. A future
-        // Finance phase can route fees to a platform revenue wallet;
-        // for now it's only visible as its own 'transfer_fee'... —
-        // actually not even that: it's bundled into the single debit
-        // above (totalDebit = amount + fee) rather than split into a
-        // separate ledger line, which is why the ledger shows one
-        // "transfer_out" entry for the combined amount, not two. A
-        // real fee-revenue account is out of scope for this pass.
+        // The fee isn't credited anywhere yet — it's removed from
+        // circulation for the sender. A fee-revenue account is out of scope.
 
         return ['sender' => $this->wallet->find((int) $senderWallet['id']), 'fee' => $fee];
+    }
+
+    /** Fee settings for the transfer form hint: ['fixed' => string, 'percent' => string]. */
+    public function feeFor(int $organizationId): array
+    {
+        $settings = $this->orgSettings->find($organizationId);
+
+        return ['fixed' => (string) ($settings['transfer_fee_fixed'] ?? '0'), 'percent' => (string) ($settings['transfer_fee_percent'] ?? '0')];
     }
 
     private function authorize(array $actingUser, string $permission): void

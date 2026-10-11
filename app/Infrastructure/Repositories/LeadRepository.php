@@ -23,33 +23,51 @@ final class LeadRepository extends TenantScopedRepository
      * docblock for why the same named parameter can't be reused with
      * real (non-emulated) prepared statements.
      */
-    public function search(array $filters = []): array
+    public function search(array $filters = [], ?int $limit = null, int $offset = 0): array
     {
-        $sql = 'SELECT * FROM leads WHERE 1 = 1';
+        [$where, $params] = $this->searchConditions($filters);
+        $sql = 'SELECT * FROM leads WHERE ' . $where . ' ORDER BY created_at DESC, id DESC';
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+        }
+
+        return $this->tenantFindMany($sql, $params);
+    }
+
+    public function countSearch(array $filters = []): int
+    {
+        [$where, $params] = $this->searchConditions($filters);
+        $row = $this->tenantFindOne('SELECT COUNT(*) AS c FROM leads WHERE ' . $where, $params);
+
+        return (int) ($row['c'] ?? 0);
+    }
+
+    /** @return array{0: string, 1: array} */
+    private function searchConditions(array $filters): array
+    {
+        $where = '1 = 1';
         $params = [];
 
         if (!empty($filters['search'])) {
-            $sql .= ' AND (first_name LIKE :search1 OR last_name LIKE :search2 OR email LIKE :search3 OR company_name LIKE :search4)';
+            $where .= ' AND (first_name LIKE :search1 OR last_name LIKE :search2 OR email LIKE :search3 OR company_name LIKE :search4 OR phone LIKE :search5)';
             $like = '%' . $filters['search'] . '%';
-            $params['search1'] = $like;
-            $params['search2'] = $like;
-            $params['search3'] = $like;
-            $params['search4'] = $like;
+            foreach ([1, 2, 3, 4, 5] as $n) {
+                $params['search' . $n] = $like;
+            }
         }
 
         if (!empty($filters['status'])) {
-            $sql .= ' AND status = :status';
+            $where .= ' AND status = :status';
             $params['status'] = $filters['status'];
         }
 
         if (!empty($filters['owner_id'])) {
-            $sql .= ' AND owner_id = :owner_id';
+            $where .= ' AND owner_id = :owner_id';
             $params['owner_id'] = $filters['owner_id'];
         }
 
-        $sql .= ' ORDER BY created_at DESC';
-
-        return $this->tenantFindMany($sql, $params);
+        return [$where, $params];
     }
 
     public function create(array $data): int

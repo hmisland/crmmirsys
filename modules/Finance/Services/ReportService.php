@@ -25,21 +25,34 @@ final class ReportService
             throw new AuthorizationException();
         }
 
-        $invoiceSummary = $this->invoices->summaryForPeriod($startDate, $endDate);
-        $totalCredited = $this->creditNotes->totalForPeriod($startDate, $endDate);
-        $netRevenue = bcsub($invoiceSummary['total_revenue'], $totalCredited, 8);
-        $outstanding = bcsub($netRevenue, $invoiceSummary['total_paid'], 8);
+        // Remediation P1 (decision D1 = A): the invoices ISSUED in the period, per
+        // currency — never one total across currencies (no FX). Their credit notes
+        // (whatever the credit-note date) and payments so far are those invoices' own,
+        // so "outstanding" is what these invoices still owe today: the same
+        // grand − credited − paid rule as the invoice page — not a receivables
+        // balance at the period end (the page says so).
+        $currencies = [];
+        $count = 0;
+        foreach ($this->invoices->periodPerformanceByCurrency($startDate, $endDate) as $row) {
+            $net = bcsub((string) $row['total_revenue'], (string) $row['total_credited'], 18);
+            $currencies[(int) $row['currency_id']] = [
+                'currency_code' => (string) ($row['currency_code'] ?? ''),
+                'invoice_count' => (int) $row['invoice_count'],
+                'gross_revenue' => (string) $row['total_revenue'],
+                'total_credited' => (string) $row['total_credited'],
+                'net_revenue' => $net,
+                'total_tax' => (string) $row['total_tax'],
+                'total_paid' => (string) $row['total_paid'],
+                'outstanding' => bcsub($net, (string) $row['total_paid'], 18),
+            ];
+            $count += (int) $row['invoice_count'];
+        }
 
         return [
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'invoice_count' => (int) $invoiceSummary['invoice_count'],
-            'gross_revenue' => $invoiceSummary['total_revenue'],
-            'total_credited' => $totalCredited,
-            'net_revenue' => $netRevenue,
-            'total_tax' => $invoiceSummary['total_tax'],
-            'total_paid' => $invoiceSummary['total_paid'],
-            'outstanding' => $outstanding,
+            'invoice_count' => $count, // a count, so adding across currencies is meaningful
+            'currencies' => $currencies,
         ];
     }
 }

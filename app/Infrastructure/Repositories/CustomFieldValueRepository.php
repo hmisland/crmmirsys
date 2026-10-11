@@ -27,6 +27,16 @@ final class CustomFieldValueRepository extends TenantScopedRepository
         return $result;
     }
 
+    public function countForField(string $entityType, string $fieldKey): int
+    {
+        $row = $this->tenantFindOne(
+            "SELECT COUNT(*) AS c FROM custom_field_values WHERE entity_type = :type AND field_key = :key AND value IS NOT NULL AND value <> ''",
+            ['type' => $entityType, 'key' => $fieldKey]
+        );
+
+        return (int) ($row['c'] ?? 0);
+    }
+
     public function setValue(string $entityType, int $entityId, string $fieldKey, ?string $value): void
     {
         $existing = $this->tenantFindOne(

@@ -53,6 +53,12 @@ final class Permission
     public const CONTACTS_IMPORT = 'contacts.import';
     public const CONTACTS_MANAGE_CATEGORIES = 'contacts.manage_categories';
 
+    /**
+     * The only permissions an Organization Admin may grant to an
+     * individual user on top of their role (user_permission_grants).
+     */
+    public const USER_GRANTABLE = [self::CONTACTS_IMPORT, self::CONTACTS_EXPORT];
+
     // Phase 12 — Finance (registered upfront per the sub-phase plan; most are granted to roles as each sub-phase actually builds that feature)
     public const FINANCE_SETTINGS_VIEW = 'finance.settings.view';
     public const FINANCE_SETTINGS_EDIT = 'finance.settings.edit';
@@ -87,6 +93,7 @@ final class Permission
     public const COMPANIES_CREATE = 'companies.create';
     public const COMPANIES_EDIT = 'companies.edit';
     public const COMPANIES_DELETE = 'companies.delete';
+    public const COMPANIES_MANAGE_CATEGORIES = 'companies.manage_categories';
 
     public const LEADS_VIEW = 'leads.view';
     public const LEADS_CREATE = 'leads.create';
@@ -110,6 +117,8 @@ final class Permission
     public const TASKS_CREATE = 'tasks.create';
     public const TASKS_EDIT = 'tasks.edit';
     public const TASKS_DELETE = 'tasks.delete';
+    public const TASKS_CHANGE_STATUS = 'tasks.change_status';
+    public const TASKS_ARCHIVE = 'tasks.archive';
 
     public const FOLLOWUPS_VIEW = 'followups.view';
     public const FOLLOWUPS_CREATE = 'followups.create';
@@ -157,8 +166,89 @@ final class Permission
     public const FILES_MANAGE = 'files.manage';
     public const FILES_MANAGE_UPLOADERS = 'files.manage_uploaders';
 
-    /** @return string[] every known permission key */
+    // Client Records module (structured client history around a contact)
+    public const CLIENT_RECORDS_VIEW = 'client_records.view';
+    public const CLIENT_RECORDS_CREATE = 'client_records.create';
+    public const CLIENT_RECORDS_EDIT = 'client_records.edit';
+    public const CLIENT_RECORDS_DELETE = 'client_records.delete';
+    public const CLIENT_RECORDS_VIEW_SENSITIVE = 'client_records.view_sensitive';
+    public const CLIENT_RECORDS_MANAGE_SESSIONS = 'client_records.manage_sessions';
+    public const CLIENT_RECORDS_MANAGE_MEDIA = 'client_records.manage_media';
+    public const CLIENT_RECORDS_MANAGE_DOCUMENTS = 'client_records.manage_documents';
+    public const CLIENT_RECORDS_EXPORT = 'client_records.export';
+
+    // Appointments module (bookable resources, types, working hours)
+    public const APPOINTMENTS_VIEW = 'appointments.view';
+    public const APPOINTMENTS_CREATE = 'appointments.create';
+    public const APPOINTMENTS_EDIT = 'appointments.edit';
+    public const APPOINTMENTS_DELETE = 'appointments.delete';
+    public const APPOINTMENTS_MANAGE_SETTINGS = 'appointments.manage_settings';
+
+    /** @var array<string, string> permission key => module that registered it */
+    private static array $moduleKeys = [];
+
+    /** @return string[] every known permission key: Core's, then module-registered ones */
     public static function all(): array
+    {
+        return array_merge(self::coreKeys(), array_keys(self::$moduleKeys));
+    }
+
+    /**
+     * Lets a module add its own keys from its register(), without Core
+     * naming the module (docs/module-extension-points.md). Rules:
+     * - a key must be "<module>.<action>" (lower-case, dot-separated) —
+     *   a module can only register keys under its own prefix;
+     * - Core keys and keys already registered by another module are
+     *   never taken over (first registration wins);
+     * - re-registering the same key for the same module is a no-op.
+     * Invalid entries are skipped, never thrown: a module mistake must
+     * not take the whole application down at boot.
+     *
+     * Registering a key does not grant it to anyone, and holding it has
+     * no effect unless the module is also available to the user
+     * (ModuleMiddleware / ModuleGate check that first).
+     *
+     * @param string[] $keys
+     * @return string[] the keys actually registered for this module
+     */
+    public static function registerModuleKeys(string $module, array $keys): array
+    {
+        if (preg_match('/^[a-z][a-z0-9_]*$/', $module) !== 1) {
+            return [];
+        }
+
+        $core = self::coreKeys();
+        $registered = [];
+
+        foreach ($keys as $key) {
+            if (!is_string($key)
+                || preg_match('/^' . preg_quote($module, '/') . '(\.[a-z][a-z0-9_]*)+$/', $key) !== 1
+                || in_array($key, $core, true)
+                || (isset(self::$moduleKeys[$key]) && self::$moduleKeys[$key] !== $module)) {
+                continue;
+            }
+
+            self::$moduleKeys[$key] = $module;
+            $registered[] = $key;
+        }
+
+        return $registered;
+    }
+
+    /** @return string[] keys registered by modules (optionally only one module's) */
+    public static function moduleKeys(?string $module = null): array
+    {
+        return array_keys(array_filter(self::$moduleKeys, fn (string $owner) => $module === null || $owner === $module));
+    }
+
+    /** Test helper: drops one module's registered keys. */
+    public static function forgetModuleKeys(string $module): void
+    {
+        self::$moduleKeys = array_filter(self::$moduleKeys, fn (string $owner) => $owner !== $module);
+    }
+
+    /** @return string[] the code-defined Core catalogue (unchanged list) */
+    private static function coreKeys(): array
     {
         return [
             self::ORGANIZATION_VIEW, self::ORGANIZATION_EDIT,
@@ -177,12 +267,13 @@ final class Permission
             self::CREDIT_NOTES_VIEW, self::CREDIT_NOTES_CREATE,
             self::TAX_VIEW, self::TAX_MANAGE,
             self::FINANCIAL_REPORTS_VIEW, self::FINANCIAL_PERIODS_VIEW, self::FINANCIAL_PERIODS_CLOSE, self::FINANCIAL_PERIODS_REOPEN,
-            self::COMPANIES_VIEW, self::COMPANIES_CREATE, self::COMPANIES_EDIT, self::COMPANIES_DELETE,
+            self::COMPANIES_VIEW, self::COMPANIES_CREATE, self::COMPANIES_EDIT, self::COMPANIES_DELETE, self::COMPANIES_MANAGE_CATEGORIES,
             self::LEADS_VIEW, self::LEADS_CREATE, self::LEADS_EDIT, self::LEADS_DELETE, self::LEADS_ASSIGN, self::LEADS_CONVERT,
             self::CUSTOM_FIELDS_MANAGE,
             self::DEALS_VIEW, self::DEALS_CREATE, self::DEALS_EDIT, self::DEALS_DELETE, self::DEALS_CHANGE_STAGE,
             self::PIPELINES_MANAGE,
             self::TASKS_VIEW, self::TASKS_CREATE, self::TASKS_EDIT, self::TASKS_DELETE,
+            self::TASKS_CHANGE_STATUS, self::TASKS_ARCHIVE,
             self::FOLLOWUPS_VIEW, self::FOLLOWUPS_CREATE, self::FOLLOWUPS_EDIT, self::FOLLOWUPS_DELETE,
             self::FOLLOWUPS_ASSIGN, self::FOLLOWUPS_COMPLETE, self::FOLLOWUPS_CANCEL, self::FOLLOWUPS_EXPORT,
             self::FOLLOWUPS_MANAGE_RULES, self::FOLLOWUPS_MANAGE_REMINDERS,
@@ -192,6 +283,11 @@ final class Permission
             self::MAIL_VIEW, self::MAIL_SEND, self::MAIL_BROADCAST_TEAM, self::MAIL_BROADCAST_CUSTOMERS,
             self::NOTIFICATIONS_CHARGE, self::NOTIFICATIONS_VIEW_LOG,
             self::KB_VIEW, self::KB_MANAGE, self::FILES_VIEW, self::FILES_MANAGE, self::FILES_MANAGE_UPLOADERS,
+            self::CLIENT_RECORDS_VIEW, self::CLIENT_RECORDS_CREATE, self::CLIENT_RECORDS_EDIT, self::CLIENT_RECORDS_DELETE,
+            self::CLIENT_RECORDS_VIEW_SENSITIVE, self::CLIENT_RECORDS_MANAGE_SESSIONS, self::CLIENT_RECORDS_MANAGE_MEDIA,
+            self::CLIENT_RECORDS_MANAGE_DOCUMENTS, self::CLIENT_RECORDS_EXPORT,
+            self::APPOINTMENTS_VIEW, self::APPOINTMENTS_CREATE, self::APPOINTMENTS_EDIT,
+            self::APPOINTMENTS_DELETE, self::APPOINTMENTS_MANAGE_SETTINGS,
         ];
     }
 

@@ -13,6 +13,8 @@ use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Followups\Services\FollowUpRuleService;
 
+use function App\Infrastructure\Theme\t;
+
 final class FollowUpRuleController extends BaseController
 {
     public function __construct(
@@ -35,9 +37,9 @@ final class FollowUpRuleController extends BaseController
     {
         try {
             $this->rules->create(CurrentUser::user(), $request->all());
-            Session::setFlash('success', 'Rule created.');
+            Session::setFlash('success', t('followups.flash.rule_created'));
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not create this rule.');
+            Session::setFlash('error', array_values($e->errors)[0][0] ?? t('followups.flash.rule_create_failed'));
         }
 
         return $this->redirect('/followups/rules');
@@ -46,7 +48,7 @@ final class FollowUpRuleController extends BaseController
     public function toggle(Request $request): Response
     {
         $this->rules->toggle(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Rule updated.');
+        Session::setFlash('success', t('followups.flash.rule_updated'));
 
         return $this->redirect('/followups/rules');
     }
@@ -54,7 +56,7 @@ final class FollowUpRuleController extends BaseController
     public function delete(Request $request): Response
     {
         $this->rules->delete(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Rule deleted.');
+        Session::setFlash('success', t('followups.flash.rule_deleted'));
 
         return $this->redirect('/followups/rules');
     }

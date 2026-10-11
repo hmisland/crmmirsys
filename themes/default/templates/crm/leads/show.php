@@ -20,6 +20,9 @@ use App\Infrastructure\Security\Csrf;
         <?= $lead['company_name'] ? ' · ' . e($lead['company_name']) : '' ?>
     </p>
     <p><?= e(t('leads.status')) ?>: <strong><?= badge(t('leads.status.' . $lead['status']), $lead['status']) ?></strong> · <?= e(t('leads.score')) ?>: <?= e($lead['score']) ?></p>
+    <?php if (!empty($lead['description'])): ?>
+        <p><?= nl2br(e($lead['description'])) ?></p>
+    <?php endif; ?>
 
     <div class="actions">
         <?php if ($lead['status'] !== 'converted'): ?>
@@ -31,6 +34,9 @@ use App\Infrastructure\Security\Csrf;
             <a href="/contacts/<?= e($lead['converted_contact_id']) ?>" class="btn btn--primary"><?= icon('eye') ?><?= e(t('leads.view_converted_contact')) ?></a>
         <?php endif; ?>
         <a href="/leads/<?= e($lead['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
+        <?php if ($canCreateFollowUp ?? false): ?>
+            <a href="/followups/create?related_type=lead&amp;related_id=<?= e($lead['id']) ?>" class="btn"><?= icon('calendar-check') ?><?= e(t('followups.new')) ?></a>
+        <?php endif; ?>
         <form method="post" action="/leads/<?= e($lead['id']) ?>/delete" class="inline-form">
             <?= Csrf::field() ?>
             <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
@@ -39,6 +45,10 @@ use App\Infrastructure\Security\Csrf;
 </section>
 
 <?php
+$panelSubjectType = 'lead';
+$panelSubject = $lead;
+include $theme->templatesPath() . '/partials/related-panels.php';
+
 $type = 'lead';
 $id = (int) $lead['id'];
 include $theme->templatesPath() . '/crm/_record_support.php';

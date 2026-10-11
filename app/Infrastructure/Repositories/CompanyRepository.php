@@ -38,22 +38,51 @@ final class CompanyRepository extends TenantScopedRepository
      * parameter to appear more than once in one query and throws
      * "SQLSTATE[HY093]: Invalid parameter number" if it does.
      */
-    public function search(array $filters = []): array
+    public function search(array $filters = [], ?int $limit = null, int $offset = 0): array
     {
-        $sql = 'SELECT * FROM companies WHERE 1 = 1';
+        [$where, $params] = $this->searchConditions($filters);
+        $sql = 'SELECT * FROM companies WHERE ' . $where . ' ORDER BY name, id';
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+        }
+
+        return $this->tenantFindMany($sql, $params);
+    }
+
+    public function countSearch(array $filters = []): int
+    {
+        [$where, $params] = $this->searchConditions($filters);
+        $row = $this->tenantFindOne('SELECT COUNT(*) AS c FROM companies WHERE ' . $where, $params);
+
+        return (int) ($row['c'] ?? 0);
+    }
+
+    /** @return array{0: string, 1: array} */
+    private function searchConditions(array $filters): array
+    {
+        $where = '1 = 1';
         $params = [];
 
         if (!empty($filters['search'])) {
-            $sql .= ' AND (name LIKE :search1 OR email LIKE :search2 OR website LIKE :search3)';
+            $where .= ' AND (name LIKE :search1 OR email LIKE :search2 OR website LIKE :search3 OR phone LIKE :search4 OR brand LIKE :search5 OR national_id LIKE :search6)';
             $like = '%' . $filters['search'] . '%';
-            $params['search1'] = $like;
-            $params['search2'] = $like;
-            $params['search3'] = $like;
+            foreach ([1, 2, 3, 4, 5, 6] as $n) {
+                $params['search' . $n] = $like;
+            }
         }
 
-        $sql .= ' ORDER BY name';
+        if (!empty($filters['owner_id'])) {
+            $where .= ' AND owner_id = :owner_id';
+            $params['owner_id'] = $filters['owner_id'];
+        }
 
-        return $this->tenantFindMany($sql, $params);
+        if (!empty($filters['category_id'])) {
+            $where .= ' AND category_id = :category_id';
+            $params['category_id'] = (int) $filters['category_id'];
+        }
+
+        return [$where, $params];
     }
 
     public function create(array $data): int

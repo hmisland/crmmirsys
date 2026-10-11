@@ -15,6 +15,8 @@ use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Sales\Services\TaskService;
 
+use function App\Infrastructure\Theme\t;
+
 final class TaskController extends BaseController
 {
     private const ALLOWED_TYPES = ['contact', 'company', 'lead', 'deal'];
@@ -29,12 +31,47 @@ final class TaskController extends BaseController
 
     public function myTasks(Request $request): Response
     {
-        $organizationId = (int) CurrentUser::user()['organization_id'];
+        $user = CurrentUser::user();
+        $archived = $request->query('view') === 'archived';
+        $status = in_array($request->query('status'), TaskService::STATUSES, true) ? (string) $request->query('status') : '';
 
         return $this->viewWithLayout('sales/tasks', 'layout', [
-            'tasks' => $this->tasks->upcomingForUser((int) CurrentUser::id()),
-            'users' => $this->users->findAllInOrganization($organizationId),
+            'tasks' => $this->tasks->forUser($user, $archived, $status !== '' ? $status : null),
+            'users' => $this->users->findAllInOrganization((int) $user['organization_id']),
+            'archived' => $archived,
+            'statusFilter' => $status,
+            'can' => $this->tasks->capabilities($user),
         ]);
+    }
+
+    public function changeStatus(Request $request): Response
+    {
+        $status = (string) $request->input('status', '');
+
+        try {
+            $this->tasks->changeStatus(CurrentUser::user(), (int) $request->attribute('id'), $status);
+            Session::setFlash('success', t('tasks.flash.status_changed', ['status' => t('tasks.status.' . $status)]));
+        } catch (ValidationException) {
+            Session::setFlash('error', t('tasks.invalid_status'));
+        }
+
+        return $this->redirect($this->backTo($request));
+    }
+
+    public function archive(Request $request): Response
+    {
+        $this->tasks->archive(CurrentUser::user(), (int) $request->attribute('id'));
+        Session::setFlash('success', t('tasks.flash.archived'));
+
+        return $this->redirect($this->backTo($request));
+    }
+
+    public function unarchive(Request $request): Response
+    {
+        $this->tasks->unarchive(CurrentUser::user(), (int) $request->attribute('id'));
+        Session::setFlash('success', t('tasks.flash.unarchived'));
+
+        return $this->redirect($this->backTo($request));
     }
 
     public function show(Request $request): Response
@@ -51,6 +88,7 @@ final class TaskController extends BaseController
             'assignees' => array_values(array_filter($allUsers, fn ($u) => in_array((int) $u['id'], $assigneeIds, true))),
             'comments' => $this->tasks->comments($id),
             'attachments' => $this->tasks->attachments($id),
+            'can' => $this->tasks->capabilities(CurrentUser::user()),
             'errors' => [],
         ]);
     }
@@ -59,7 +97,7 @@ final class TaskController extends BaseController
     {
         try {
             $this->tasks->create(CurrentUser::user(), $request->all());
-            Session::setFlash('success', 'Task added.');
+            Session::setFlash('success', t('tasks.flash.added'));
         } catch (ValidationException $e) {
             Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not add task.');
         }
@@ -73,7 +111,7 @@ final class TaskController extends BaseController
 
         try {
             $this->tasks->update(CurrentUser::user(), $id, $request->all());
-            Session::setFlash('success', 'Task updated.');
+            Session::setFlash('success', t('tasks.flash.updated'));
         } catch (ValidationException $e) {
             Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not update task.');
         }
@@ -91,7 +129,7 @@ final class TaskController extends BaseController
     public function delete(Request $request): Response
     {
         $this->tasks->delete(CurrentUser::user(), (int) $request->attribute('id'));
-        Session::setFlash('success', 'Task deleted.');
+        Session::setFlash('success', t('tasks.flash.deleted'));
 
         return $this->redirect($this->backTo($request));
     }
@@ -111,7 +149,7 @@ final class TaskController extends BaseController
 
     public function deleteComment(Request $request): Response
     {
-        $this->tasks->deleteComment((int) $request->attribute('commentId'));
+        $this->tasks->deleteComment(CurrentUser::user(), (int) $request->attribute('id'), (int) $request->attribute('commentId'));
 
         return $this->redirect('/tasks/' . (int) $request->attribute('id'));
     }
@@ -138,7 +176,7 @@ final class TaskController extends BaseController
 
     public function deleteAttachment(Request $request): Response
     {
-        $this->tasks->deleteAttachment((int) $request->attribute('attachmentId'));
+        $this->tasks->deleteAttachment(CurrentUser::user(), (int) $request->attribute('id'), (int) $request->attribute('attachmentId'));
 
         return $this->redirect('/tasks/' . (int) $request->attribute('id'));
     }
@@ -148,13 +186,9 @@ final class TaskController extends BaseController
         $id = (int) $request->attribute('id');
         $attachmentId = (int) $request->attribute('attachmentId');
 
-        $match = null;
-        foreach ($this->tasks->attachments($id) as $row) {
-            if ((int) $row['id'] === $attachmentId) {
-                $match = $row;
-                break;
-            }
-        }
+        // The task must be viewable by this user (403 otherwise) and the file
+        // must be THIS task's (404 otherwise) — before any byte is served.
+        $match = $this->tasks->attachmentForDownload(CurrentUser::user(), $id, $attachmentId);
 
         if ($match === null) {
             throw new NotFoundException();

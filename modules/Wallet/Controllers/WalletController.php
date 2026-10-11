@@ -10,18 +10,22 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Config\Config;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Wallet\Gateways\GatewayRegistry;
+use Modules\Wallet\Services\WalletGiftService;
 use Modules\Wallet\Services\WalletService;
 use Modules\Wallet\Services\WalletSettingsService;
 use Modules\Wallet\Services\WalletTopUpService;
 use Modules\Wallet\Services\WalletTransferService;
 use Modules\Wallet\Services\WalletWithdrawalService;
 use Modules\Wallet\WalletWithdrawalRepository;
+
+use function App\Infrastructure\Theme\t;
 
 final class WalletController extends BaseController
 {
@@ -36,6 +40,7 @@ final class WalletController extends BaseController
         private readonly GatewayRegistry $gateways,
         private readonly UserRepository $users,
         private readonly BankAccountService $bankAccounts,
+        private readonly ?WalletGiftService $gifts = null,
     ) {
         parent::__construct($templates);
     }
@@ -48,9 +53,15 @@ final class WalletController extends BaseController
 
         $wallet = $this->wallet->getOrCreateWallet($organizationId, (int) $actingUser['id'], $currencyId);
 
+        $type = (string) $request->query('type', '');
+        $ledger = array_filter($this->wallet->ledgerFor((int) $wallet['id'], 1000), fn ($e) => $type === '' || $e['type'] === $type);
+        [$ledger, $pagination] = Pagination::slice($ledger, $request);
+
         return $this->viewWithLayout('wallet/index', 'layout', [
             'wallet' => $wallet,
-            'ledger' => $this->wallet->ledgerFor((int) $wallet['id'], 30),
+            'ledger' => $ledger,
+            'pagination' => $pagination,
+            'ledgerType' => $type,
             'withdrawalRequests' => $this->withdrawalRequests->forWallet((int) $wallet['id']),
             'limits' => $this->settings->effectiveTopupLimits($organizationId),
             'gateways' => $this->gateways->all(),
@@ -59,6 +70,8 @@ final class WalletController extends BaseController
                 fn ($u) => (int) $u['id'] !== (int) $actingUser['id']
             ),
             'bankAccounts' => $this->bankAccounts->forUser((int) $actingUser['id']),
+            'transferFee' => $this->transfer->feeFor($organizationId),
+            'canGift' => $this->gifts?->canManage($actingUser) ?? false,
         ]);
     }
 
@@ -105,14 +118,17 @@ final class WalletController extends BaseController
     public function transfer(Request $request): Response
     {
         try {
-            $this->transfer->transfer(
+            $result = $this->transfer->transfer(
                 CurrentUser::user(),
                 (int) $request->input('recipient_user_id', 0),
                 (string) $request->input('amount', '')
             );
-            Session::setFlash('success', 'Transfer sent.');
+            Session::setFlash('success', bccomp($result['fee'], '0', 18) > 0
+                ? t('wallet.transfer_sent_fee', ['fee' => number_format((float) $result['fee'])])
+                : t('wallet.transfer_sent'));
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not complete transfer.');
+            $message = array_values($e->errors)[0][0] ?? 'Could not complete transfer.';
+            Session::setFlash('error', $message === 'Insufficient balance.' ? t('wallet.transfer_insufficient') : $message);
         }
 
         return $this->redirect('/wallet');

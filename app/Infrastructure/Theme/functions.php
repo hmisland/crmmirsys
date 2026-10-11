@@ -62,7 +62,7 @@ function t(string $key, array $replace = []): string
  */
 function icon(string $name, string $class = ''): string
 {
-    static $directional = ['chevron-right', 'chevron-left', 'arrow-right', 'arrow-left', 'log-in', 'log-out', 'reply', 'send', 'undo'];
+    static $directional = ['chevron-right', 'chevron-left', 'arrow-right', 'arrow-left', 'log-in', 'log-out', 'reply', 'forward', 'send', 'undo'];
 
     $classes = trim('icon ' . (in_array($name, $directional, true) ? 'icon--dir ' : '') . $class);
 
@@ -80,9 +80,9 @@ function badge(string $label, ?string $status): string
 {
     static $tones = [
         'success' => ['active', 'won', 'paid', 'accepted', 'converted', 'completed', 'resolved', 'approved', 'delivered', 'enabled'],
-        'warning' => ['pending', 'partial', 'in_progress', 'contacted', 'unpaid', 'expired'],
+        'warning' => ['pending', 'partial', 'in_progress', 'contacted', 'unpaid', 'expired', 'no_show', 'requested'],
         'danger' => ['lost', 'rejected', 'cancelled', 'failed', 'disabled', 'unqualified', 'deprecated'],
-        'info' => ['issued', 'open', 'new', 'qualified', 'sent', 'scheduled'],
+        'info' => ['issued', 'open', 'new', 'qualified', 'sent', 'scheduled', 'planned', 'confirmed'],
     ];
 
     $tone = 'neutral';
@@ -94,4 +94,38 @@ function badge(string $label, ?string $status): string
     }
 
     return '<span class="badge' . ($tone !== 'neutral' ? ' badge--' . $tone : '') . '">' . e($label) . '</span>';
+}
+
+/**
+ * Presentation-only helper: a small "?" button that opens a help-center
+ * article (/help/{slug}) in the shared help popup, or as a normal page
+ * when JavaScript is off. Use next to a page title or field:
+ * <?= help_link('deal-contract-sales-project') ?>
+ */
+function help_link(string $slug, string $class = ''): string
+{
+    $url = '/help/' . rawurlencode($slug);
+
+    return '<a href="' . e($url) . '" class="' . e(trim('help-link ' . $class)) . '"'
+        . ' data-related-url="' . e($url . '?fragment=1') . '" data-related-dialog="help-dialog"'
+        . ' data-related-title="' . e(t('help.title')) . '"'
+        . ' aria-label="' . e(t('help.open')) . '" title="' . e(t('help.open')) . '">'
+        . icon('help-circle') . '</a>';
+}
+
+/**
+ * Stage 5.2 (L2): a money amount for display under the currency precision
+ * policy (App\Infrastructure\Finance\CurrencyPrecision): IRR with up to 3
+ * significant decimals, other currencies with their configured precision,
+ * rounded half-up. Pass the template's LocaleFormatter to keep its localized
+ * digits; without one: Latin digits with "," grouping, as number_format()
+ * gave. Display only — stored amounts never change. Never adds currencies.
+ */
+function money(mixed $amount, ?string $currencyCode, ?\App\Infrastructure\Localization\LocaleFormatter $fmt = null): string
+{
+    $amount = trim((string) $amount) === '' ? '0' : trim((string) $amount);
+    $currency = $currencyCode !== null && $currencyCode !== '' ? \App\Infrastructure\Finance\CurrencyPrecision::currencyByCode($currencyCode) : null;
+
+    return ($fmt ?? new \App\Infrastructure\Localization\LocaleFormatter('en'))
+        ->number($amount, \App\Infrastructure\Finance\CurrencyPrecision::displayDecimals($amount, $currency));
 }

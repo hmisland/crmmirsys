@@ -19,6 +19,21 @@ use App\Infrastructure\Security\Csrf;
     <p class="muted"><?= e(t('wallet.status')) ?>: <?= badge(t('wallet.wallet_status.' . $wallet['status']), $wallet['status']) ?></p>
 </section>
 
+<?php if ($canGift ?? false): ?>
+<section class="card card--form">
+    <h2><?= e(t('wallet_gift.redeem_title')) ?></h2>
+    <p class="muted"><?= e(t('wallet_gift.redeem_hint')) ?></p>
+    <form method="post" action="/org/wallet/gift/redeem">
+        <?= Csrf::field() ?>
+        <input type="hidden" name="return" value="/wallet">
+        <label for="gift_code"><?= e(t('wallet_gift.code')) ?></label>
+        <input type="text" id="gift_code" name="code" required dir="ltr" autocomplete="off" placeholder="GIFT-XXXX-XXXX-XXXX" class="field-md">
+        <button type="submit" class="btn btn--primary"><?= icon('check') ?><?= e(t('wallet_gift.redeem')) ?></button>
+    </form>
+    <p class="field-hint"><a href="/org/wallet"><?= icon('send') ?><?= e(t('wallet_gift.send_title')) ?></a></p>
+</section>
+<?php endif; ?>
+
 <section class="card card--form">
     <h2><?= e(t('wallet.top_up')) ?></h2>
     <?php if ($gateways === []): ?>
@@ -58,6 +73,9 @@ use App\Infrastructure\Security\Csrf;
 
             <label for="transfer_amount"><?= e(t('wallet.amount')) ?></label>
             <input type="number" id="transfer_amount" name="amount" min="1" required>
+            <?php if (isset($transferFee) && ((float) $transferFee['fixed'] > 0 || (float) $transferFee['percent'] > 0)): ?>
+                <div class="field-hint"><?= e(t('wallet.transfer_fee_hint', ['percent' => rtrim(rtrim($transferFee['percent'], '0'), '.'), 'fixed' => number_format((float) $transferFee['fixed'])])) ?></div>
+            <?php endif; ?>
 
             <button type="submit" class="btn btn--primary"><?= icon('send') ?><?= e(t('wallet.send')) ?></button>
         </form>
@@ -104,6 +122,7 @@ use App\Infrastructure\Security\Csrf;
 
 <section class="card">
     <h2><?= e(t('wallet.recent_activity')) ?></h2>
+    <?php include __DIR__ . '/_ledger-filter.php'; ?>
     <div class="table-responsive">
     <table class="table">
         <thead><tr><th><?= e(t('wallet.date')) ?></th><th><?= e(t('wallet.type')) ?></th><th><?= e(t('wallet.amount')) ?></th><th><?= e(t('wallet.balance_after')) ?></th><th><?= e(t('contacts.description')) ?></th></tr></thead>

@@ -19,7 +19,7 @@ namespace App\Infrastructure\Localization;
 final class Translator
 {
     /** Every locale the language switcher offers. Adding a language = add its file under /lang AND a line here. */
-    public const SUPPORTED_LOCALES = ['en', 'fa', 'ar', 'tr'];
+    public const SUPPORTED_LOCALES = ['en', 'fa', 'ar', 'tr', 'fr'];
 
     /** Locales that read right-to-left. */
     private const RTL_LOCALES = ['fa', 'ar'];

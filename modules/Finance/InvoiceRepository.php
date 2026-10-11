@@ -21,30 +21,80 @@ final class InvoiceRepository extends TenantScopedRepository
      * list's correlated subqueries have their own WHERE clauses
      * textually before the outer one.
      */
-    public function search(array $filters = []): array
+    public function search(array $filters = [], ?int $limit = null, int $offset = 0): array
     {
-        $orgScoped = !SuperAdminContext::isActive();
+        [$where, $params] = $this->searchConditions($filters);
         $sql = "SELECT i.*,
                     (SELECT code FROM currencies WHERE currencies.id = i.currency_id) AS currency_code,
                     (SELECT CONCAT(first_name, ' ', COALESCE(last_name, '')) FROM contacts WHERE contacts.id = i.contact_id) AS contact_name,
-                    (SELECT CONCAT(first_name, ' ', COALESCE(last_name, '')) FROM users WHERE users.id = i.owner_id) AS owner_name
+                    (SELECT CONCAT(first_name, ' ', COALESCE(last_name, '')) FROM users WHERE users.id = i.owner_id) AS owner_name,
+                    (SELECT COALESCE(SUM(c.amount), 0) FROM credit_notes c
+                      WHERE c.invoice_id = i.id AND c.organization_id = i.organization_id) AS credited_total
                 FROM invoices i
-                WHERE " . ($orgScoped ? 'i.organization_id = :org_id' : '1 = 1');
+                WHERE " . $where . ' ORDER BY i.created_at DESC, i.id DESC';
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+        }
+
+        return $this->findMany($sql, $params);
+    }
+
+    public function countSearch(array $filters = []): int
+    {
+        [$where, $params] = $this->searchConditions($filters);
+        $row = $this->findOne('SELECT COUNT(*) AS c FROM invoices i WHERE ' . $where, $params);
+
+        return (int) ($row['c'] ?? 0);
+    }
+
+    /**
+     * Filters: owner_id, status, contact_id, search (invoice number or
+     * contact name), date_from / date_to (issue date, Y-m-d).
+     *
+     * @return array{0: string, 1: array}
+     */
+    private function searchConditions(array $filters): array
+    {
+        $orgScoped = !SuperAdminContext::isActive();
+        $where = $orgScoped ? 'i.organization_id = :org_id' : '1 = 1';
         $params = $orgScoped ? ['org_id' => OrganizationContext::id()] : [];
 
         if (!empty($filters['owner_id'])) {
-            $sql .= ' AND i.owner_id = :owner_id';
+            $where .= ' AND i.owner_id = :owner_id';
             $params['owner_id'] = $filters['owner_id'];
         }
 
         if (!empty($filters['status'])) {
-            $sql .= ' AND i.status = :status';
+            $where .= ' AND i.status = :status';
             $params['status'] = $filters['status'];
         }
 
-        $sql .= ' ORDER BY i.created_at DESC';
+        if (!empty($filters['contact_id'])) {
+            $where .= ' AND i.contact_id = :contact_id';
+            $params['contact_id'] = (int) $filters['contact_id'];
+        }
 
-        return $this->findMany($sql, $params);
+        if (!empty($filters['search'])) {
+            $where .= " AND (i.invoice_number LIKE :search1 OR i.custom_number LIKE :search3 OR i.contact_id IN (
+                SELECT c.id FROM contacts c WHERE c.organization_id = i.organization_id
+                    AND CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')) LIKE :search2))";
+            $params['search1'] = '%' . $filters['search'] . '%';
+            $params['search2'] = '%' . $filters['search'] . '%';
+            $params['search3'] = '%' . $filters['search'] . '%';
+        }
+
+        if (!empty($filters['date_from'])) {
+            $where .= ' AND i.issue_date >= :date_from';
+            $params['date_from'] = $filters['date_from'];
+        }
+
+        if (!empty($filters['date_to'])) {
+            $where .= ' AND i.issue_date <= :date_to';
+            $params['date_to'] = $filters['date_to'];
+        }
+
+        return [$where, $params];
     }
 
     public function findById(int $id): ?array
@@ -59,24 +109,36 @@ final class InvoiceRepository extends TenantScopedRepository
     }
 
     /**
-     * Issued invoices only — a basic report has no business counting
-     * drafts (not real yet) or cancelled ones (voided) as revenue.
-     * No correlated subquery here, so tenantFindOne()'s auto-scoping
-     * is safe.
+     * Period performance per currency (remediation P1, decision D1 = A): the
+     * ISSUED invoices whose issue_date is in the period — drafts aren't real
+     * yet and cancelled ones are void — one row per invoice currency (amounts
+     * in different currencies are never added together). credited_total is
+     * every credit note OF THOSE invoices, whatever its own date; paid_total
+     * is what those invoices have received so far.
+     *
+     * Explicit organization filter on both the invoices and the correlated
+     * credit-note subquery (tenantFindMany() would scope the first WHERE,
+     * which is the subquery's).
+     *
+     * @return array<int, array<string, mixed>> ordered by currency id
      */
-    public function summaryForPeriod(string $startDate, string $endDate): array
+    public function periodPerformanceByCurrency(string $startDate, string $endDate): array
     {
-        $row = $this->tenantFindOne(
-            "SELECT COUNT(*) AS invoice_count,
-                    COALESCE(SUM(grand_total), 0) AS total_revenue,
-                    COALESCE(SUM(tax_total), 0) AS total_tax,
-                    COALESCE(SUM(paid_total), 0) AS total_paid
-             FROM invoices
-             WHERE status = 'issued' AND issue_date BETWEEN :start_date AND :end_date",
-            ['start_date' => $startDate, 'end_date' => $endDate]
+        return $this->findMany(
+            "SELECT i.currency_id,
+                    (SELECT code FROM currencies WHERE currencies.id = i.currency_id) AS currency_code,
+                    COUNT(*) AS invoice_count,
+                    COALESCE(SUM(i.grand_total), 0) AS total_revenue,
+                    COALESCE(SUM(i.tax_total), 0) AS total_tax,
+                    COALESCE(SUM(i.paid_total), 0) AS total_paid,
+                    COALESCE(SUM((SELECT COALESCE(SUM(c.amount), 0) FROM credit_notes c
+                                   WHERE c.invoice_id = i.id AND c.organization_id = i.organization_id)), 0) AS total_credited
+               FROM invoices i
+              WHERE i.organization_id = :org_id AND i.status = 'issued' AND i.issue_date BETWEEN :start_date AND :end_date
+              GROUP BY i.currency_id
+              ORDER BY i.currency_id",
+            ['org_id' => OrganizationContext::id(), 'start_date' => $startDate, 'end_date' => $endDate]
         );
-
-        return $row ?? ['invoice_count' => 0, 'total_revenue' => '0', 'total_tax' => '0', 'total_paid' => '0'];
     }
 
     public function create(array $fields): int

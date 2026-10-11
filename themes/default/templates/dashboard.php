@@ -1,6 +1,6 @@
 <?php
-/** @var int $contactsCount */
-/** @var int $companiesCount */
+/** @var int|null $contactsCount */
+/** @var int|null $companiesCount */
 /** @var array|null $wallet */
 /** @var array|null $tasks */
 /** @var int|null $unreadMailCount */
@@ -20,10 +20,13 @@ $greetingName = trim((string) ($me['first_name'] ?? ''));
 
 // Every tile maps 1:1 to a value the controller already provides; a
 // tile whose module isn't available (value === null) is simply omitted.
-$kpis = [
-    ['label' => t('dashboard.contacts_count'), 'value' => $contactsCount, 'href' => '/contacts', 'link' => t('nav.contacts'), 'icon' => 'users', 'tone' => ''],
-    ['label' => t('dashboard.companies_count'), 'value' => $companiesCount, 'href' => '/companies', 'link' => t('nav.companies'), 'icon' => 'building', 'tone' => 'info'],
-];
+$kpis = [];
+if ($contactsCount !== null) {
+    $kpis[] = ['label' => t('dashboard.contacts_count'), 'value' => $contactsCount, 'href' => '/contacts', 'link' => t('nav.contacts'), 'icon' => 'users', 'tone' => ''];
+}
+if ($companiesCount !== null) {
+    $kpis[] = ['label' => t('dashboard.companies_count'), 'value' => $companiesCount, 'href' => '/companies', 'link' => t('nav.companies'), 'icon' => 'building', 'tone' => 'info'];
+}
 if ($wallet !== null) {
     $kpis[] = ['label' => t('dashboard.wallet_balance'), 'value' => (float) $wallet['balance'], 'unit' => $wallet['currency_code'], 'href' => '/wallet', 'link' => t('wallet.my_wallet'), 'icon' => 'wallet', 'tone' => 'success'];
 }

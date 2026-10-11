@@ -85,7 +85,69 @@ final class ErrorHandler
             'trace' => $this->debug ? $e->getTraceAsString() : null,
         ]);
 
+        if ($status === 403 && !$request->isJson()) {
+            $redirect = $this->forbiddenRedirect($request);
+            if ($redirect !== null) {
+                return $redirect;
+            }
+        }
+
         return $this->render($request, $status, $e);
+    }
+
+    /**
+     * A permission denial in the web UI isn't a crash: send the user back
+     * to the page they came from (or the dashboard) and let the layout
+     * show a "you don't have the required permission" popup there
+     * (one-time 'forbidden' flash). Only same-origin referers are
+     * followed — never an open redirect — and never the URL that was
+     * just denied, so a refresh of a forbidden page can't loop. Falls
+     * back to the themed 403 page when there's no session or nowhere
+     * safe to go. API (JSON) callers keep getting a plain 403.
+     */
+    private function forbiddenRedirect(Request $request): ?Response
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return null;
+        }
+
+        $current = (string) ($request->server('REQUEST_URI') ?? $request->path);
+        $target = $this->sameOriginReferer($request);
+
+        if ($target === null || $target === $current) {
+            $target = '/';
+        }
+
+        if ($target === $current || $request->path === '/') {
+            return null; // the fallback page itself was denied — show the 403 page instead of looping
+        }
+
+        \App\Infrastructure\Security\Session::setFlash('forbidden', '1');
+
+        return Response::redirect($target, 303);
+    }
+
+    private function sameOriginReferer(Request $request): ?string
+    {
+        $referer = (string) $request->header('REFERER', '');
+        if ($referer === '') {
+            return null;
+        }
+
+        $parts = parse_url($referer);
+        $host = (string) $request->server('HTTP_HOST', '');
+        $refererHost = ($parts['host'] ?? '') . (isset($parts['port']) ? ':' . $parts['port'] : '');
+
+        if ($parts === false || $host === '' || strcasecmp($refererHost, $host) !== 0) {
+            return null;
+        }
+
+        $path = (string) ($parts['path'] ?? '/');
+        if (!str_starts_with($path, '/') || str_starts_with($path, '//')) {
+            return null;
+        }
+
+        return $path . (isset($parts['query']) ? '?' . $parts['query'] : '');
     }
 
     private function render(Request $request, int $status, ?\Throwable $e = null): Response
@@ -106,7 +168,11 @@ final class ErrorHandler
             return Response::json($payload, $status);
         }
 
-        $view = $status === 404 ? 'errors/404' : 'errors/500';
+        $view = match ($status) {
+            404 => 'errors/404',
+            403 => 'errors/403',
+            default => 'errors/500',
+        };
         $message = $status >= 500 || !$e ? null : $e->getMessage();
 
         return Response::html($this->templates->render($view, ['message' => $message]), $status);

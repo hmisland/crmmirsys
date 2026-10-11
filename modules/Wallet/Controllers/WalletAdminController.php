@@ -8,11 +8,13 @@ use App\Application\Controllers\BaseController;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Wallet\Services\WalletAdminService;
+use Modules\Wallet\Services\WalletGiftService;
 use Modules\Wallet\Services\WalletLedgerAccessService;
 use Modules\Wallet\Services\WalletSettingsService;
 use Modules\Wallet\Services\WalletWithdrawalService;
@@ -26,6 +28,7 @@ final class WalletAdminController extends BaseController
         private readonly WalletSettingsService $settings,
         private readonly WalletLedgerAccessService $ledgerAccess,
         private readonly UserRepository $users,
+        private readonly ?WalletGiftService $gifts = null,
     ) {
         parent::__construct($templates);
     }
@@ -35,12 +38,19 @@ final class WalletAdminController extends BaseController
         $actingUser = CurrentUser::user();
         $organizationId = (int) $actingUser['organization_id'];
 
+        $type = (string) $request->query('type', '');
+        $transactions = array_filter($this->ledgerAccess->forOrganization($actingUser, 1000), fn ($e) => $type === '' || $e['type'] === $type);
+        [$transactions, $pagination] = Pagination::slice($transactions, $request);
+
         return $this->viewWithLayout('wallet/admin', 'layout', [
             'pendingWithdrawals' => $this->withdrawals->pendingForOrganization($actingUser),
-            'transactions' => $this->ledgerAccess->forOrganization($actingUser, 100),
+            'transactions' => $transactions,
+            'pagination' => $pagination,
+            'ledgerType' => $type,
             'orgSettings' => $this->settings->orgSettings($organizationId),
             'platformLimits' => $this->settings->effectiveTopupLimits($organizationId),
             'users' => $this->users->findAllInOrganization($organizationId),
+            'canGift' => $this->gifts?->canManage($actingUser) ?? false,
         ]);
     }
 

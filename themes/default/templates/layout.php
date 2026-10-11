@@ -27,6 +27,8 @@ $dir = $translator !== null ? $translator->direction() : 'ltr';
 $authUser = CurrentUser::user();
 $successFlash = Session::getFlash('success');
 $errorFlash = Session::getFlash('error');
+// Set by ErrorHandler when a page/action was denied (403) — shown as a popup.
+$forbiddenFlash = Session::getFlash('forbidden') !== null;
 
 // Per Phase 0 §73: "hiding a menu item is not a security mechanism" —
 // this check exists purely so a logged-in user doesn't see a Deals
@@ -74,6 +76,30 @@ $knowledgeEnabled = $authUser !== null && (new ModuleAccessResolver(
     new UserModuleOverrideRepository()
 ))->resolvedForUser('knowledge', $authUser);
 
+$contractsEnabled = $authUser !== null && (new ModuleAccessResolver(
+    new ModuleRepository(),
+    new OrganizationModuleRepository(),
+    new UserModuleOverrideRepository()
+))->resolvedForUser('contracts', $authUser);
+
+$projectsEnabled = $authUser !== null && (new ModuleAccessResolver(
+    new ModuleRepository(),
+    new OrganizationModuleRepository(),
+    new UserModuleOverrideRepository()
+))->resolvedForUser('projects', $authUser);
+
+$clientRecordsEnabled = $authUser !== null && (new ModuleAccessResolver(
+    new ModuleRepository(),
+    new OrganizationModuleRepository(),
+    new UserModuleOverrideRepository()
+))->resolvedForUser('client_records', $authUser);
+
+$appointmentsEnabled = $authUser !== null && (new ModuleAccessResolver(
+    new ModuleRepository(),
+    new OrganizationModuleRepository(),
+    new UserModuleOverrideRepository()
+))->resolvedForUser('appointments', $authUser);
+
 // ---------------------------------------------------------------------
 // Navigation model (presentation only). Each group is one module area;
 // each item lists the URL prefixes that count as "inside" it, so the
@@ -88,20 +114,30 @@ if ($isSuperAdmin) {
     $navGroups[] = ['label' => t('nav.group_platform'), 'items' => [
         ['href' => '/admin/organizations', 'icon' => 'building', 'label' => t('admin.all_organizations'), 'match' => ['/admin/organizations']],
         ['href' => '/admin/modules', 'icon' => 'layers', 'label' => t('admin.modules_platform'), 'match' => ['/admin/modules']],
-        ['href' => '/admin/wallet/settings', 'icon' => 'wallet', 'label' => t('admin.wallet_settings_platform'), 'match' => ['/admin/wallet']],
+        ['href' => '/admin/wallet/settings', 'icon' => 'wallet', 'label' => t('admin.wallet_settings_platform'), 'match' => ['/admin/wallet/settings', '/admin/wallet/banks']],
+        ['href' => '/admin/wallet/gift-codes', 'icon' => 'zap', 'label' => t('wallet_gift.title'), 'match' => ['/admin/wallet/gift-codes']],
         ['href' => '/admin/notifications/settings', 'icon' => 'bell', 'label' => t('admin.notification_pricing_platform'), 'match' => ['/admin/notifications']],
         ['href' => '/admin/exchange-rates', 'icon' => 'coins', 'label' => t('exchange_rates.title'), 'match' => ['/admin/exchange-rates']],
+        ['href' => '/admin/sms', 'icon' => 'message', 'label' => t('sms.title'), 'match' => ['/admin/sms']],
+        ['href' => '/admin/announcements', 'icon' => 'megaphone', 'label' => t('announcements.title'), 'match' => ['/admin/announcements']],
     ]];
 }
 if ($hasOrg) {
     $navGroups[] = ['label' => null, 'items' => [
         ['href' => '/', 'icon' => 'dashboard', 'label' => t('nav.dashboard'), 'match' => ['/'], 'exact' => true],
     ]];
-    $navGroups[] = ['label' => t('nav.group_crm'), 'items' => [
+    $crmItems = [
         ['href' => '/contacts', 'icon' => 'users', 'label' => t('nav.contacts'), 'match' => ['/contacts']],
         ['href' => '/companies', 'icon' => 'building', 'label' => t('nav.companies'), 'match' => ['/companies']],
         ['href' => '/leads', 'icon' => 'target', 'label' => t('nav.leads'), 'match' => ['/leads']],
-    ]];
+    ];
+    if ($clientRecordsEnabled) {
+        $crmItems[] = ['href' => '/client-records', 'icon' => 'clipboard', 'label' => t('client_records.title'), 'match' => ['/client-records']];
+    }
+    if ($appointmentsEnabled) {
+        $crmItems[] = ['href' => '/appointments', 'icon' => 'calendar', 'label' => t('appointments.title'), 'match' => ['/appointments']];
+    }
+    $navGroups[] = ['label' => t('nav.group_crm'), 'items' => $crmItems];
     $salesItems = [];
     if ($salesEnabled) {
         $salesItems[] = ['href' => '/deals/board', 'icon' => 'briefcase', 'label' => t('nav.deals'), 'match' => ['/deals']];
@@ -113,11 +149,22 @@ if ($hasOrg) {
     if ($salesItems !== []) {
         $navGroups[] = ['label' => t('nav.group_sales'), 'items' => $salesItems];
     }
+    if ($contractsEnabled) {
+        $navGroups[] = ['label' => t('nav.group_contracts'), 'items' => [
+            ['href' => '/contracts', 'icon' => 'file-text', 'label' => t('contracts.title'), 'match' => ['/contracts']],
+        ]];
+    }
+    if ($projectsEnabled) {
+        $navGroups[] = ['label' => t('nav.group_projects'), 'items' => [
+            ['href' => '/projects', 'icon' => 'kanban', 'label' => t('projects.title'), 'match' => ['/projects']],
+        ]];
+    }
     $financeItems = [];
     if ($financeEnabled) {
         $financeItems[] = ['href' => '/finance/products', 'icon' => 'package', 'label' => t('products.title'), 'match' => ['/finance/products']];
         $financeItems[] = ['href' => '/finance/proformas', 'icon' => 'file-text', 'label' => t('proformas.title'), 'match' => ['/finance/proformas']];
         $financeItems[] = ['href' => '/finance/invoices', 'icon' => 'receipt', 'label' => t('invoices.title'), 'match' => ['/finance/invoices']];
+        $financeItems[] = ['href' => '/finance/expenses', 'icon' => 'coins', 'label' => t('finance.expense.title'), 'match' => ['/finance/expenses']];
     }
     if ($walletEnabled) {
         $financeItems[] = ['href' => '/wallet', 'icon' => 'wallet', 'label' => t('nav.my_wallet'), 'match' => ['/wallet']];
@@ -145,6 +192,13 @@ if ($hasOrg) {
         ['href' => '/search', 'icon' => 'search', 'label' => t('nav.search'), 'match' => ['/search']],
         ['href' => '/org/settings', 'icon' => 'settings', 'label' => t('nav.org_settings'),
             'match' => ['/org', '/finance/settings', '/finance/periods', '/finance/reports', '/notifications/admin', '/sales/pipeline', '/support/categories', '/kb/categories', '/files/uploaders']],
+    ]];
+}
+// Help center: readable by every signed-in user; management (/admin/help)
+// is Super Admin only and is checked in HelpController.
+if ($authUser !== null) {
+    $navGroups[] = ['label' => t('nav.group_help'), 'items' => [
+        ['href' => '/help', 'icon' => 'help-circle', 'label' => t('help.title'), 'match' => ['/help', '/admin/help']],
     ]];
 }
 
@@ -187,7 +241,7 @@ if ($authUser !== null) {
 
 // Language names are shown in their own script, never translated —
 // a user who can't read the current UI language must still find theirs.
-$languageNames = ['en' => 'English', 'fa' => 'فارسی', 'ar' => 'العربية', 'tr' => 'Türkçe'];
+$languageNames = ['en' => 'English', 'fa' => 'فارسی', 'ar' => 'العربية', 'tr' => 'Türkçe', 'fr' => 'Français'];
 
 $asset = function (string $path) use ($theme): string {
     $file = $theme->assetsPath() . '/' . $path;
@@ -317,6 +371,8 @@ $languageSwitcher = function () use ($lang, $languageNames): string {
                 <a href="/search" class="btn btn--ghost btn--icon topbar__search-link" aria-label="<?= e(t('nav.search')) ?>"><?= icon('search') ?></a>
             <?php endif; ?>
 
+            <?php include __DIR__ . '/partials/announcement-bell.php'; ?>
+
             <?= $languageSwitcher() ?>
 
             <details class="dropdown user-menu">
@@ -352,6 +408,17 @@ $languageSwitcher = function () use ($lang, $languageNames): string {
         </footer>
     </div>
 </div>
+
+<?php // Shared popup for help_link() — filled on demand from /help/{slug}?fragment=1 ?>
+<dialog class="modal modal--wide" id="help-dialog" aria-labelledby="help-dialog-title" data-error-text="<?= e(t('help.load_error')) ?>">
+    <div class="modal__head">
+        <h2 class="modal__title" id="help-dialog-title" data-related-title></h2>
+        <form method="dialog">
+            <button type="submit" class="btn btn--ghost btn--icon" aria-label="<?= e(t('common.close')) ?>"><?= icon('x') ?></button>
+        </form>
+    </div>
+    <div class="modal__content" data-related-body></div>
+</dialog>
 <?php endif; ?>
 
 <dialog class="modal" id="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-text">
@@ -369,6 +436,23 @@ $languageSwitcher = function () use ($lang, $languageNames): string {
         </div>
     </form>
 </dialog>
+
+<?php if ($forbiddenFlash): ?>
+<dialog class="modal" id="forbidden-dialog" data-autoopen open aria-labelledby="forbidden-dialog-title" aria-describedby="forbidden-dialog-text">
+    <form method="dialog">
+        <div class="modal__body">
+            <span class="modal__icon"><?= icon('lock') ?></span>
+            <div>
+                <h2 class="modal__title" id="forbidden-dialog-title"><?= e(t('errors.forbidden_title')) ?></h2>
+                <p class="modal__text" id="forbidden-dialog-text"><?= e(t('errors.forbidden_text')) ?></p>
+            </div>
+        </div>
+        <div class="modal__footer">
+            <button type="submit" value="ok" class="btn btn--primary" autofocus><?= icon('check') ?><?= e(t('errors.forbidden_ok')) ?></button>
+        </div>
+    </form>
+</dialog>
+<?php endif; ?>
 
     <script src="<?= e($asset('js/app.js')) ?>"></script>
     <script src="<?= e($asset('js/datepicker.js')) ?>"></script>

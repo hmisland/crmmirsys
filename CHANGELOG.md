@@ -4,6 +4,576 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Finance Stage 5.2 — audit findings L1–L5 closed (local; Production not yet migrated)
+- **Duplicate submissions (L1, migration 0023):** expense, payment and credit-note forms carry a one-time key. A double click or retry gets the original record back, with no second record and no second audit event. A failed attempt does not block its corrected retry.
+- **Period locking (L5):** issuing, cancelling, payments, credit notes and expenses re-check the period inside their transaction with a locking read, in one fixed lock order. Closing or reopening a period re-checks its status under a row lock. A lock conflict gets a "please retry" message, not a server error.
+- **Amount precision (L2):**
+  - money: IRR up to 3 decimals (never rounded to whole rials automatically); other currencies use their configured precision;
+  - unit price: money decimals + 2; quantity and percentage discounts: 4;
+  - anything more precise is refused with a clear message, never silently cut.
+  - "1,000" is still accepted.
+  - The invoice-level discount is validated (precision, not negative, not above the lines).
+- **Arithmetic (L3):** bcmath at scale 18 everywhere. Line totals are stored exactly. Subtotal, tax and grand total are at the currency precision; totals of documents that were valid before are unchanged. The rounding mode stays half-up (the architecture document said half-even; the discrepancy is now documented).
+- **Optional final invoice rounding (migration 0024):**
+  - Finance → Settings has an organization default, OFF; the issuer can override it per invoice.
+  - IRR rounds to a whole rial; other currencies to their precision.
+  - The amount before rounding and the adjustment are kept on the invoice and shown on the page and in print / PDF. The grand total is the final payable, so payments, credit notes, outstanding, reports and profit count the adjustment once.
+  - Invoices issued before the change are not touched.
+- **Amounts display at their currency's precision:** fractions are no longer hidden by the old whole-number display. This applies to invoices, proformas, print, expenses, reports, project and contract panels, ClientRecords and the contact panel.
+- **Audit history (L4):** recording a payment, issuing a credit note, and closing or reopening a period each write a timeline event in the same transaction.
+  - The invoice page has a "Financial history" card: payments only with `payments.view`, credit notes only with `credit_notes.view`.
+  - The periods page shows the close / reopen history.
+  - The events never appear on other timelines.
+  - Payments and credit notes still cannot be edited or deleted.
+- New suite `FinanceFinalizationTest` (15). Suite total 620, 0 failed. All 9 concurrency probes pass with no leftovers. Mutations: 9 new + L1 (4) + L5 (4), all detected. The expense probe now also removes the period audit event it causes. One existing assertion changed by policy: the contact panel now shows a USD balance as `0.15` instead of `0`. See `docs/finance-stage-5-2-finalization.md`.
+
+### Finance validation & reconciliation — remediation P1–P3
+- **Financial report:** one row per currency; amounts in different currencies are never added together. It covers the invoices issued in the period with all their own credit notes and payments, and says so on the page. It no longer shows a negative net when a credit note falls in a later period.
+- **Outstanding is now the same everywhere:** grand − credit notes − payments on the invoice page, the contact panel (now decimal-safe), the client record summary and invoices tab, and the ClientRecords API's new `outstanding` field. The existing API field `remaining` is unchanged.
+- **Amounts typed into invoice / proforma lines, payments and credit notes** are validated on the server:
+  - "1,000" is accepted;
+  - malformed or negative values, discounts above 100 % and fixed discounts larger than the line amount get a clear error instead of a server error or a silently wrong total;
+  - valid documents compute exactly as before.
+- No migration, no schema or data change. New suite `FinanceRemediationTest` (11). Suite total 599, 0 failed; 15 mutations detected.
+
+### Tests: Patch B credit-note visibility suite made deterministic (test-only)
+- **Tests 2 / 4 / 6:** amounts are now matched exactly ("700", "-700", "700.00"), never inside an id or a longer number. The page shows "Invoice #10700", which made the bare `notContains('700')` fail at random. All assertions kept; re-introducing the credit-note leak in InvoiceController or DocumentPrintService still fails tests 2, 3, 4, 6, 7, 8, 12 and 14.
+- **Test 7 (PDF):** streams are cut by their `/Length` instead of at "\nendstream". A compressed stream ending in "\r" used to lose its last byte and yield no text. `TJ` arrays and hex strings are read too.
+- Two new deterministic tests (7a, 7b) pin both causes. No application code changed. Suite total 588.
+
+### Expense project allocation + contract reference (Project Finance, Stage 5.1)
+- **"Allocate to project" on the general expense form** (Finance → Expenses → New / Edit).
+  - It reuses the existing `project_id` and its checks: `projects.edit`, not cancelled, record scope, both projects when moving.
+  - Only an expense allocated to a project counts in that project's actual cost, budget vs actual, profit and margin.
+  - Project → New Expense still fixes the project.
+- **"Allocate to contract" is a reference only.** It never affects any financial figure, and no project is ever derived from it. A help note under the field says so.
+  - Only contracts the user can view are offered.
+  - Corrections copy the reference.
+  - It can be changed only while the expense itself is editable.
+- **Form order:** amount, currency, category, date, payee, project, contract, description.
+- **Migration:** Finance 0022 (`finance_expenses.contract_id`, reference only). 10 new translation keys in all five languages.
+- **Unchanged:** Stage 5 formulas and files, `ExpenseRepository`, revenue / invoice / payment / credit note / billing / report code, Projects, Contracts and Core.
+- **Tests:**
+  - new suite `ExpenseAllocationTest` (17). Suite total 586, 0 failed;
+  - 18 mutations detected.
+
+### Budget, project profit and margin (Project Finance, Stage 5)
+- **New "Budget" panel on the project page (after Project revenue and Project costs, which are unchanged).**
+  - An expense budget per category × currency, amount ≥ 0.
+  - Budget vs Actual with Remaining, Variance (Actual − Budget) and Variance %, plus a total per currency. Amounts in different currencies are never added together.
+  - "No budget defined" plus "Define budget" when allowed.
+  - Actual comes from the Stage 4 expenses the user may view, and only with `finance.expenses.view`.
+- **Budget form `/finance/projects/{id}/budget`:**
+  - needs `finance.budgets.manage` and `projects.edit` on the project (record scope), and the project in draft / planned / active / on_hold; completed and cancelled projects are read-only;
+  - each save replaces the whole budget in one transaction with the project's lines locked;
+  - the project timeline gets a generic "Budget updated" with no amounts.
+- **New "Profitability" panel (per currency, no FX, no combined total):**
+  - Revenue (excl. tax) = issued invoices attributed to the project, (grand − tax) less credit notes in each invoice's own net / gross proportion;
+  - Actual cost = Stage 4 net expenses;
+  - Profit = Revenue − Actual cost;
+  - Margin % only when revenue > 0;
+  - a note explains why this revenue differs from "Revenue (incl. tax)".
+- **Profit is shown only with all of** `finance.budgets.view`, `invoices.view` (organization scope), `credit_notes.view` and `finance.expenses.view` (organization scope). Otherwise it is hidden entirely; there is no partial profit.
+- **Permissions:** new module keys `finance.budgets.view` / `finance.budgets.manage`, granted (organization scope) only to the system Organization admin role. Custom roles are unchanged. `Permission.php` is not changed.
+- **Migrations:** Finance 0020 (`finance_budget_lines`) and 0021 (grants). 40 new translation keys in all five languages.
+- **Unchanged:**
+  - Stage 4 (expenses), ProjectRevenue, InvoiceService, PaymentService, CreditNoteService, ReportService;
+  - installments, ContractBillingService, InvoiceController, `finance_document_links`;
+  - Core, Projects, Contracts, `layout.php`.
+- **Tests:**
+  - new suites `ProjectBudgetTest` (15) and `ProjectProfitTest` (10). Suite total 569, 0 failed;
+  - 38 mutations detected plus 2 equivalent;
+  - the new probe `tests/concurrency/budget-probe.php`.
+
+### Expenses (Project Finance, Stage 4)
+- **New Finance → Expenses list, form and detail page.** An expense is an actual cost:
+  - one positive amount, recoverable tax excluded, with no tax logic;
+  - a fixed category, a date, a currency and an optional reference;
+  - a payee contact **or** company;
+  - at most one project.
+- **Lifecycle:** `recorded` → `void` (with a reason of up to 450 characters). There is no delete.
+  - Edit, void and receipts only while the expense's financial period is open.
+  - After the period is closed, changes are made with **correction entries** (increase / decrease). They copy the original's currency, project and scope. An original's net can never go below zero, and corrections can't be chained.
+- **Project link:**
+  - **"New expense" in the new project "Project costs" panel.** It needs `finance.expenses.manage` plus `projects.edit` on the project, and the project must not be cancelled. Every check is re-run on submit.
+  - The edit form can remove the project.
+  - Later project status changes or deletion never change the expense.
+- **Project costs panel:**
+  - actual cost per currency (no conversion, no combined total), i.e. the net of each original counted once, void excluded;
+  - only expenses the user may view are summed;
+  - it has no effect on revenue, invoices, payments, credit notes, installments, Contract Billing or Project Revenue.
+- **Permissions:** new module keys `finance.expenses.view` / `finance.expenses.manage` with record scope. They are granted (organization scope) only to the system Organization admin role; custom roles are unchanged.
+- **Receipts:** go only through Finance's own routes. They need view permission plus record scope to download, and manage permission, a recorded expense and an open period to upload or delete. The Core record attachment routes are off for expenses.
+- **Period-close races:** a locking read of the covering period row is used inside every expense transaction. Row locks are held on the expense and on the original of a correction. `FinancialPeriodService` is unchanged.
+- **Timeline:** full details on the expense; generic text on the project (no amount, reason or receipt).
+- **Migrations:** Finance 0018 (`finance_expenses`) and 0019 (grants). 89 new translation keys in all five languages, one sidebar item.
+- **Unchanged:** InvoiceService, PaymentService, CreditNoteService, ReportService, the installment code, ContractBillingService, InvoiceController, ProjectRevenue code, `finance_document_links`, Core RecordSupport, Projects, Contracts and `Permission.php`.
+- **Tests:**
+  - new suite `ExpenseTest` with 21 tests. Suite total 544, 0 failed;
+  - 18 mutations detected plus 2 equivalent;
+  - the new probe `tests/concurrency/expense-probe.php` detects 3 lock mutations.
+
+### New invoice from a project; attach-list order (Project Finance, Stage 3-C)
+- **"New invoice" button in the project revenue panel.** It opens the normal invoice form, prefilled with the project's contact and a line named after the project.
+- **Saving creates a draft invoice attributed to the project in one transaction.** It is revenue only once issued.
+- **Access:** needs `invoices.create` and `projects.edit` on an open (not completed / cancelled) project the user can see. The project is re-checked on the server; hidden fields are never trusted.
+- **Timeline:** the project-side entry shows no invoice details.
+- **Attach list order:** the project's own contact first, then contacts of its company, then the rest. Eligibility unchanged.
+- **Unchanged:**
+  - `from_contract` / `from_installment` flows, invoice show / cancel (Patch A/B);
+  - `ContractBillingService`, `InvoiceService` (no proforma attribution; D-B5 stays);
+  - payments, credit notes, reports, installments, Contracts, Projects, Core and permissions.
+- No migration. 2 new translation keys in all five languages.
+- **Tests:**
+  - new suite `ProjectInvoiceTest` with 13 tests. Suite total 523, 0 failed;
+  - 15 mutations detected, atomicity by the new probe `tests/concurrency/project-invoice-atomic-probe.php`.
+
+### Project revenue (Project Finance, Stage 3-B)
+- **A "Project revenue" panel on the project page.** For each currency, with no conversion and no combined total, it shows:
+  - Invoiced (incl. tax) and Paid;
+  - with `credit_notes.view` also Credited, Revenue (incl. tax) = invoiced − credit notes, Receivable and Refund due.
+- **Security gate:** without `credit_notes.view` the panel shows only Invoiced and Paid. Receivable is withheld too, so no credit amount can be inferred from this panel. Other pages (invoice page, print/PDF, contract Billing) are unchanged by decision; their known inference risk remains.
+- **Only issued invoices attributed to the project count.** Payments, drafts, cancelled invoices, proformas, contract value, installments and the contract ↔ project association are never revenue. Only invoices the user may view are listed or summed.
+- **Attribution** lives in the existing `finance_document_links` (`linked_type = 'project'`), whose unique key gives one project per invoice. No new table, no migration.
+  - Attach needs `invoices.edit` on the invoice and `projects.edit` on the project. Draft or issued invoices only, never cancelled. No move to another project.
+  - Detach only while the invoice is a draft.
+  - Both lock the invoice row. Duplicate or concurrent attaches are idempotent or refused cleanly.
+- **Timeline:** entries on the project (without invoice details) and on the invoice.
+- **Unchanged:** InvoiceService, PaymentService, CreditNoteService, ReportService, the installment code, ContractBillingService, Contracts, Projects (incl. Stage 3-A), Core and permissions. 16 new translation keys in all five languages.
+- **Tests:**
+  - new suite `ProjectRevenueTest` with 20 tests. Suite total 510, 0 failed;
+  - 25 mutations detected by the suite, and the lock / timeline race mutations by the new probe `tests/concurrency/project-revenue-probe.php`.
+
+### Contract ↔ Project association hardened (Project Finance, Stage 3-A)
+- **The existing Projects link (`project_links`, N:N) is kept**, with no new table or migration.
+- **Permissions:** linking or unlinking a project and a contract, and creating a project from a contract, now needs `projects.edit` on the project **and** `contracts.edit` on the contract, with record scope.
+- **Status rules for new links:** not with a terminated or cancelled contract, and not with a completed or cancelled project. Unlinking is allowed in every status. Deal links are unchanged.
+- **Concurrency:** linking is idempotent even under concurrent requests (no raw duplicate-key error, no duplicate row or timeline entry). Unlink writes the timeline only when it actually removed the link.
+- **Timeline:** link and unlink are recorded on the contract too (`project_linked` / `project_unlinked`).
+- **UI:** the contract page's Projects panel gets an "Unlink" action per project. "New project" and "Link existing" are shown only when allowed.
+- **No financial effect:** no Finance, Contracts, Core or permission-definition change. 2 new translation keys in all five languages.
+- **Tests:**
+  - new suite `ContractProjectLinkTest` with 21 tests;
+  - one `ProjectLinksTest` fixture now uses a member-owned contract (approved rule), with all assertions kept;
+  - suite total 490, 0 failed;
+  - 18 mutations detected, by the suite or the new probe `tests/concurrency/project-link-probe.php`.
+
+### Contract installment schedule (Project Finance, Stage 2)
+- **A Finance-owned payment schedule on the contract page.** Each installment has a due date, an amount and a description. It is a plan, not an invoice: it never counts as revenue, receivable or payment, and the Billing summary is unchanged.
+- **Status is derived from the one active linked document:** Not invoiced, Invoiced, Partially paid, Settled, Void, plus an Overdue flag.
+- **Documents from an installment:** a proforma or invoice draft made from an installment carries a contract link and an installment link. Only one active document is allowed per installment, enforced under a row lock.
+- **Access and state rules:**
+  - managing the schedule needs `contracts.edit` on the contract;
+  - new installments and edits only while the contract is active;
+  - documents while it is active or expired;
+  - nothing new once it is terminated;
+  - void (reason required) whenever there is no active document.
+- **Currency:** the contract's; otherwise the schedule's first. Never mixed.
+- **Visibility:** a linked document the user may not open is shown only as "access is restricted".
+- **Conversion fix (D-S2-8):** proforma → invoice conversion now runs in one transaction with the proforma row locked and re-checked, so a double conversion can't create two invoices. It also carries the installment link.
+- **New:**
+  - Finance migration `0017_create_finance_installments_table` (additive);
+  - 48 translation keys in all five languages.
+- **Unchanged:** no Contracts, Core or permission change. Payment and credit-note services, Patch A cancel rules, Patch B visibility and the period report are untouched.
+- **Tests:**
+  - new suite `ContractInstallmentsTest` with 24 tests. Suite total 469, 0 failed;
+  - 22 mutation checks: 20 caught by the suite, and the 2 lock re-checks caught by the new concurrency probe `tests/concurrency/installment-lock-probe.php`, which also catches row-lock removal.
+
+### Finance: credit-note visibility (Patch B)
+- **Credit-note details now require `credit_notes.view`** on the invoice page, the print view and the PDF. This covers the list, number, date, reason, amount, Total credited, Effective total, and Payable on print/PDF.
+- **Without the permission:**
+  - the controller does not hand any of that data to the template at all;
+  - print and PDF show the grand total in place of Payable.
+- **Unchanged for everyone:** Outstanding / Remaining and the payment status still account for every credit note.
+- **`credit_notes.view` and `credit_notes.create` stay independent:**
+  - a user with create only still gets the issue form, without the amount cap and without the list;
+  - a user with view only gets the list and no form.
+- **Unchanged:** no Core, schema, migration or permission-definition change. The period report, `PaymentService`, `CreditNoteService` and `InvoiceService` are not touched. Proforma print is unchanged. No new translation keys.
+- **Tests:** new suite `CreditNoteVisibilityTest` with 15 tests, including the real mPDF output. 8 of them fail on the unpatched code. 11 mutation checks, all caught. Suite total 445, 0 failed.
+
+### Finance: invoice cancel hardening (Patch A)
+- **An issued invoice can no longer be cancelled when:**
+  - it has **any payment** (partial or full);
+  - it has **any credit note**, even if its balance is 0;
+  - its issue date is in a **closed financial period**.
+  The user gets a translated reason, and on the invoice page the cancel button is disabled with that explanation.
+- When allowed, cancelling an issued invoice now **requires a reason** (at most 450 characters). It is recorded in the timeline (subject `invoice`) with the user and the time.
+- **Draft invoices** cancel exactly as before. They have no reason requirement and no period lock, though they are now also recorded in the timeline.
+- **The rule checks are repeated on the invoice row locked `FOR UPDATE`**, the same lock payments and credit notes use, so a concurrent payment can't slip through.
+- **The invoice page now shows:**
+  - the cancellation history;
+  - for a cancelled invoice that has payments (old data), a warning that the amount is not valid revenue.
+  No existing data is changed and no refund is created.
+- **Unchanged:** no migration, Core or permission change. `PaymentService` and `CreditNoteService` are not touched. Uses the existing `TimelineService` and `FinancialPeriodService::isDateLocked()`.
+- 10 new translation keys in all five languages. The cancel flash messages are now translated.
+- **Tests:** new suite `InvoiceCancelHardeningTest` with 17 tests. 8 of 9 mutation checks caught by the suite. The locked-row re-check needs true concurrency: the separate probe `tests/concurrency/invoice-cancel-lock-probe.php` (two connections, two processes, crm_local only) catches its removal. Suite total 430, 0 failed.
+
+### Contract Billing summary: credit-note effect (Project Finance, Stage 1)
+- **Per issued invoice, in its own currency**, the contract's Billing panel now computes:
+  - Credited = its credit notes;
+  - Net billed = Grand total − Credited;
+  - Receivable = max(0, Grand total − Credited − Paid);
+  - Refund due = max(0, Paid − (Grand total − Credited)).
+- Totals are kept per currency and never mixed. Drafts are never counted.
+- **Cancelled invoices** are out of every figure. A payment recorded on one is shown in a separate warning: "Payment recorded on a cancelled invoice … not valid revenue".
+- **Access:**
+  - Only invoices the user may view (permission and record scope) are summed.
+  - The Credited and Net billed rows need `credit_notes.view`. Without it, Receivable and Refund due still account for credits, but no credit-note detail is shown.
+  - Another organization's invoice or credit-note ids have no effect.
+- **Unchanged:** no change to payments, credit notes, invoices, cancel, tax or financial periods; no Core, migration or permission change.
+- 5 new translation keys; `finance.billing_hint` corrected in all five languages.
+- **Tests:** new suite `ContractCreditEffectTest` with 17 tests. 10 mutation checks, all caught. Suite total 413, 0 failed.
+- **Docs:**
+  - `docs/project-finance-design.md` now holds the final design decisions;
+  - new `docs/invoice-cancel-note.md` analyses cancelling paid invoices, plus the credit-note visibility on the invoice page; both are still to be decided.
+
+### PDF font per language
+- Generated PDFs (invoice/proforma) pick the font from the user's language:
+  - **fa:** Vazirmatn, the UI font, for both Persian and Latin text. Static `Vazirmatn-Regular.ttf` / `Vazirmatn-Bold.ttf` (v33.003, OFL) were added to `themes/default/assets/fonts/vazirmatn/`, because mPDF can't read the variable woff2.
+  - **ar:** XB Riyaz (Arabic Naskh).
+  - **en / tr / fr:** DejaVu Sans. Any Arabic-script text in these documents uses XB Riyaz.
+- `PdfRenderer::render()` takes a new optional `$locale` argument. `DocumentPrintController` passes the current locale.
+
+### Hardening patch: Follow-ups, task and ticket attachments
+- **H1 (security, cross-tenant name leak):** a follow-up's `assignee_user_id`, `team_id` and `department_id` must now belong to the user's organization. The assignee must be an active user; the one already saved on a follow-up may be kept. Otherwise 422.
+  - Before, a tampered assignee from another organization showed that person's name in the follow-up list, through an unscoped subquery.
+  - The assignee picker now lists only active users, plus the saved assignee.
+  - **Automation (D1):** a rule whose fixed assignee isn't an active user of the event's organization assigns the follow-up to the actor instead.
+- **H2:** a follow-up created with `type` / `priority` missing used to fail with a database error. It now gets `task` / `normal`. An edit with missing or invalid values keeps the stored ones.
+- **H3 (security):** task and ticket attachment downloads now first check the user may view that task (`tasks.view` + OWN creator/assignee rule) or ticket (`tickets.view`): 403. They then check the file belongs to it: 404. Before, any user of the organization could download them by id.
+- **H4:** ticket attachment upload now checks the ticket exists in the organization and the user may view it (`tickets.view`, D2) **before** anything is stored.
+- **H5 + D3:** the 11 English flash messages and 7 English validation messages of the Follow-ups module are translated (`followups.flash.*`, `followups.error.*`). 21 new keys in all five languages, including H1's 3 error keys.
+- **Unchanged:** Core, schema, URLs and permission definitions (`followups.assign` is still not enforced, out of scope); Contracts, Projects and Finance.
+- **Tests:** new suite `HardeningPatchTest` with 20 tests.
+  - Every security test fails on the unpatched code.
+  - 10 mutation checks, all caught.
+  - Suite total 396, 0 failed.
+
+### File library: folders, thumbnails, grid view, server inbox
+- **Folders** in Files (`/files?folder=N`): nested folders, breadcrumb path, create / rename / delete (empty folders only), "Move to folder" on each file, uploads go into the open folder.
+- **Title:** files get a display title; empty = file name without extension. Shown above the original file name.
+- **Thumbnails:** images show a GD-made JPEG preview (`/files/{id}/thumb`, cached under `storage/file-library/{org}/thumbs/`); other types show a type icon. Images and PDFs open in the browser (`/files/{id}/view`); downloads keep Persian file names (`filename*`).
+- **Grid view:** List / Grid switch (`?view=grid`).
+- **Server inbox:** files copied with their folders into `storage/file-library/{org}/inbox/` show a "N files waiting — Add them" notice for file managers. One click recreates the folder tree, moves the files into the library and titles them from their file names. The old system's `.tmb/` and top-level `index.html` are ignored; re-running only picks up what is left.
+- **Search** (`?q=`; old `?tag=` links still work) matches title, file name, exact tag and folder names, across folders.
+- **Data:** Knowledge module migrations `0005_create_file_library_folders_table`, `0006_add_folder_and_title_to_file_library_documents` (additive; existing files stay at the top level).
+- **Unchanged:** permissions (`files.view`, `files.manage`, uploader allow-list), storage location and the 25 MB upload limit.
+- 45 new translation keys in all five languages. **Tests:** new suite `FileLibraryTest` (10 tests).
+
+### Contract ↔ Finance (billing from contracts)
+- **New on the contract page:** a "Billing" panel, owned by Finance through `RelatedPanelRegistry`.
+  - It lists the proformas and invoices linked to the contract and a per-currency summary: billed, paid, balance, and the contract value when the currency matches.
+  - The summary counts **issued invoices only**. Credit notes are not included.
+  - It has "New proforma" / "New invoice" buttons.
+  - Each section needs its view permission (`quotes.view` / `invoices.view`). Every row goes through Finance's existing record scope.
+- **Create from a contract:** `/finance/proformas/create?from_contract=N` and `/finance/invoices/create?from_contract=N`.
+  - The form is prefilled from the contract: contact, currency, one line "title × value", terms.
+  - On save, the contract is re-checked on the server (`RecordTypeRegistry::find()`: Contracts available, `contracts.view`, same organization, record scope).
+  - The document is created by the unchanged `create()`, then linked, with a timeline entry on the contract, all in one transaction.
+  - A contract that isn't viewable gives 404 on GET and 422 on POST; nothing is created.
+- **Conversion and deletion:** converting a linked proforma links the new invoice to the same contract. Deleting a linked draft removes its link.
+- **Data:** new Finance module migration `finance/0016_create_finance_document_links_table`.
+  - Additive; existing financial tables are untouched.
+  - No FK to Contracts.
+  - `UNIQUE (organization_id, document_type, document_id, linked_type)`: one contract per document, many documents per contract.
+- **Security (pre-existing, F1):** proformas and invoices accepted any `contact_id`. Finance lists showed that contact's name through an unscoped subquery, so another organization's contact name could appear. The contact must now belong to the user's organization and the currency must be active, checked server-side (`DocumentHeaderGuard`), otherwise 422.
+- **Unchanged:**
+  - tax, totals, numbering, payments, credit notes and financial periods;
+  - Contracts, Projects, Sales and Core (Contracts is read only through the registry);
+  - URLs (one query parameter added) and permissions.
+- 12 new translation keys in all five languages.
+- **Tests:** new suite `ContractFinanceTest` with 25 tests.
+  - The F1 tests fail against the unpatched code.
+  - Created totals are byte-identical with and without a contract.
+  - 9 mutation checks, all caught.
+  - Suite total 366, 0 failed.
+
+### Follow-ups on contracts and projects
+- A follow-up can now relate to a **contract** or a **project**:
+  - A "Follow-ups" panel is added to the contract and project pages (owned by the Follow-ups module, through `RelatedPanelRegistry`).
+  - Its "New follow-up" button uses the existing route `/followups/create?related_type=contract|project&related_id=N`.
+  - The form shows the link read-only, the show page links back, and editing keeps the link.
+  - Creating, completing, cancelling and rescheduling write on the contract's or project's timeline, as for contacts.
+- **Access:** the record is read only through `RecordTypeRegistry::find()`. The user must be able to view that very contract or project: the module must be available, the user must hold the view permission, and the record must be in the same organization and within their record scope.
+  - The check runs on the GET prefill (otherwise 404) and again on the POST (otherwise 422, nothing created).
+  - Panel rows are filtered with the same rule as the follow-up page.
+  - The "New follow-up" button appears only when the server would accept it.
+- **Hardening:** `FollowUpService` accepts only `contact`, `lead`, `deal`, `contract` and `project` as `related_type`. A raw `related_type` posted to the create form is refused unless it is a valid contract or project link.
+- **Unchanged:** no migration, permission or URL change; Contracts, Projects, Sales and Core are untouched. Followups never reads contract or project tables.
+- **Translations:** 3 new keys in all five languages.
+- **Tests:** new suite `FollowUpRelatedRecordsTest` with 23 tests covering tampering, cross-tenant, own scope, module off, records that are missing or not viewable, the allow-list, regressions and 5 languages. 8 mutation checks were run. Suite total 341, 0 failed.
+- **Known, out of scope:**
+  - `FollowUpService::validatedFields()` stores a null `type`/`priority` when the request omits them (the form always sends them).
+  - G4–G6 in the design document.
+
+### Security — notes, tags and attachments must belong to the record in the URL
+- **Fixed:** in the same organization, one record's URL could delete another record's note or attachment: `/records/{type}/{id}/notes|attachments/{childId}/delete`.
+  - The note route also deleted **before** checking the record type. An unknown type, a disabled module or a user without a role could still delete a note.
+  - The Sales routes `/tasks/{id}/comments/{commentId}/delete` and `/tasks/{id}/attachments/{attachmentId}/delete` and the Support route `/support/tickets/{id}/attachments/{attachmentId}/delete` could delete **any** note or attachment in the organization.
+- **Fixed (cross-tenant):**
+  - removing a tag could delete another organization's tag link (`taggables` has no `organization_id`);
+  - adding a tag could attach your tag to another organization's record, where its name then showed.
+- **Fixed:** notes, tags and uploads on a missing record, or another organization's record, are refused instead of stored as orphans. This was pre-existing observation 7.3.
+- **Rule now, before any write:**
+  1. the record type is valid and viewable;
+  2. the parent record exists in the user's organization;
+  3. the note, attachment or tag belongs to that parent;
+  4. otherwise 404.
+  - An attachment's file is removed only after ownership is proven.
+- **Unchanged:** URLs, permissions, schema and UI. Anyone who may view a record can still delete its notes (product rule kept).
+- **Code:**
+  - Additive Core methods: `NoteService::deleteFromSubject()`, `AttachmentService::findForSubject()` / `deleteFromSubject()`, `TagService::detachFromSubject()`. `TagService::detach()` is now a no-op for a tag outside the organization.
+  - `RecordSupportController` checks the parent first.
+  - `TaskService::deleteComment` / `deleteAttachment` and `TicketController::deleteAttachment` use the checked methods.
+- **Tests:** new suite `RecordSupportOwnershipTest` with 15 tests (11 security, 3 regression, 1 rollback).
+  - Against the old code, every security test fails.
+  - Ten mutation checks are all caught.
+  - Suite total 318, 0 failed.
+
+### Projects module (Phase 5 Step 3)
+- **New sellable module `projects`** (`modules/Projects`, type addon, no dependencies). It runs with Core alone and imports no other module. Design: `docs/projects-module-design.md`.
+- **Projects:** name, `PRJ-0001` code (Core `number_series`), description, project manager, contact and/or company, start date, expected end date, actual end date.
+- **Lifecycle:** `draft → planned → active → on_hold → completed / cancelled`, with reopen from completed to active.
+  - Completing sets the actual end date.
+  - Completed and cancelled projects are read-only.
+  - Only draft, planned or cancelled projects can be deleted.
+- **Members:** being a member lets a user see the project, nothing more. Adding or removing members needs `projects.manage_members`.
+- **Permissions:** six keys, registered by the module (`projects.view/create/edit/delete/manage_members/manage_settings`). Default grants come from module migration `projects/0003`:
+  - org_admin: all six, organization scope;
+  - member: view and create at organization scope; edit and manage_members on their own projects.
+- **Pages:** list (search, status, mine, paginated), show (status actions, members, linked records, Core notes/tags/files/timeline), create/edit form, and `/projects/settings`. Sidebar group "Projects" behind the module flag.
+- **Panels** (via `RelatedPanelRegistry`) on contact, company, deal and contract pages. On deal and contract pages the panel has "New project" (prefilled from that record) and "Link existing project".
+- **Deal and contract links:** stored in `project_links`, with no foreign key to other modules. Records are read only through `RecordTypeRegistry`.
+- **Optional auto-create:** an organization setting, off by default. When a deal is won, Projects creates one draft project linked to it (at most one per deal). The listener subscribes to `DealStageChanged` by class-name string.
+- **Unchanged:** Contracts, Sales and Core code.
+- **Events:** `ProjectCreated`, `ProjectStatusChanged`.
+- **Migrations:** module migrations `projects/0001`–`0005` (`projects`, `project_members`, grants, `project_links`, `project_settings`), each with `down()`.
+- **Translations:** 76 new keys in all five languages.
+- **Tests:** 100 new tests in 9 suites, including a standalone run with only Projects installed. Suite total 303, 0 failed, 0 skipped. `BackwardCompatTest`'s Step 1 assertion "no `project` type yet" now checks that the Projects module owns the type.
+
+### Help center (user guide)
+- **New sidebar group "Help" → "User guide"** (`/help`) for every signed-in user: a searchable list of guides and a page per guide (`/help/{slug}`).
+- **Super Admin only:** create, edit and delete guides (`/admin/help/create`, `/admin/help/{id}/edit`, `/admin/help/{id}/delete`). Each guide has a stable slug, a display order, a published flag, and a title, summary and HTML body in each of the five languages. English is required and is the fallback for empty languages. Unpublished guides are visible only to the Super Admin. Org admins and members can only read.
+- **Contextual help:** the new template helper `help_link('slug')` prints a "?" icon that opens the guide in a popup (`#help-dialog` in the layout, `/help/{slug}?fragment=1`), or as a normal page without JavaScript. It has been added to the Deals list and board, Contracts, Proformas and Invoices page titles.
+- **HTML safety:** `App\Infrastructure\Security\HtmlSanitizer` (allow-list) cleans bodies on save and again on output. It removes scripts, frames, forms, event handlers, inline style and non-http(s)/mailto URLs, and adds `rel="noopener noreferrer"` to `target="_blank"` links.
+- **Migration** `0077_create_help_articles_tables` (`help_articles`, `help_article_translations`; not tenant-scoped) seeds the first guide, "Deal, Contract, Sales and Project: what is the difference?", in all five languages from `database/help-content/deal-contract-sales-project/`.
+- UI: `help-circle` icon; `.help-*` styles in `app.css` (prose, tables, `.help-callout`, `.help-example`, `.help-flow`). `app.js`: `[data-related-url]` can target another dialog with `data-related-dialog` and works on links.
+- 35 new keys in all five languages.
+- Tests: `tests/lite/HelpCenterTest.php` (13 tests: read access, Super-Admin-only management, CSRF, validation, fallback, unpublished visibility, sanitizer, helper). Suite total 203, 0 failed.
+
+### Contracts module — step 2.10 (full test matrix)
+- No application code changed in this step; tests only.
+- New suites:
+  - `StandaloneContractsTest`: Core + Contracts only, in a separate process on a temporary copy with every other module physically absent.
+  - `ContractMatrixTest`: RBAC on all 21 routes × 3 roles, CSRF, module states, tenant isolation on every id route.
+  - `ContractEndToEndTest`: the full deal-won → contract → renew/terminate → module off/on story.
+  - `ContractTranslationsTest`: all keys in all five languages, and every page rendered in all five without a raw key.
+- New shared test harness: `tests/lite/Support/LocalApp.php`.
+- Suite total: 190 tests, 0 failed, 0 skipped. Real data is unchanged after a run (checked).
+- Pre-existing Core observations, unchanged, listed in `docs/contracts-module-design.md`.
+
+### Contracts module — step 2.9 (organization auto-create setting)
+- **New settings page** `/contracts/settings` (`contracts.manage_settings`; "Settings" button on the contract list) with one option, **off by default**: "Create a draft contract automatically when a deal is won". Module migration `contracts/0005_create_contract_settings_table` (one row per organization; no row = off).
+- **When the option is on and a deal is won,** the Contracts listener (subscribed by event name, no Sales import) creates a draft contract prefilled from the deal and linked to it. It acts only when Contracts is entitled to that organization.
+  - At most one contract per deal: nothing is created when a contract is already linked, so there's no duplicate on a second "won".
+  - Lost deals, ordinary stage moves and events without an acting user create nothing.
+- **Owner** is the deal's owner (when they are an active user of the organization), otherwise the person who won it. The timeline says it was created automatically.
+- 5 new keys in all five languages.
+- Tests: `tests/lite/ContractAutoCreateTest.php`, 9 tests through the real Sales `DealService` and EventBus. Suite total 144.
+
+### Contracts module — step 2.8 (manual "Create contract" from a deal)
+- The deal page's "Contracts" panel has a "New contract" button for users with `contracts.create`. It opens the form prefilled from the deal: title, contact, company, amount, and currency (the deal's 3-letter code mapped to an active Core currency). A notice links back to the deal.
+- On save, the contract is created and linked to the deal in one transaction. The deal is re-checked on the server through `RecordTypeRegistry::find()` (Sales available, `deals.view`, same organization, record scope). Hidden form fields are never trusted: an unavailable or tampered source returns an error and creates nothing.
+- `?from_deal=` for a deal the user can't see returns 404. Creating a contract without a deal keeps working when Sales is off.
+- Contracts still references no Sales code or URL: the deal page URL comes from Sales' own record type. The architecture test caught one hard-coded `/deals/` URL during development, and it was replaced.
+- Tests: `tests/lite/ContractFromDealTest.php`, 9 tests through the real router. Suite total 135.
+
+### Contracts module — step 2.7 (Deal → Contract via EventBus)
+- **Sales:** registers its own `deal` record type (P3) with a tenant-scoped finder, `deals.view` and `recordSupport: false`. This is the only Sales change; Sales knows nothing about Contracts.
+- **Core (backward compatible):** `RecordType` gains an optional `recordSupport` flag (default `true`). With `false`, the type is never accepted by the shared `/records/{type}/{id}` notes/tags/attachments routes, so `/records/deal/...` still returns 404 as before.
+- **Contracts — links:** module migration `contracts/0004_create_contract_links_table`. It has no foreign key to any other module's table and stores a label snapshot. Contracts can be linked to records of other modules; the target is checked through `RecordTypeRegistry::find()` (module available, `deals.view`, same organization, record scope).
+  - A link stays when Sales is later disabled and is then shown as plain text.
+  - The contract page lists linked records, with unlink for users who may edit the contract.
+- **Contracts — events:** `DealStageChangedListener` is subscribed by the class-name string, with no import. When a linked deal moves stage, is won or is lost, each linked contract's timeline gets an entry. This happens only when Contracts is active and entitled for that organization; an event of an unexpected shape is logged and ignored.
+- **Deal page:** a "Contracts" panel (via `RelatedPanelRegistry`) lists the contracts linked to the deal.
+- **Architecture test:** allows exactly one string, the event class name, once, in `ContractsModule.php`.
+- Tests: `tests/lite/ContractDealLinkTest.php`, 15 tests, including real `DealService::changeStage()` → `EventBus` → Contracts listener, and a deal of another organization. Suite total 126.
+
+### Contracts module — step 2.6 (related panels)
+- Contact and company pages show a "Contracts" panel. It is contributed by the Contracts module through `RelatedPanelRegistry` (`Modules\Contracts\ContractPanels`); the contact and company pages themselves are unchanged.
+  - The panel appears only when Contracts is available to the user and they hold `contracts.view`.
+  - It lists the newest 5 contracts with that party, within the user's own/team/department scope, with number, status, period and amount.
+  - "New contract" opens the form with the contact or company preselected (only with `contracts.create`).
+  - "All N contracts" opens the list filtered by that party.
+- Contract list: new `?contact=` and `?company=` filters, kept when other filters are applied.
+- 2 new keys (`contracts.view_all`, `contracts.panel_empty`) in all five languages.
+- Tests: `tests/lite/ContractPanelsTest.php`, 10 tests through the real router. Suite total 111.
+
+### Contracts module — step 2.5 (pages)
+- Contract pages under `/contracts`:
+  - **list:** search, status (including computed "expired"), category, "ending within 30 days", "only mine"; paginated. Columns: title with number, party, status, period, amount, row actions.
+  - **show:** facts, contact/company links, lifecycle buttons only when allowed (submit, return to draft, approve or activate with a signing date, cancel, terminate with optional reason, renew), terms, renewal history, related-panel slot, Core notes/tags/attachments/timeline.
+  - **create/edit form:** Jalali/Gregorian datepickers.
+  - **categories page:** `contracts.manage_settings`.
+- Routes: every route is behind `AuthMiddleware`, `ModuleMiddleware('contracts')` (404 when the module isn't available to the user) and `RbacMiddleware`; CSRF on POST. The edit page is refused unless the user may save it, i.e. permission on this record and an editable status.
+- Sidebar: new "Contracts" group, shown only when the module is available.
+- Translations: 70 new keys in all five languages. Dates show in Jalali for fa; amounts use locale grouping.
+- **Shared fix (all lists):** the CSS tooltip on disabled row actions stayed in the layout while hidden (`opacity: 0`) and widened its table, giving a horizontal scrollbar on lists such as contacts or leads for rows the user can't edit. Hidden tooltips are now `display: none`, and long tooltips wrap (`max-width: 18rem`).
+- Tests: `tests/lite/ContractPagesTest.php`, 14 tests through the real router and middleware. They found one real bug, now fixed: the edit form could be opened for a contract the user can't save. Suite total 101.
+
+### Contracts module — step 2.4 (service + repository)
+- Core: generic per-organization document numbering. Core migration `0076_create_number_series_table` and `App\Infrastructure\Repositories\NumberSeriesRepository::next($type, $prefix)`: row-locked (`FOR UPDATE`), joins the caller's transaction, rows are created lazily. Finance's own series are untouched.
+- Contracts: `ContractRepository` (search by text, status, effective status, owner, team, department, contact, company, category and expiring-within-days; explicit organization scoping because it joins tables), `ContractCategoryRepository`, and `Services\ContractService`:
+  - **create/update:** title required; dates must be Gregorian ISO with end ≥ start; amount kept as an exact decimal and needs an active currency; contact, company and category must belong to the organization.
+  - **lifecycle:** submit, return to draft, approve, activate (assigns `CTR-0001`… and the signing date atomically), cancel, terminate, renew (new linked draft; dates follow on).
+  - **expiry:** computed on read; an active contract past its end date counts as expired.
+  - **access:** record-level RBAC, and list scope (own/team/department) applied in SQL.
+  - **errors:** returned as translation keys, `contracts.error.*` (20 keys in all five languages).
+  - `allowedActions()` for the pages.
+- Events: `Modules\Contracts\Events\ContractActivated` and `ContractTerminated`.
+- `ContractsModule` now implements `ProvidesServices` (exposes `ContractService`).
+- Tests: `tests/lite/ContractServiceTest.php`, 20 tests against `crm_local` inside a rolled-back transaction. Suite total 87.
+
+### Contracts module — step 2.3 (permissions)
+- Core (P1, backward compatible): `Permission::registerModuleKeys($module, $keys)` lets a module add keys under its own prefix. `all()`/`exists()` include them, Core keys can't be taken over, and invalid entries are skipped. The Core list itself is unchanged (moved into a private `coreKeys()`).
+- Contracts: `Modules\Contracts\ContractPermission` defines 9 keys (`contracts.view`, `create`, `edit`, `delete`, `approve`, `activate`, `terminate`, `renew`, `manage_settings`), registered from the module's `register()`. They appear on `/org/roles` and can be saved on custom roles.
+- Module migration `contracts/0003_grant_contracts_permissions`: org_admin gets all 9 keys at organization scope; member gets view and create at organization scope and edit on own contracts. Its `down()` removes them. Grants have no effect while the module isn't entitled to the organization.
+- Tests: `tests/lite/ContractsPermissionsTest.php`, 15 tests. Two 2.2 tests were adjusted to the new defaults (member scope set explicitly; the grant count is compared to the pre-test value). Suite total 67.
+
+### Contracts module — step 2.2 (skeleton + record type)
+- New module `modules/Contracts` (key `contracts`, type addon, no dependencies). The Super Admin must sync it on `/admin/modules` and entitle an organization before anything is usable; until then it is invisible.
+- Module migrations `contracts/0001_create_contract_categories_table` and `contracts/0002_create_contracts_table`. Foreign keys point only to Core tables (organizations, users, teams, departments, contacts, companies, currencies) and to the module's own tables.
+- Registers the `contract` record type: view permission `contracts.view`, page `/contracts/{id}`, with a finder. Notes, tags and attachments on contracts go through the existing `/records/contract/{id}` routes.
+- Core (extension of step 1, backward compatible): `RecordType` gains an optional `finder`; `RecordTypeRegistry::find($type, $id, $user)` returns another module's record only when it is viewable, in the user's organization and within the user's record scope; `ModuleGate::allows()` takes an optional record for own/team/department scope.
+- Not yet: permissions and grants (2.3), service (2.4), pages and routes (2.5). `/contracts/{id}` does not exist yet.
+- Tests: `tests/lite/ContractsRecordTypeTest.php`, 15 tests. Suite total 52.
+
+### Module extension points (Phase 5 · Step 1)
+- Core extension points so future sellable modules (Contracts, Projects) can plug in without Core naming them — see `docs/module-extension-points.md`. **ProvidesServices**: optional module interface; Application binds the returned services (first registration wins, a module can never replace a Core binding, invalid entries skipped and logged). **RecordTypeRegistry**: Core registers contact/company/lead; modules register their own types. **RelatedPanelRegistry** + `partials/related-panels.php`: modules add panels to other records' pages; the slot is on the contact, company, lead and deal pages (renders nothing until a module registers a panel). All access goes through the new `ModuleGate`, a thin wrapper over the existing `ModuleAccessResolver` + `AuthorizationEngine` — no second access system.
+- Notes/tags/attachments (`/records/{type}/{id}`) now accept any registered type the user can view instead of a hard-coded list; contact/company/lead behave as before, and the routes now also require the type's view permission (`contacts.view` / `companies.view` / `leads.view`).
+- Plain-PHP test runner `php tests/lite/run.php` (PHPUnit is not installed): 37 tests for the registries and backward compatibility (local `crm_local` only, inside a rolled-back transaction).
+- No database schema changes. No Contracts/Projects code, tables or UI.
+- Also in this release: a lead free-text description (migration `0075`), tags on the new-lead form, follow-ups linkable to a contact or a lead (two pickers), a "New follow-up" button per lead row and on lead/contact pages, and list tables no longer push row actions out of view.
+
+### Companies
+- **Companies**: categories (`/companies/categories`, org admin via new permission `companies.manage_categories`; category filter and column on the list). New fields: brand (the name the company is known by), category, CEO, national ID, economic code, registration number, description — shown on the company page as a facts row. The create form now also takes tags (pill input), files (attachments, up to 10 MB each) and linked contacts (picked from contacts the user may edit; a contact already in another company is moved). Editing now really clears an emptied field, while partial forms (custom fields on the company page) leave other fields untouched. Company flash messages translated. Migrations `0072`–`0074`.
+
+### Internal mail forward
+- Internal mail: **Forward**. Every message in a conversation has a "Forward" button (`/mail/forward/{id}`): the compose form opens with "Fwd:" subject, the original quoted under a "Forwarded message" header (from, date, subject) and the original's attachments as checkboxes (all ticked); new files can be added too. Sent as a new conversation; chosen attachments are copied, so deleting either message never affects the other. Only participants of the original can forward it. New forward icon. Keys in all five languages.
+- Internal mail cleanup: every flash and validation message (sent, draft saved/deleted, attachment removed, moved to trash, restored, broadcast results, subject/body/recipient/attachment errors) is now translated in all five languages instead of fixed English; services return translation keys. Inline `style=""` removed from compose, conversation and trash pages, replaced by shared classes `.form-actions` (button row), `.card--narrow`, `.section-heading`.
+
+### French language
+- **French (Français) added — the system is now 5-language** (fa, ar, tr, en, fr). `lang/fr.php` with all 1609 keys (checked: no missing keys, every `:placeholder` kept). French in the language picker, profile and organization default-language lists; French number format (1 234 567,89 with no-break space), dd/mm/yyyy dates, amounts in words in French on invoice print (vingt et un, quatre-vingts, cent/cents, mille, millions…), datepicker "Aujourd’hui". Landing page (`public/index.html`): FR button, French for every text and module card, "5 languages". CLAUDE.md: new keys go into all five language files.
+
+### Announcements (Super Admin → org admins)
+- Super Admin → org admin announcements (one-way). Super Admin → Announcements (`/admin/announcements`): send a subject + message to all organization admins or to one; list of sent messages with "seen X / Y", a per-recipient read report (seen time, removed time) and delete-for-everyone. Org admins get a bell next to the language picker that turns red with an unread count; its panel lists the messages with "I've seen it" and "Delete" (removes it from their list; the report keeps the row), plus an "All messages" page (`/announcements`). Core migration `0071` (`admin_announcements`, `admin_announcement_recipients`).
+
+### Contact history wording
+- Client Records renamed to industry-neutral wording, structure unchanged: fa «سوابق مخاطب» (مراجع→مخاطب, جلسه→مراجعه, متخصص→کارشناس, پذیرش→اطلاعات اولیه, آلرژی→نکات احتیاطی, درمان→خدمت); en "Contact history" (client→contact, session→visit, specialist→expert, intake→initial information, allergies→precautions); ar and tr updated the same way. Custom-field examples now device model / serial number / website address. Module manifest name: "Contact History".
+
+### Appointments → قرار ملاقات, internal meetings
+- Appointments: the customer is now optional — leave it empty to book an **internal meeting** (shown as "Internal meeting"; same calendar, resources and conflict checks; no contact timeline entry). Module migration `appointments/0005` makes `appointments.contact_id` nullable.
+- Persian wording: «نوبت‌دهی/نوبت» renamed to «قرار ملاقات/قرار» across the module, settings and the client record tab (fa only; en/ar/tr unchanged).
+
+### Wallet transfer fee
+- Wallet transfers: the transfer fee is now its own ledger line ("Transfer fee") instead of being added into the "Transfer sent" amount (e.g. 1,000,000 + 15,000 fee used to show as one -1,015,000 line). Balance is checked against amount + fee before anything is written. The transfer form shows the fee (percent + fixed), and the success message states the fee deducted.
+
+### Gift credit (wallet)
+- Super Admin → Gift codes (`/admin/wallet/gift-codes`): generate 1–100 codes (`GIFT-XXXX-XXXX-XXXX`, unambiguous characters) for an amount, optionally locked to one organization and/or with an expiry date, with a note; new codes are shown once for copying; list with status (unused / redeemed by whom, when / revoked) and revoke for unused codes.
+- Org admin (`wallet.adjust`) on `/org/wallet`: "Redeem a gift code" — the amount is credited to their wallet as **gift credit** (code claimed atomically, works once; typed with or without dashes/case); "Send gift credit to a colleague" — paid from their wallet, received by the colleague as gift credit, no fee, reversed if the credit fails.
+- Wallet migration `0007`: `wallet_gift_codes` table; ledger types `gift_credit` (اعتبار هدیه) and `gift_sent`; both appear in transaction lists and the type filter.
+- The "Redeem a gift code" box is also on the personal wallet page (`/wallet`, sidebar "My wallet") for org admins, with a link to sending gift credit; after redeeming there, you return to `/wallet`.
+
+### Bulk delete and row actions: products, proformas, invoices
+- Same as contacts/companies/leads: checkbox column with "select all on this page", a "Delete selected" bar (`POST /finance/{products|proformas|invoices}/bulk-delete`) and Edit/Delete buttons on each row. Rules come from the existing permissions plus document state: org admin — every row; member — own proformas/invoices only (no product edit/delete); issued invoices and proformas converted to an invoice are locked for everyone (buttons disabled with the reason; bulk delete skips them). `partials/row-actions.php` now accepts a per-row `reason`.
+
+### Manual proforma / invoice number
+- Optional "Document number" field on the proforma and invoice forms. When filled it is shown instead of the system number on the document page, in the list and in print/PDF, and list search finds it; when empty the system number (invoice series / `PF-000123`) is used exactly as before. Finance migration `0015` (`custom_number` on `proformas` and `invoices`).
+
+### Date picker
+- Month and year are separate buttons in the header: the month opens the 12 months, the year opens a page of 12 years (prev/next pages by 12).
+- The date can be typed or corrected by hand in the calendar shown (`1405/07/13`, `1405-7-13`, Persian/Arabic digits); invalid text reverts on blur, Enter applies.
+- Mobile: the popup is never wider than the screen, opens above the field when there's no room below and follows scrolling. "Today" is localized.
+
+### Proforma / invoice line items: product code, name, description
+- The "free text row" dropdown is gone. Each row has product code, product name and description (شرح), then quantity, unit price and discount, in a tidy two-line card (`finance/_line-items.php`, shared by both forms). Code and name are search-as-you-type fields (`GET /finance/products/lookup?q=`, allowed with products.view, quotes.create or invoices.create; exact code first, max 15); picking a product fills code, name, description, price and product_id. Works with any number of products (no product dropdown). A row can still be written by hand.
+- Finance migration `0014`: `item_code`, `item_name` snapshot columns on `proforma_items` and `invoice_items`; carried over when a proforma becomes an invoice. Older rows fall back to the product's current sku/name.
+- Print/PDF: new "Code" column; the name is shown with the description under it when they differ.
+
+### Number and price inputs
+- Every amount-like number field (decimal step or a price/amount/cost/value/discount/rate/fee name) shows thousand separators while typing, accepts Persian/Arabic digits, allows at most 3 decimals and clears a "0" on focus (restored if left empty). Stored values like `10000.000000000000000000` display as `10,000`. The form still posts the plain number (hidden twin field); scripts reading/setting `input.value` keep working. Rows added later (invoice/proforma items) are handled too. Opt out with `data-no-format`. (`app.js`, presentation only.)
+
+### SMS providers per country/language
+- `SmsProviderRegistry` + `SmsProviderDefinition` (like payment gateways): each provider declares the languages/countries it serves, its credential fields and a factory. Kavenegar = `fa` / IR. Organizations whose language no provider serves don't see SMS settings and can't send; the platform account is only offered where its provider serves the organization's language.
+- Kavenegar sender line is now required (Kavenegar returns 412 without it) and there is a separate optional international line: `KAVENEGAR_SENDER`, `KAVENEGAR_SENDER_INTERNATIONAL`; numbers are sent on the matching line. `config/sms.php` now has `platform.provider` + per-provider credentials (`SMS_PLATFORM_PROVIDER`).
+- Organization own accounts store provider + all credential fields as one encrypted JSON object (migration `0070`); the SMS settings page renders the selected provider's fields from the registry. Rows saved under `0069` are still read.
+
+### SMS: platform account or the organization's own Kavenegar key
+- New page Organization settings → SMS (`/org/sms`, `organization.edit`): "our SMS service" (default) or "your own Kavenegar account" with API key + line. The key is verified with Kavenegar before saving and stored encrypted (`SecretBox`); migration `0069` (`organization_sms_settings`).
+- Platform mode is billed per SMS part from the organization's prepaid notification credit (charged from Wallet, which is topped up through the payment gateway) at the Super Admin's SMS price; charged before sending, refunded when the provider rejects it (`SmsBillingInterface`, implemented by the Notification module's `NotificationSmsBilling`; `NotificationCreditService::refund()`). Own-key mode is never billed. Notification SMS are no longer deducted separately, so they are not charged twice.
+
+### SMS via Kavenegar
+- Core `SmsService` (`$container->make(SmsService::class)`) for sending SMS from anywhere: `send()` (free text, one or many numbers) and `sendTemplate()` (Kavenegar verify/lookup, for OTP codes). Numbers are normalized (+98 / 0098 / 98 / Persian digits). Driver `KavenegarSmsSender` (REST API checked against the official docs; `account/info` is GET-only), `NullSmsSender` when no key is set. Config: `KAVENEGAR_API_KEY`, `KAVENEGAR_SENDER` (`config/sms.php`).
+- Every attempt is logged in `sms_logs` (migration `0068`); template tokens are never stored.
+- Super Admin page `/admin/sms`: connection status, account credit, test send, log.
+- The Notification module's SMS channel now sends through this service (`SmsServiceGateway`) instead of the old placeholder; `NotificationDispatchService` now takes the gateway interface. See `docs/sms.md`.
+
+### Bulk delete and row actions: contacts, companies, leads
+- Checkbox column with "select all on this page" and a "Delete selected" bar (`partials/bulk-bar.php`, `POST /{contacts|companies|leads}/bulk-delete`). Every id goes through the normal `delete()` and its record-level check; rows the user may not delete are skipped and counted in the flash message. Returns to the same filtered page.
+- Edit / Delete buttons on every row of all three lists (`partials/row-actions.php`); a button for someone else's record is shown disabled with a tooltip. Org admin: all rows; Member: own rows only.
+- Migration `0067`: the system Member role gets `companies.delete` and `leads.delete` at `own` scope (same as `contacts.delete` in `0066`).
+
+### Vazirmatn font, self-hosted
+- Vazirmatn 33.0.3 variable font (one woff2, weights 100–900, SIL OFL 1.1) in `themes/default/assets/fonts/vazirmatn/`, declared with `@font-face` in `app.css` — the existing `--font-rtl` / `--font-sans` tokens already named it but it was never loaded. Also used by the invoice/proforma print view and the landing page (`public/index.html`).
+- The separate `mirsys.ir` site gets its own copy in `mirsys.ir/fonts/`.
+
+### Public landing page
+- The landing page (former `index-2.html`) is now `public/index.html`. Visitors opening the site address see it; logged-in users still get the dashboard at `/`. `public/.htaccess` sets `DirectoryIndex index.php` so `/` always goes through the app.
+- Login and sign-up buttons in the landing header, hero, a closing call-to-action and the footer. They pass through `/lang/switch`, so the language chosen on the landing page carries over to the login/register screens.
+- Root `.htaccess` no longer rewrites requests for the separate `mirsys.ir` site into the CRM; `mirsys.ir/.htaccess` also turns the rewrite engine on so it can't inherit the CRM's rules.
+
+### Pagination and filters on every record list
+- New `App\Infrastructure\Pagination\Pagination` + `partials/pagination.php` (summary "showing X–Y of Z", rows per page 25/50/100, page links that keep the active filters), placed above each list under its filter bar.
+- Database-side paging (`LIMIT/OFFSET` + `COUNT`, only one page read): contacts, companies, leads, invoices, proformas. In-memory paging of the already-loaded list: deals, follow-ups, appointments, client records, products, tickets, knowledge-base articles, files, mail inbox/sent/drafts, wallet ledger and organization transactions (now up to 1000 instead of the latest 30/100), team members, organizations (super admin).
+- New filters: contacts (also phone search, "only mine"), companies (phone, "only mine"), leads ("only mine", phone), deals (status), invoices & proformas (search by number/contact, status, issue-date range), mail (subject/sender, inbox "unread only"; trash search), wallet (ledger type), team members (name/email, role, status), organizations (name/slug). Every filter bar has "Clear filters".
+- Mail trash keeps its two short tables without paging (search only).
+
+### Contacts: CSV import/export, rollback, contact page
+- CSV import/export stays org-admin only by default; an Organization Admin can now grant/revoke "CSV import" and "CSV export" to individual teammates on the team members page. New table `user_permission_grants` (migration `0064`); `AuthorizationEngine` falls back to it only for the allowlist `Permission::USER_GRANTABLE`, always at organization scope. The contacts list hides the import/export buttons for users without the permission.
+- Fix: large imports silently imported only the first ~70 rows. The review form posted every row back (≈13 fields per row) and PHP's `max_input_vars` (1000) dropped the rest. The uploaded file is now kept server-side (`storage/cache/contact-imports`, removed after 24 h) and the form only sends the column mapping and the unchecked row numbers.
+- Fix: an over-long value (e.g. address line 1 + 2) aborted the whole import with a database error; values are now cut to the column length and a failing row is reported and skipped.
+- Fix: imported mobile/email were written only to `contacts.phone/email`, so the edit form (which reads `contact_phones`/`contact_emails`) showed them empty. Import now fills both; the edit form and contact page also fall back to the legacy columns for contacts imported earlier.
+- Migration `0065` clears the literal text `NULL` that earlier imports stored in contact fields; the importer now treats `NULL` cells as empty.
+- Column mapping: every file column is auto-matched (English, Persian and WooCommerce `billing_*` headers, existing custom-field labels) and can be changed per column with a dropdown — including "create a new custom field". Iranian province codes (THR, ESF, …) become province names. All mapped columns (address, city, province, postal code, country, …) are shown in the preview.
+- Rows without a first name take the part of the email before `@` (or the mobile number).
+- One category and/or company can be chosen (or created) for the whole import; the company only applies to rows whose own company column is empty.
+- Rollback of the latest import (migration `0065`, `contact_import_batches` + `contact_import_batch_items`): deletes contacts it created, restores contacts it updated from a snapshot, removes companies/categories/custom fields it created when unused. Contacts edited or used (invoice, deal, task, note, …) since the import are left untouched and listed.
+- Contact edit form: the three tabs now really switch (a CSS rule overrode `hidden`). Tab 1 = details up to country, tab 2 = additional phones/emails + social networks, tab 3 = description + interests.
+- Contacts list: Edit and Delete buttons on every row, enabled per the same record-level check the service enforces (org admin: all contacts; Member: only contacts they own, otherwise shown disabled with a tooltip). Migration `0066` gives the system Member role `contacts.delete` at `own` scope (it already had `contacts.edit` = own). Fixed RTL display of phone/email in the list. Also fixed a missing `use` in `RbacMiddleware` that caused a 500 on every RBAC-protected page.
+- Contact page: summary tiles for invoices, proformas, deals, tasks, follow-ups, appointments and tickets (shown per module access + view permission, OWN scope respected); each list opens in a dialog loaded on demand (`GET /contacts/{id}/related/{type}`), invoices with total/paid/balance. Details, custom fields and notes/activity are tabs.
+
+### Appointments module (نوبت‌دهی)
+- New optional module `appointments` (`modules/Appointments/`): staff book time for a contact on a bookable resource (person, place or equipment) with appointment types (default length + buffer after), weekly working hours (split shifts allowed), capacity, and status flow (requested → scheduled → confirmed → in progress → completed, plus cancelled with reason / no-show). Industry-neutral.
+- Rules: resource capacity is a hard limit, checked under a row lock; outside working hours or a double-booked staff member are warnings with "save anyway". Every change goes to the contact's timeline.
+- Views: day grid (time × resources, free slots link to a pre-filled booking), week overview (Saturday-first in fa/ar), filterable list, appointment page with status actions, settings for resources/hours/types.
+- Ready for a future public booking page / customer portal without schema changes: `appointments.source`, status `requested`, `appointment_types.is_public`, and `AvailabilityService::freeSlots()`.
+- 4 module migrations + core `0063_grant_appointments_permissions` (5 new `appointments.*` permissions). Small additive changes: sidebar item, `badge()` tones for `requested`/`confirmed`, an "Appointments calendar" CSS section, translations in en/fa/ar/tr. See `docs/appointments-module.md`.
+
+### Invoice & proforma print / PDF
+- New A4 print view (`/finance/invoices/{id}/print`, `/finance/proformas/{id}/print`) and real server-side PDF download (`…/pdf`), from one shared template so screen and PDF match. Seller from the organization profile (falls back to the Finance profile's legal name/tax ID), buyer from the contact. Persian: Jalali dates and Persian digits; Arabic: Arabic-Indic digits; amount in words in fa/en/ar/tr.
+- PDF engine: mPDF 8.2.7 (+ deps) bundled in `vendor/` from the official GitHub releases, with a hand-written `vendor/autoload.php` (no Composer at runtime). Only XB Riyaz (fa/ar) and DejaVu Sans (Latin/Turkish) fonts are kept. Core wrapper: `App\Infrastructure\Pdf\PdfRenderer`; formatting: `App\Infrastructure\Localization\LocaleFormatter`.
+- Migration `0062`: organization profile gets address, postal code, phone, national ID, economic code, registration number and a logo (PNG/JPG ≤ 1 MB, stored outside the web root, served to members via `/org/logo`); contacts get national ID, economic code, postal code.
+- Tax label renamed to VAT everywhere (fa «مالیات بر ارزش افزوده», ar «ضريبة القيمة المضافة», tr «KDV»).
+- Security fix: `POST /org/settings` had no permission check (any member could rename the organization); it now requires `organization.edit`.
+
+### Client Records module (پرونده مراجع)
+- New optional module `client_records` (`modules/ClientRecords/`): a structured client-history layer around the existing Contact — intake, service history, sessions, appointments (scheduled sessions), before/after media, documents, follow-ups, invoices/payments and a unified timeline. Industry-neutral (clinics, salons, physio, consulting); not an EMR.
+- Reuses instead of duplicating: contacts (1:1, contact data never copied), users, RBAC (`AuthorizationEngine`), module entitlement (`ModuleMiddleware`), Core attachments/notes/custom fields/timeline, Finance products/invoices/payments (read-only) and the Follow-ups engine (follow-ups are created by `FollowUpService`).
+- 4 module migrations (`client_records`, `client_record_services`, `client_record_sessions`, `client_record_files`) + core `0060_grant_client_records_permissions` (9 new `client_records.*` permissions).
+- Web UI under `/client-records`, REST under `/api/v1/client-records` (same services, same RBAC, `_csrf` on writes).
+- Small additive integration points in existing code: `InvoiceService::list()` accepts an optional `contact_id` filter; `FinanceModule` exposes `PaymentService` like it already exposed `InvoiceService`; the search page, contact page, custom-fields admin and sidebar show Client Records only when the module is available to the user; `badge()` knows `planned`/`no_show`; 5 icons added to the sprite; new CSS components (profile header, fact row, event list, course cards, media grid, `.form-grid`).
+- Translations for en/fa/ar/tr. See `docs/client-records-module.md`.
+
 ### UI/UX redesign (presentation layer only)
 - New design system in `themes/default/assets/css/app.css` (tokens, buttons, forms, tables, badges, alerts, tabs, dropdowns, dialog, empty/loading states). Every pre-existing class name still works.
 - New app shell: grouped sidebar with icons (module → section), collapsible on desktop, off-canvas drawer on tablet/mobile; topbar with breadcrumb, global search, language switcher (native language names) and account menu.

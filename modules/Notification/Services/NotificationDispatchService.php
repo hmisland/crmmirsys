@@ -9,7 +9,6 @@ use App\Infrastructure\Repositories\UserRepository;
 use Modules\Notification\Gateways\BaleGateway;
 use Modules\Notification\Gateways\NotificationGatewayInterface;
 use Modules\Notification\Gateways\NotificationSendResult;
-use Modules\Notification\Gateways\NullSmsGateway;
 use Modules\Notification\NotificationLogRepository;
 use Modules\Notification\NotificationRecipientRepository;
 
@@ -18,10 +17,9 @@ use Modules\Notification\NotificationRecipientRepository;
  * explicit requirement) — never with the full message text, only a
  * short, fixed announcement ("You have a new message in..."), since
  * that's all that was asked for. Tries BOTH channels for each
- * recipient (not "pick one") — SMS will simply log
- * skipped_no_destination or fail (no provider connected) until a real
- * one is wired in; Bale sends for real if the recipient has stored a
- * chat_id and the bot token is configured.
+ * recipient (not "pick one") — SMS goes through the core SmsService
+ * (Kavenegar) once KAVENEGAR_API_KEY is set; Bale sends if the
+ * recipient has stored a chat_id and the bot token is configured.
  */
 final class NotificationDispatchService
 {
@@ -31,7 +29,7 @@ final class NotificationDispatchService
         private readonly NotificationLogRepository $logs,
         private readonly NotificationPlatformSettingsRepository $platformSettings,
         private readonly BaleGateway $bale,
-        private readonly NullSmsGateway $sms,
+        private readonly NotificationGatewayInterface $sms,
         private readonly UserRepository $users,
     ) {
     }
@@ -70,7 +68,10 @@ final class NotificationDispatchService
             return;
         }
 
-        if (!$this->credits->tryDeduct($organizationId, $cost, $gateway->channel(), $referenceId)) {
+        // SMS is billed inside SmsService (platform account → this credit,
+        // organization's own Kavenegar key → nothing); only Bale is
+        // charged here, so an SMS is never paid twice.
+        if ($gateway->channel() !== 'sms' && !$this->credits->tryDeduct($organizationId, $cost, $gateway->channel(), $referenceId)) {
             $this->logs->record($userId, $gateway->channel(), 'skipped_no_credit', null, 'message', $referenceId);
 
             return;
