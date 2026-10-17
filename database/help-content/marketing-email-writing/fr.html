@@ -1,0 +1,21 @@
+<h2>Une structure qui fonctionne</h2>
+<ol>
+<li><strong>Objet (moins de ~50 caractères) :</strong> concret et honnête. « {{first_name}}, vos 15 % se terminent vendredi » vaut mieux que « LETTRE N°12 ».</li>
+<li><strong>Première ligne :</strong> saluez par le prénom et dites pourquoi vous écrivez.</li>
+<li><strong>Un message, une action :</strong> une offre ou une nouvelle, et un seul lien ou bouton clair.</li>
+<li><strong>Court :</strong> 3 à 6 petits paragraphes. On lit en diagonale sur le téléphone.</li>
+<li><strong>Signature :</strong> le nom de votre activité et comment vous joindre.</li>
+</ol>
+<h2>Règles du système</h2>
+<ul>
+<li>Seules les variables listées fonctionnent (guide « Les bases du marketing e-mail ») ; une inconnue est refusée.</li>
+<li>Si un contact n'a pas de prénom, <code>{{first_name}}</code> devient vide — écrivez de façon à rester lisible.</li>
+<li>Les e-mails marketing reçoivent toujours un lien de désinscription en bas. Pour le placer vous-même, mettez <code>{{unsubscribe_url}}</code> dans un lien.</li>
+<li>Le corps HTML est envoyé tel quel ; l'aperçu s'affiche en sécurité dans un cadre isolé.</li>
+</ul>
+<div class="help-example">
+<p><strong>Exemple :</strong></p>
+<p>Objet : <code>{{first_name}}, un nouveau service pour vous</code></p>
+<p><code>&lt;p&gt;Bonjour {{first_name}},&lt;/p&gt;&lt;p&gt;Dès la semaine prochaine, nous livrons aussi à domicile dans votre ville.&lt;/p&gt;&lt;p&gt;&lt;a href="https://yourdomain.com/delivery"&gt;Voir comment ça marche&lt;/a&gt;&lt;/p&gt;&lt;p&gt;— L'équipe {{organization}}&lt;/p&gt;</code></p>
+</div>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> ne mettez pas tout le texte dans une image — beaucoup d'applications bloquent les images par défaut et votre message paraîtrait vide.</p></div>

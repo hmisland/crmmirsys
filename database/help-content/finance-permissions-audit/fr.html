@@ -1,0 +1,28 @@
+<h2>Autorisations principales</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Tâche</th><th>Autorisation</th></tr></thead>
+<tbody>
+<tr><td>Paramètres financiers</td><td>voir / modifier les paramètres financiers</td></tr>
+<tr><td>Proforma</td><td>voir, créer, modifier, supprimer, convertir</td></tr>
+<tr><td>Facture</td><td>voir, créer, modifier, supprimer, <strong>émettre</strong>, <strong>annuler</strong></td></tr>
+<tr><td>Paiement / avoir</td><td>voir et créer, chacun séparément</td></tr>
+<tr><td>Période financière</td><td>voir, clôturer, rouvrir</td></tr>
+<tr><td>Rapports, dépenses, budgets</td><td>une autorisation distincte pour chacun</td></tr>
+</tbody>
+</table>
+</div>
+<p>La portée de chaque autorisation (moi, équipe, service, toute l’organisation) détermine les documents visibles par l’utilisateur.</p>
+<h2>Piste d’audit</h2>
+<ul>
+<li>La carte « Historique financier » de la facture : les paiements uniquement avec l’autorisation de voir les paiements, les avoirs uniquement avec celle de voir les avoirs ; avec l’utilisateur, l’heure et le montant avant → après.</li>
+<li>La clôture et la réouverture des périodes sont enregistrées sur la page des périodes. Les annulations de factures restent enregistrées avec leur motif.</li>
+<li>Un événement est écrit avec son opération : les deux sont enregistrés ou aucun. Un envoi répété ne crée pas d’événement en double.</li>
+<li>Les paiements et les avoirs ne peuvent être ni modifiés ni supprimés.</li>
+</ul>
+<div class="help-example">
+<p><strong>Exemple :</strong> un rôle « Caissier » avec la consultation des factures et la consultation/création des paiements enregistre les paiements, mais ne peut ni émettre ni annuler de facture et ne voit pas les avoirs.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Conseil financier — séparation des tâches :</strong> la personne qui émet les factures ne doit pas être la seule à enregistrer les paiements et à clôturer les périodes. Répartir ces tâches entre plusieurs personnes réduit les erreurs et la fraude.</p>
+</div>

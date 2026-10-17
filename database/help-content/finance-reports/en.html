@@ -1,0 +1,25 @@
+<h2>System rules</h2>
+<ul>
+<li>Choose a date range; the report takes the invoices <strong>issued</strong> in it (not drafts, not cancelled).</li>
+<li>Each currency is a separate row; currencies are never added together.</li>
+<li>Credit notes and payments of <em>those same invoices</em> (whatever their date) are included, so "outstanding" is what those invoices still owe <em>today</em>.</li>
+<li>Everything is read from stored amounts (including final rounding).</li>
+</ul>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Gross</td><td>invoice grand totals, tax included</td></tr>
+<tr><td>Credit notes</td><td>credit notes of these invoices</td></tr>
+<tr><td>Net</td><td>gross − credit notes</td></tr>
+<tr><td>Tax</td><td>tax on these invoices</td></tr>
+<tr><td>Paid / Outstanding</td><td>paid so far / net − paid</td></tr>
+</tbody>
+</table>
+</div>
+<div class="help-example">
+<p><strong>Example (IRR):</strong> gross 500 million, credit notes 20, net 480, tax 40, paid 350, outstanding 130 million → 130 million still to collect.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finance tip:</strong> sales are not cash. "Net" is what you sold; "paid" is the money that actually arrived. Track outstanding ÷ net every month; if it rises, collection is getting weaker.</p>
+</div>

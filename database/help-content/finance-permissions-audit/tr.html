@@ -1,0 +1,28 @@
+<h2>Ana yetkiler</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>İş</th><th>Yetki</th></tr></thead>
+<tbody>
+<tr><td>Finans ayarları</td><td>finans ayarlarını görüntüleme / düzenleme</td></tr>
+<tr><td>Proforma</td><td>görüntüleme, oluşturma, düzenleme, silme, dönüştürme</td></tr>
+<tr><td>Fatura</td><td>görüntüleme, oluşturma, düzenleme, silme, <strong>kesme</strong>, <strong>iptal</strong></td></tr>
+<tr><td>Ödeme / alacak dekontu</td><td>görüntüleme ve oluşturma, her biri ayrı</td></tr>
+<tr><td>Mali dönem</td><td>görüntüleme, kapatma, yeniden açma</td></tr>
+<tr><td>Raporlar, giderler, bütçeler</td><td>her biri için ayrı yetki</td></tr>
+</tbody>
+</table>
+</div>
+<p>Her yetkinin kapsamı (kendim, ekip, departman, tüm kuruluş) kullanıcının hangi belgeleri göreceğini belirler.</p>
+<h2>Denetim izi</h2>
+<ul>
+<li>Faturanın "Mali geçmiş" kartı: ödemeler yalnızca ödemeleri görme yetkisiyle, alacak dekontları yalnızca onları görme yetkisiyle; kullanıcı, zaman ve önce → sonra tutarıyla.</li>
+<li>Dönem kapatma ve yeniden açma dönemler sayfasında kaydedilir. Fatura iptalleri de gerekçesiyle kayıtlı kalır.</li>
+<li>Olay, işlemiyle birlikte yazılır: ikisi birlikte kaydedilir ya da hiçbiri. Tekrarlanan gönderim tekrar olay oluşturmaz.</li>
+<li>Ödemeler ve alacak dekontları düzenlenemez veya silinemez.</li>
+</ul>
+<div class="help-example">
+<p><strong>Örnek:</strong> fatura görüntüleme ve ödeme görüntüleme/oluşturma yetkili "Kasiyer" rolü ödeme kaydeder, ancak fatura kesemez veya iptal edemez ve alacak dekontlarını görmez.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finans ipucu — görevlerin ayrılığı:</strong> fatura kesen kişi, ödemeleri kaydeden ve dönemleri kapatan tek kişi olmamalıdır. Bu işleri birkaç kişiye bölmek hatayı ve suistimali azaltır.</p>
+</div>

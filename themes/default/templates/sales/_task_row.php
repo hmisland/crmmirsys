@@ -1,13 +1,13 @@
 <?php
 /**
  * One task row, shared by "My tasks" and a deal's task list.
- * Expects in scope: $task, $can (TaskService::capabilities()),
- * $returnTo (where actions redirect back to).
+ * Expects in scope: $task, $taskActions (TaskService::actionsFor(), keyed
+ * by task id), $returnTo (where actions redirect back to).
  *
  * The checkbox marks the task done (or back to pending) and the row
  * stays put, struck through — it doesn't disappear. Status, archive and
- * delete controls only render when the user may use them; the services
- * re-check every action anyway.
+ * delete controls only render when the user may use them on THIS task
+ * (same rule the server enforces); the services re-check every action anyway.
  */
 
 use function App\Infrastructure\Theme\e;
@@ -15,16 +15,16 @@ use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
 use App\Infrastructure\Security\Csrf;
-use Modules\Sales\Services\TaskService;
 
 $isDone = $task['status'] === 'completed';
 $isClosed = in_array($task['status'], ['completed', 'rejected', 'cancelled'], true);
 $isArchived = ($task['archived_at'] ?? null) !== null;
 $base = '/tasks/' . (int) $task['id'];
 $statusIcons = ['pending' => 'clock', 'in_progress' => 'activity', 'on_hold' => 'ban', 'completed' => 'check-circle', 'rejected' => 'x-circle', 'cancelled' => 'x'];
+$act = ($taskActions ?? [])[(int) $task['id']] ?? ['statuses' => [], 'toggle' => null, 'archive' => false, 'delete' => false];
 ?>
 <li class="task-row<?= $isClosed ? ' task-row--closed' : '' ?><?= $isDone ? ' task-row--done' : '' ?>">
-    <?php if ($can['change_status'] && !$isArchived): ?>
+    <?php if ($act['toggle'] !== null): ?>
         <form method="post" action="<?= e($base) ?>/toggle" class="inline-form">
             <?= Csrf::field() ?>
             <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">
@@ -46,14 +46,13 @@ $statusIcons = ['pending' => 'clock', 'in_progress' => 'activity', 'on_hold' => 
 
     <?= badge(t('tasks.status.' . $task['status']), $task['status']) ?>
 
-    <?php if (($can['change_status'] && !$isArchived) || $can['archive'] || $can['delete']): ?>
+    <?php if ($act['statuses'] !== [] || $act['archive'] || $act['delete']): ?>
         <details class="dropdown">
             <summary class="btn btn--ghost btn--icon btn--sm" aria-label="<?= e(t('tasks.actions')) ?>" title="<?= e(t('tasks.actions')) ?>"><?= icon('sliders') ?></summary>
             <div class="dropdown__panel">
-                <?php if ($can['change_status'] && !$isArchived): ?>
+                <?php if ($act['statuses'] !== []): ?>
                     <div class="dropdown__header"><strong><?= e(t('tasks.change_status')) ?></strong></div>
-                    <?php foreach (TaskService::STATUSES as $status): ?>
-                        <?php if ($status === $task['status']) { continue; } ?>
+                    <?php foreach ($act['statuses'] as $status): ?>
                         <form method="post" action="<?= e($base) ?>/status">
                             <?= Csrf::field() ?>
                             <input type="hidden" name="status" value="<?= e($status) ?>">
@@ -62,14 +61,14 @@ $statusIcons = ['pending' => 'clock', 'in_progress' => 'activity', 'on_hold' => 
                         </form>
                     <?php endforeach; ?>
                 <?php endif; ?>
-                <?php if ($can['archive']): ?>
+                <?php if ($act['archive']): ?>
                     <form method="post" action="<?= e($base) ?>/<?= $isArchived ? 'unarchive' : 'archive' ?>">
                         <?= Csrf::field() ?>
                         <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">
                         <button type="submit" class="dropdown__item"><?= icon($isArchived ? 'undo' : 'archive') ?><?= e(t($isArchived ? 'tasks.unarchive' : 'tasks.archive')) ?></button>
                     </form>
                 <?php endif; ?>
-                <?php if ($can['delete']): ?>
+                <?php if ($act['delete']): ?>
                     <form method="post" action="<?= e($base) ?>/delete">
                         <?= Csrf::field() ?>
                         <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">

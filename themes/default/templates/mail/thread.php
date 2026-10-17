@@ -5,6 +5,7 @@
 /** @var array $attachmentsByMessage */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -33,7 +34,7 @@ $labelFor = fn (string $type) => match ($type) {
 
 <?php foreach ($messages as $msg): ?>
 <section class="card">
-    <p class="muted">#<?= e($msg['id']) ?> · <?= e($msg['sender_name'] ?? '') ?> · <?= e($msg['created_at']) ?></p>
+    <p class="muted">#<?= e($msg['id']) ?> · <?= e($msg['sender_name'] ?? '') ?> · <?= e(local_time($msg['created_at'])) ?></p>
     <p><?= nl2br(e($msg['body'])) ?></p>
     <?php $atts = $attachmentsByMessage[$msg['id']] ?? []; ?>
     <?php if ($atts !== []): ?>

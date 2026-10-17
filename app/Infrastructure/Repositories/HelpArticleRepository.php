@@ -16,7 +16,10 @@ final class HelpArticleRepository extends BaseRepository
     /** Articles in display order, each resolved to $locale (or en). */
     public function listForLocale(string $locale, bool $includeUnpublished, string $search = ''): array
     {
-        $where = $includeUnpublished ? '1 = 1' : 'a.is_published = 1';
+        // Readers only see articles that exist in their language or in English: a guide written for
+        // one language only (e.g. the Kavenegar SMS guides, Persian/Iran only) never shows up as an
+        // empty page in other languages. The Super Admin list still shows every article.
+        $where = $includeUnpublished ? '1 = 1' : 'a.is_published = 1 AND (tl.article_id IS NOT NULL OR tf.article_id IS NOT NULL)';
         $params = ['locale' => $locale, 'fallback' => self::FALLBACK_LOCALE];
         if ($search !== '') {
             $where .= ' AND (COALESCE(tl.title, tf.title) LIKE :q OR COALESCE(tl.summary, tf.summary) LIKE :q2)';
@@ -38,7 +41,7 @@ final class HelpArticleRepository extends BaseRepository
         );
     }
 
-    /** One article by slug, resolved to $locale (or en); null when missing. */
+    /** One article by slug, resolved to $locale (or en); null when missing or not written in either. */
     public function findBySlug(string $slug, string $locale): ?array
     {
         return $this->findOne(
@@ -49,7 +52,7 @@ final class HelpArticleRepository extends BaseRepository
              FROM help_articles a
              LEFT JOIN help_article_translations tl ON tl.article_id = a.id AND tl.locale = :locale
              LEFT JOIN help_article_translations tf ON tf.article_id = a.id AND tf.locale = :fallback
-             WHERE a.slug = :slug",
+             WHERE a.slug = :slug AND (tl.article_id IS NOT NULL OR tf.article_id IS NOT NULL)",
             ['slug' => $slug, 'locale' => $locale, 'fallback' => self::FALLBACK_LOCALE]
         );
     }

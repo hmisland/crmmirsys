@@ -100,6 +100,12 @@ $appointmentsEnabled = $authUser !== null && (new ModuleAccessResolver(
     new UserModuleOverrideRepository()
 ))->resolvedForUser('appointments', $authUser);
 
+$marketingEnabled = $authUser !== null && (new ModuleAccessResolver(
+    new ModuleRepository(),
+    new OrganizationModuleRepository(),
+    new UserModuleOverrideRepository()
+))->resolvedForUser('marketing', $authUser);
+
 // ---------------------------------------------------------------------
 // Navigation model (presentation only). Each group is one module area;
 // each item lists the URL prefixes that count as "inside" it, so the
@@ -178,6 +184,9 @@ if ($hasOrg) {
     }
     if ($mailEnabled) {
         $commItems[] = ['href' => '/mail', 'icon' => 'mail', 'label' => t('nav.mail'), 'match' => ['/mail']];
+    }
+    if ($marketingEnabled) {
+        $commItems[] = ['href' => '/marketing', 'icon' => 'megaphone', 'label' => t('marketing.title'), 'match' => ['/marketing']];
     }
     if ($commItems !== []) {
         $navGroups[] = ['label' => t('nav.group_communication'), 'items' => $commItems];
@@ -367,6 +376,7 @@ $languageSwitcher = function () use ($lang, $languageNames): string {
                     <?= icon('search', 'icon--sm') ?>
                     <label for="topbar-q" class="visually-hidden"><?= e(t('nav.search')) ?></label>
                     <input type="search" id="topbar-q" name="q" placeholder="<?= e(t('dashboard.search_placeholder')) ?>" autocomplete="off">
+                    <button type="submit" class="btn btn--sm topbar-search__submit"><?= icon('search') ?><?= e(t('common.search')) ?></button>
                 </form>
                 <a href="/search" class="btn btn--ghost btn--icon topbar__search-link" aria-label="<?= e(t('nav.search')) ?>"><?= icon('search') ?></a>
             <?php endif; ?>
@@ -458,6 +468,7 @@ $languageSwitcher = function () use ($lang, $languageNames): string {
     <script src="<?= e($asset('js/datepicker.js')) ?>"></script>
     <script src="<?= e($asset('js/tag-input.js')) ?>"></script>
     <script src="<?= e($asset('js/recipient-picker.js')) ?>"></script>
+    <?php if ($marketingEnabled): ?><script src="<?= e($asset('js/marketing.js')) ?>"></script><script src="<?= e($asset('js/marketing-segments.js')) ?>"></script><?php endif; ?>
     <script>
         // System-wide date field convention (docs/conventions.md): every
         // <input class="crm-datepicker"> on the page gets the picker,

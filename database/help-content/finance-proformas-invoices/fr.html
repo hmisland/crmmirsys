@@ -1,0 +1,21 @@
+<ul class="help-flow">
+<li>Proforma</li>
+<li>Convertir</li>
+<li>Facture brouillon</li>
+<li>Émettre</li>
+<li>Paiement</li>
+</ul>
+<h2>Règles du système</h2>
+<ul>
+<li>Une <strong>proforma</strong> est une offre de prix, pas une dette. Statuts : brouillon, envoyée, acceptée, refusée, expirée, convertie. Tant qu’elle n’est pas convertie, elle peut être modifiée ou supprimée.</li>
+<li>La <strong>conversion</strong> crée une facture <em>brouillon</em> avec les mêmes lignes. La proforma devient « convertie », est verrouillée et ne peut être convertie qu’une fois.</li>
+<li><strong>Facture :</strong> brouillon → émise → (annulée). Un brouillon se modifie ou se supprime librement.</li>
+<li>L’<strong>émission</strong> (en général réservée aux administrateurs de l’organisation) attribue le numéro suivant et <strong>fige</strong> la facture. Elle est refusée si la date de la facture tombe dans une période financière clôturée.</li>
+<li>Une facture émise n’est jamais modifiée ; la correction se fait par un <a href="/help/finance-credit-notes-cancel">avoir</a>.</li>
+</ul>
+<div class="help-example">
+<p><strong>Exemple :</strong> vous envoyez une proforma pour 3 licences. Le client accepte ; vous la convertissez, fixez l’échéance et l’émettez : <code>INV-00007</code>. À partir de ce moment, le montant vous est dû.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Conseil financier :</strong> une proforma n’est pas un chiffre d’affaires. Seule une facture émise crée une <em>créance client</em>. Indiquez toujours une échéance pour repérer les factures en retard.</p>
+</div>

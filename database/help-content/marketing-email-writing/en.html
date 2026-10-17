@@ -1,0 +1,21 @@
+<h2>A structure that works</h2>
+<ol>
+<li><strong>Subject (under ~50 characters):</strong> concrete and honest. "{{first_name}}, your 15% discount ends Friday" beats "NEWSLETTER #12".</li>
+<li><strong>First line:</strong> greet by name and say why you are writing.</li>
+<li><strong>One message, one action:</strong> one offer or piece of news, and one clear link or button.</li>
+<li><strong>Short:</strong> 3–6 short paragraphs. People scan on their phones.</li>
+<li><strong>Signature:</strong> your business name and how to reach you.</li>
+</ol>
+<h2>System rules</h2>
+<ul>
+<li>Only the listed variables work (see "Email marketing basics"); an unknown one is refused.</li>
+<li>If a contact has no first name, <code>{{first_name}}</code> becomes empty — write "Hello {{first_name}}," so it still reads well.</li>
+<li>Marketing emails always get an unsubscribe link at the bottom. To place it yourself, put <code>{{unsubscribe_url}}</code> in a link.</li>
+<li>The HTML body is sent as written; the preview is shown safely in an isolated frame.</li>
+</ul>
+<div class="help-example">
+<p><strong>Example:</strong></p>
+<p>Subject: <code>{{first_name}}, a new service for you</code></p>
+<p><code>&lt;p&gt;Hello {{first_name}},&lt;/p&gt;&lt;p&gt;From next week we also offer home delivery in your city.&lt;/p&gt;&lt;p&gt;&lt;a href="https://yourdomain.com/delivery"&gt;See how it works&lt;/a&gt;&lt;/p&gt;&lt;p&gt;— The {{organization}} team&lt;/p&gt;</code></p>
+</div>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> avoid images that contain all the text — many email apps block images by default, and your message would be blank.</p></div>

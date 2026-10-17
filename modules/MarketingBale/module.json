@@ -1,0 +1,9 @@
+{
+    "key": "bale_messaging",
+    "name": "Bale Messaging (Safir)",
+    "version": "1.0.0",
+    "type": "addon",
+    "is_core": false,
+    "dependencies": ["marketing"],
+    "bootstrap": "Modules\\MarketingBale\\MarketingBaleModule"
+}

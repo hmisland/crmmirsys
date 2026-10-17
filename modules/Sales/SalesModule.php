@@ -23,6 +23,7 @@ use App\Infrastructure\Records\RecordTypeRegistry;
 use App\Infrastructure\Modules\ModuleManifest;
 use App\Infrastructure\Repositories\CompanyRepository;
 use App\Infrastructure\Repositories\ContactRepository;
+use App\Infrastructure\Repositories\LeadRepository;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Sales\Controllers\DealController;
@@ -86,7 +87,12 @@ final class SalesModule implements ModuleInterface
             new TaskRepository(),
             $container->make(NoteService::class),
             $container->make(AttachmentService::class),
-            $container->make(AuthorizationEngine::class)
+            $container->make(AuthorizationEngine::class),
+            new UserRepository(),
+            $container->make(RecordTypeRegistry::class),
+            new ContactRepository(),
+            new CompanyRepository(),
+            new LeadRepository()
         );
         $this->taskServiceInstance = $taskService;
 
@@ -103,7 +109,7 @@ final class SalesModule implements ModuleInterface
         );
 
         $this->pipelineController = new PipelineController($templates, $pipelineService);
-        $this->taskController = new TaskController($templates, $taskService, new UserRepository());
+        $this->taskController = new TaskController($templates, $taskService);
     }
 
     public function routes(Router $router): void

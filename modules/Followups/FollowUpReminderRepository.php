@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Followups;
 
 use App\Infrastructure\Repositories\BaseRepository;
+use App\Infrastructure\Time\OrganizationTimezone;
 
 final class FollowUpReminderRepository extends BaseRepository
 {
@@ -21,13 +22,24 @@ final class FollowUpReminderRepository extends BaseRepository
         );
     }
 
-    /** Due now, still pending — what a periodic sweep (cron or on-demand check) would process. */
-    public function duePending(string $asOf): array
+    /**
+     * Due now, still pending — what a periodic sweep (cron or on-demand
+     * check) would process, across organizations. scheduled_at is the
+     * follow-up organization's local wall clock, so "now" is that
+     * organization's local time (rows carry organization_id).
+     */
+    public function duePending(?OrganizationTimezone $timezone = null): array
     {
-        return $this->findMany(
-            "SELECT * FROM follow_up_reminders WHERE status = 'pending' AND scheduled_at <= :as_of",
-            ['as_of' => $asOf]
+        $timezone ??= OrganizationTimezone::shared();
+        // Cheap pre-filter: no zone is more than 14 h ahead of UTC.
+        $rows = $this->findMany(
+            "SELECT r.*, f.organization_id FROM follow_up_reminders r
+             INNER JOIN follow_ups f ON f.id = r.follow_up_id
+             WHERE r.status = 'pending' AND r.scheduled_at <= :latest ORDER BY r.scheduled_at",
+            ['latest' => $timezone->now()->setTimezone(new \DateTimeZone('UTC'))->modify('+14 hours')->format('Y-m-d H:i:s')]
         );
+
+        return array_values(array_filter($rows, fn (array $r) => $r['scheduled_at'] <= $timezone->localNow((int) $r['organization_id'])));
     }
 
     public function create(array $fields): int

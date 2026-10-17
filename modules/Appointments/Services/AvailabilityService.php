@@ -12,8 +12,9 @@ use Modules\Appointments\WorkingHoursRepository;
  * future public booking page or customer portal can offer slots with
  * exactly the same rules staff bookings are checked against.
  *
- * Times are "HH:MM" strings and dates "Y-m-d"; everything is in the
- * application's own timezone, like the rest of the app.
+ * Times are "HH:MM" strings and dates "Y-m-d" in the organization's local
+ * wall clock (appointment times are never converted). PHP arithmetic on them
+ * runs in UTC, so "now" must be the organization's local now in the same frame.
  */
 final class AvailabilityService
 {
@@ -150,7 +151,7 @@ final class AvailabilityService
         $cursor = strtotime($date . ' ' . $open . ':00');
         $last = strtotime($date . ' ' . $close . ':00') - $minutes * 60;
         $capacity = max(1, (int) $resource['capacity']);
-        $now = time();
+        $now = strtotime(\App\Infrastructure\Time\OrganizationTimezone::shared()->localNow()); // same frame as $cursor (local wall clock read as UTC)
         $slots = [];
 
         for (; $cursor <= $last; $cursor += $stepMinutes * 60) {

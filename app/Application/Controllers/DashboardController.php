@@ -109,9 +109,10 @@ final class DashboardController extends BaseController
     private function tasksWidget(array $user): ?array
     {
         return $this->optionalTile($user, 'sales', 'tasks.view', 'Modules\\Sales\\Services\\TaskService', function ($taskService) use ($user) {
-            $rows = $taskService->upcomingForUser((int) $user['id']);
+            $rows = $taskService->upcomingForUser($user);
 
-            $today = date('Y-m-d');
+            // due_at is the organization's local wall clock, so "today" is the organization's too.
+            $today = \App\Infrastructure\Time\OrganizationTimezone::shared()->today();
             $overdue = [];
             $dueToday = [];
             $upcoming = [];

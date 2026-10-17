@@ -28,6 +28,7 @@ $grantColumns = $grants === [] ? [] : [
     <?php if (isset($pagination)): ?>
     <form method="get" action="/org/users" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($filters['q']) ?>" placeholder="<?= e(t('filters.search_user')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select name="role_id" aria-label="<?= e(t('org.role')) ?>">
             <option value=""><?= e(t('filters.all_roles')) ?></option>
             <?php foreach ($roles as $role): ?>

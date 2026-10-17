@@ -1,0 +1,18 @@
+<p>A <strong>campaign</strong> is one message (SMS or email) sent to one <strong>audience</strong>. Everything happens under <strong>Marketing</strong>.</p>
+<ol class="help-flow"><li>Draft</li><li>Review</li><li>Test</li><li>Approve</li><li>Sending</li><li>Results</li></ol>
+<h2>The pieces</h2>
+<ul>
+<li><strong>Campaign:</strong> name, channel (email), provider (Sender or Brevo), subject, HTML body, optional plain-text version.</li>
+<li><strong>Audience:</strong> selected contacts, a contact group, contacts with a tag, a saved segment, or all active contacts.</li>
+<li><strong>Template:</strong> a reusable subject and body (<em>Marketing › Templates</em>), loaded into a new campaign.</li>
+<li><strong>Personalization:</strong> <code>{{first_name}}</code>, <code>{{last_name}}</code>, <code>{{full_name}}</code>, <code>{{company}}</code>, <code>{{email}}</code>, <code>{{phone}}</code>, <code>{{organization}}</code>, <code>{{unsubscribe_url}}</code>.</li>
+</ul>
+<h2>System rules</h2>
+<ul>
+<li>A campaign is saved as a <strong>draft</strong>; the review page shows the number of recipients, skipped contacts (no address, invalid, opted out, duplicates) and a personalized preview.</li>
+<li><strong>Approve and send</strong> needs the "send campaigns" permission. The recipient count you confirm must still be correct — if contacts changed meanwhile, review again.</li>
+<li>Sending runs in the background (the CRM's scheduled worker, or while the campaign page is open). You can close the page.</li>
+<li>Every person receives a separate email; nobody sees other recipients.</li>
+<li>An unknown variable such as <code>{{coupon}}</code> is refused — it would otherwise be sent as-is.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> always use <em>Send a test</em> to yourself before approving. Read it on your phone — most emails are opened there.</p></div>

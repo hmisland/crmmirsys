@@ -6,10 +6,11 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
-    <h1><?= e(t('periods.title')) ?></h1>
+    <h1><?= e(t('periods.title')) ?><?= help_link('finance-periods') ?></h1>
     <p class="muted"><?= e(t('periods.hint')) ?></p>
 
     <div class="table-responsive">
@@ -46,7 +47,7 @@ use App\Infrastructure\Security\Csrf;
 
 <?php if ($history !== []): ?>
 <section class="card">
-    <h2><?= icon('activity') ?><?= e(t('finance.history.period_title')) ?></h2>
+    <h2><?= icon('activity') ?><?= e(t('finance.history.period_title')) ?><?= help_link('finance-permissions-audit') ?></h2>
     <div class="table-responsive">
     <table class="table">
         <thead><tr><th><?= e(t('periods.starts_on')) ?></th><th><?= e(t('periods.ends_on')) ?></th><th><?= e(t('finance.history.action')) ?></th><th><?= e(t('finance.history.by')) ?></th><th><?= e(t('finance.history.at')) ?></th></tr></thead>

@@ -1,0 +1,18 @@
+<p>Bir <strong>kampanya</strong>, bir <strong>kitleye</strong> gönderilen tek bir mesajdır (SMS veya e-posta). Her şey <strong>Pazarlama</strong> altında yapılır.</p>
+<ol class="help-flow"><li>Taslak</li><li>İnceleme</li><li>Test</li><li>Onay</li><li>Gönderim</li><li>Sonuçlar</li></ol>
+<h2>Parçalar</h2>
+<ul>
+<li><strong>Kampanya:</strong> ad, kanal (e-posta), sağlayıcı (Sender veya Brevo), konu, HTML gövde, isteğe bağlı düz metin sürümü.</li>
+<li><strong>Kitle:</strong> seçili kişiler, bir kişi grubu, etiketli kişiler, kayıtlı bir segment veya tüm etkin kişiler.</li>
+<li><strong>Şablon:</strong> yeniden kullanılabilir konu ve gövde (<em>Pazarlama › Şablonlar</em>), yeni kampanyaya yüklenir.</li>
+<li><strong>Kişiselleştirme:</strong> <code>{{first_name}}</code>, <code>{{last_name}}</code>, <code>{{full_name}}</code>, <code>{{company}}</code>, <code>{{email}}</code>, <code>{{phone}}</code>, <code>{{organization}}</code>, <code>{{unsubscribe_url}}</code>.</li>
+</ul>
+<h2>Sistem kuralları</h2>
+<ul>
+<li>Kampanya <strong>taslak</strong> olarak kaydedilir; inceleme sayfası alıcı sayısını, atlanan kişileri (adres yok, geçersiz, çıkış yapmış, yinelenen) ve kişiselleştirilmiş önizlemeyi gösterir.</li>
+<li><strong>Onayla ve gönder</strong> "kampanya gönderme" yetkisi gerektirir. Onayladığınız sayı hâlâ doğru olmalıdır — kişiler değiştiyse yeniden inceleyin.</li>
+<li>Gönderim arka planda yapılır (CRM'in zamanlanmış çalışanı veya kampanya sayfası açıkken). Sayfayı kapatabilirsiniz.</li>
+<li>Herkes ayrı bir e-posta alır; kimse diğer alıcıları görmez.</li>
+<li><code>{{coupon}}</code> gibi bilinmeyen bir değişken reddedilir — aksi halde olduğu gibi gönderilirdi.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> onaylamadan önce her zaman kendinize <em>Test gönder</em> yapın ve telefonunuzda okuyun — e-postaların çoğu orada açılır.</p></div>

@@ -25,7 +25,7 @@ final class ReportController extends BaseController
     public function index(Request $request): Response
     {
         $startDate = (string) $request->query('start_date', date('Y-m-01'));
-        $endDate = (string) $request->query('end_date', date('Y-m-d'));
+        $endDate = (string) $request->query('end_date', \App\Infrastructure\Time\OrganizationTimezone::shared()->today());
 
         $translator = Locale::get();
 

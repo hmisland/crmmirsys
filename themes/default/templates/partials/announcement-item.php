@@ -11,13 +11,14 @@
 use App\Infrastructure\Security\Csrf;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 ?>
 <article class="announcement<?= $m['seen_at'] === null ? ' announcement--unread' : '' ?>">
     <header class="announcement__head">
         <strong><?= e($m['title']) ?></strong>
-        <span class="muted text-sm"><?= e($fmt->date($m['created_at'])) ?></span>
+        <span class="muted text-sm"><?= e($fmt->date(local_time($m['created_at']))) ?></span>
     </header>
     <div class="announcement-body"><?= nl2br(e($m['body'])) ?></div>
     <div class="announcement__actions">

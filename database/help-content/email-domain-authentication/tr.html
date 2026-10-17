@@ -1,0 +1,19 @@
+<p>Gmail ve Yahoo, doğrulanmamış alan adlarından gelen e-postayı reddeder veya gizler. E-posta sağlayıcınız alan adınızın DNS'ine eklenecek üç kayıt verir.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Kayıt</th><th>Tür / Ad</th><th>Ne işe yarar</th></tr></thead>
+<tbody>
+<tr><td>DKIM</td><td>CNAME, örn. <code>sender._domainkey</code></td><td>her e-postayı imzalar; alıcı gerçekten sizden geldiğini bilir</td></tr>
+<tr><td>SPF</td><td><code>@</code> üzerinde TXT, <code>v=spf1</code> ile başlar</td><td>alan adınız adına gönderebilecek sunucuları listeler</td></tr>
+<tr><td>DMARC</td><td><code>_dmarc</code> üzerinde TXT</td><td>kontrollerden geçemeyen e-postayla ne yapılacağını söyler</td></tr>
+</tbody></table></div>
+<h2>cPanel'de ekleme</h2>
+<ol>
+<li>cPanel › <strong>Zone Editor</strong> › alan adınız için <em>Manage</em>.</li>
+<li><strong>DKIM:</strong> Add Record › CNAME, sağlayıcının verdiği ad ve değerle.</li>
+<li><strong>SPF:</strong> TXT'ye göre filtreleyin ve mevcut <code>v=spf1</code> kaydını <strong>düzenleyin</strong> — sağlayıcının <code>include:…</code> ifadesini <code>~all</code>'dan önce ekleyin. SPF yoksa tek bir TXT kaydı ekleyin.</li>
+<li><strong>DMARC:</strong> Add Record › "DMARC" (veya TXT), ad <code>_dmarc</code>, değer <code>v=DMARC1; p=none;</code>.</li>
+<li>Birkaç dakika ile birkaç saat bekleyin, sonra sağlayıcının "kayıtları kontrol et" düğmesine basın.</li>
+</ol>
+<div class="help-callout help-callout--warning"><p><strong>Asla ikinci bir SPF kaydı oluşturmayın.</strong> Bir alan adında tam olarak bir <code>v=spf1</code> kaydı olmalıdır; iki kayıt normal posta kutuları dahil tüm e-postanızı bozar.</p></div>
+<div class="help-example"><p><strong>Örnek (Sender):</strong> mevcut SPF <code>v=spf1 +a +mx ~all</code>, <code>v=spf1 +a +mx include:sendersrv.com ~all</code> olur; DKIM <code>sender._domainkey</code> → <code>dkim.sendersrv.com</code>.</p></div>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> <code>p=none</code> yalnızca izler. Birkaç hafta sorunsuz çalıştıktan sonra DMARC'ı sıkılaştırabilirsiniz (<code>quarantine</code>), ama oradan başlamanız gerekmez.</p></div>

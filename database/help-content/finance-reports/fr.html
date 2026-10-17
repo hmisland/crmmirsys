@@ -1,0 +1,25 @@
+<h2>Règles du système</h2>
+<ul>
+<li>Choisissez une plage de dates ; le rapport prend les factures <strong>émises</strong> dans cette plage (ni brouillons ni annulées).</li>
+<li>Chaque devise est une ligne distincte ; les devises ne sont jamais additionnées.</li>
+<li>Les avoirs et paiements de <em>ces mêmes factures</em> (quelle que soit leur date) sont inclus ; le « restant dû » est donc ce que ces factures doivent encore <em>aujourd’hui</em>.</li>
+<li>Tout est lu à partir des montants enregistrés (arrondi final compris).</li>
+</ul>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Colonne</th><th>Signification</th></tr></thead>
+<tbody>
+<tr><td>Brut</td><td>totaux des factures, taxe comprise</td></tr>
+<tr><td>Avoirs</td><td>avoirs de ces factures</td></tr>
+<tr><td>Net</td><td>brut − avoirs</td></tr>
+<tr><td>Taxe</td><td>taxe de ces factures</td></tr>
+<tr><td>Payé / Restant dû</td><td>payé à ce jour / net − payé</td></tr>
+</tbody>
+</table>
+</div>
+<div class="help-example">
+<p><strong>Exemple (IRR) :</strong> brut 500 millions, avoirs 20, net 480, taxe 40, payé 350, restant dû 130 millions → 130 millions restent à encaisser.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Conseil financier :</strong> les ventes ne sont pas de la trésorerie. Le « net » est ce que vous avez vendu ; le « payé » est l’argent réellement reçu. Suivez chaque mois le ratio restant dû ÷ net ; s’il monte, le recouvrement se dégrade.</p>
+</div>

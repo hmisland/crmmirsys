@@ -82,7 +82,7 @@ final class CreditNoteService
             throw new ValidationException(['amount' => [t('finance.error.amount_precision', ['max' => $decimals])]]);
         }
 
-        $issueDate = (string) ($input['issue_date'] ?? date('Y-m-d'));
+        $issueDate = (string) ($input['issue_date'] ?? \App\Infrastructure\Time\OrganizationTimezone::shared()->today());
         if ($this->financialPeriods->isDateLocked($issueDate)) {
             throw new ValidationException(['issue_date' => ['This date falls inside a closed financial period.']]);
         }

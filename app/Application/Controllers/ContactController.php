@@ -229,7 +229,11 @@ final class ContactController extends BaseController
             $scope = $moduleEnabled[$module] ? $engine->scopeFor($user, $permission) : null;
 
             if ($scope !== null) {
-                $access[$type] = $scope === Scope::OWN ? (int) $user['id'] : null;
+                // Tasks have no team/department column here, so TEAM/DEPARTMENT
+                // scope must not widen to every task: it falls back to own tasks.
+                $ownOnly = $scope === Scope::OWN
+                    || ($type === 'tasks' && ($scope === Scope::TEAM || $scope === Scope::DEPARTMENT));
+                $access[$type] = $ownOnly ? (int) $user['id'] : null;
             }
         }
 

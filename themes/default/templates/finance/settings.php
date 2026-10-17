@@ -9,12 +9,13 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
 ?>
 <section class="card card--form">
-    <h1><?= e(t('finance.settings_title')) ?></h1>
+    <h1><?= e(t('finance.settings_title')) ?><?= help_link('finance-getting-started') ?></h1>
     <p class="muted"><?= e(t('finance.settings_hint')) ?></p>
 
     <form method="post" action="/finance/settings">
@@ -92,7 +93,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
 
         <label class="check check--block">
             <input type="checkbox" name="invoice_final_rounding" value="1"<?= (int) ($profile['invoice_final_rounding'] ?? 0) === 1 ? ' checked' : '' ?>>
-            <span><?= e(t('finance.final_rounding.setting')) ?><br><span class="muted"><?= e(t('finance.final_rounding.setting_hint')) ?></span></span>
+            <span><?= e(t('finance.final_rounding.setting')) ?><?= help_link('finance-final-rounding') ?><br><span class="muted"><?= e(t('finance.final_rounding.setting_hint')) ?></span></span>
         </label>
 
         <button type="submit" class="btn btn--primary"><?= icon('save') ?><?= e(t('profile.save_changes')) ?></button>

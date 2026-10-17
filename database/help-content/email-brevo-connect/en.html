@@ -1,0 +1,17 @@
+<p>Brevo (<a href="https://www.brevo.com/" target="_blank" rel="noopener">brevo.com</a>) is a second supported email service. Its advantage in the CRM: it reports <strong>delivered, bounced, spam and unsubscribe</strong> events back, so campaign results are more complete.</p>
+<h2>Steps</h2>
+<ol>
+<li>Sign up at Brevo and confirm your account.</li>
+<li><strong>Senders, domains & IPs:</strong> add your sender address and authenticate your domain (SPF, DKIM, DMARC — see "Verifying your sender domain"). The sender must be <em>active</em>.</li>
+<li><strong>SMTP & API › API keys:</strong> create an API key (it starts with <code>xkeysib-</code>).</li>
+<li>In the CRM: <strong>Organization settings › Messaging providers › Email — Brevo</strong>: key, sender email, sender name, optional reply-to → <em>Save and test connection</em>.</li>
+<li>Press <em>Register webhook</em> so delivery events reach the CRM. This needs the CRM to run on <code>https://</code>.</li>
+<li>Send a test email.</li>
+</ol>
+<h2>What the connection test checks</h2>
+<ul>
+<li>That the key is valid (Brevo account).</li>
+<li>That your sender email is an <strong>active sender</strong> in Brevo — if not, you see a warning; fix it in Brevo before sending campaigns.</li>
+<li>It cannot check SPF/DKIM — the warning about domain authentication is always shown as a reminder.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> you can connect both Sender and Brevo; each email campaign chooses one of them.</p></div>

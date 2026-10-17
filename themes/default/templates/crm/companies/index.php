@@ -24,6 +24,7 @@ $categoryNames = array_column($categories, 'name', 'id');
 
     <form method="get" action="/companies" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('companies.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <?php if ($categories !== []): ?>
             <select name="category_id" aria-label="<?= e(t('companies.category')) ?>">
                 <option value=""><?= e(t('companies.all_categories')) ?></option>

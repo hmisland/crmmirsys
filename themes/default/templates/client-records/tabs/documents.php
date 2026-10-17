@@ -10,6 +10,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -29,7 +30,7 @@ $categories = ['consent', 'identity', 'client_provided', 'treatment', 'other'];
                         <li>
                             <a href="/client-records/<?= e($record['id']) ?>/files/<?= e($file['id']) ?>?download=1"><?= e($file['filename']) ?></a>
                             <span class="badge"><?= e(t('client_records.doc_category.' . $file['category'])) ?></span>
-                            <span class="muted"><span class="ltr"><?= e($file['taken_at'] ?? substr((string) $file['created_at'], 0, 10)) ?></span> · <?= e(max(1, (int) round($file['size'] / 1024))) ?> KB</span>
+                            <span class="muted"><span class="ltr"><?= e($file['taken_at'] ?? substr((string) local_time($file['created_at']), 0, 10)) ?></span> · <?= e(max(1, (int) round($file['size'] / 1024))) ?> KB</span>
                             <?php if ($file['session_id'] !== null): ?><span class="muted">· <?= icon('activity', 'icon--sm') ?> <?= e(t('client_records.linked_session')) ?></span><?php endif; ?>
                             <?php if (!empty($file['notes'])): ?><span class="muted">· <?= e($file['notes']) ?></span><?php endif; ?>
                             <?php if ($can['documents']): ?>

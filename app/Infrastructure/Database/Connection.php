@@ -27,9 +27,39 @@ final class Connection
     {
         if (self::$pdo === null) {
             self::$pdo = self::connect();
+            self::applyStorageTimezone(self::$pdo);
         }
 
         return self::$pdo;
+    }
+
+    /**
+     * UTC storage: once migration 0083 has converted the MySQL-stamped
+     * timestamps (marker row in storage_timezone_state), every connection
+     * runs with session time_zone +00:00, so CURRENT_TIMESTAMP, ON UPDATE
+     * and NOW() are UTC like PHP's date(). An offset, not a named zone:
+     * no MySQL time-zone tables needed, no dependence on the host's zone.
+     * Before the conversion (fresh install, or code uploaded but not yet
+     * migrated) the server zone is kept, so no table ever mixes two zones.
+     */
+    public static function applyStorageTimezone(\PDO $pdo): bool
+    {
+        try {
+            $converted = $pdo->query('SELECT 1 FROM storage_timezone_state WHERE id = 1')->fetchColumn() !== false;
+        } catch (\PDOException $e) {
+            // Only "table doesn't exist" (migration 0083 not run yet) means the
+            // old zone. Any other error is rethrown: silently staying in the old
+            // zone after the conversion would write mixed timestamps.
+            if ($e->getCode() === '42S02' || (int) ($e->errorInfo[1] ?? 0) === 1146) {
+                return false;
+            }
+            throw $e;
+        }
+        if ($converted) {
+            $pdo->exec("SET time_zone = '+00:00'");
+        }
+
+        return $converted;
     }
 
     private static function connect(): \PDO

@@ -17,14 +17,16 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 
 $money = fn ($amount, ?string $code = null): string => \App\Infrastructure\Theme\money($amount, $code); // currency display policy (L2)
 ?>
-<?php if ($canCreate): ?>
 <div class="actions">
+<?php if ($canCreate): ?>
     <a href="/finance/expenses/create?from_project=<?= e($projectId) ?>" class="btn btn--sm"><?= icon('plus') ?><?= e(t('finance.expense.new')) ?></a>
-</div>
 <?php endif; ?>
+    <?= help_link('finance-expenses') ?>
+</div>
 <dl class="fact-row">
     <?php if ($totals === []): ?>
         <div class="fact"><dt><?= icon('coins') ?><?= e(t('finance.expense.actual_cost')) ?></dt><dd>—</dd></div>

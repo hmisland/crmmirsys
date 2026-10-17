@@ -18,6 +18,7 @@ use function App\Infrastructure\Theme\help_link;
 
     <form method="get" action="/deals" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('deals.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select name="status" aria-label="<?= e(t('deals.status')) ?>">
             <option value=""><?= e(t('filters.all_statuses')) ?></option>
             <?php foreach (['open', 'won', 'lost'] as $s): ?>

@@ -18,6 +18,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 
@@ -59,7 +60,7 @@ $bookUrl = function (?int $resource, string $day, string $time = ''): string {
 
         <div class="appt-datenav">
             <a class="btn btn--sm" href="<?= e($base . $prev) ?>"><?= icon('chevron-left') ?><?= e(t($view === 'week' ? 'appointments.prev_week' : 'appointments.prev_day')) ?></a>
-            <a class="btn btn--sm" href="<?= e($base . date('Y-m-d')) ?>"><?= icon('calendar-check') ?><?= e(t('appointments.today')) ?></a>
+            <a class="btn btn--sm" href="<?= e($base . local_today()) ?>"><?= icon('calendar-check') ?><?= e(t('appointments.today')) ?></a>
             <a class="btn btn--sm" href="<?= e($base . $next) ?>"><?= e(t($view === 'week' ? 'appointments.next_week' : 'appointments.next_day')) ?><?= icon('chevron-right') ?></a>
             <strong class="appt-datenav__label"><?= e($heading) ?></strong>
         </div>

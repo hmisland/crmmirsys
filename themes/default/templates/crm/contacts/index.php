@@ -28,6 +28,7 @@ $rowActions = $rowActions ?? [];
 
     <form method="get" action="/contacts" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('contacts.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select aria-label="<?= e(t('contacts.category')) ?>" name="category_id">
             <option value=""><?= e(t('contacts.all_categories')) ?></option>
             <?php foreach ($categories as $cat): ?>

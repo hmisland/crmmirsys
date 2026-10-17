@@ -9,6 +9,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -55,7 +56,7 @@ $base = '/client-records/' . (int) $record['id'];
                             </a>
                             <figcaption class="media-card__meta">
                                 <span class="badge badge--brand"><?= e(t('client_records.media_category.' . $file['category'])) ?></span>
-                                <span class="nowrap ltr"><?= e($file['taken_at'] ?? substr((string) $file['created_at'], 0, 10)) ?></span>
+                                <span class="nowrap ltr"><?= e($file['taken_at'] ?? substr((string) local_time($file['created_at']), 0, 10)) ?></span>
                                 <?php if ($file['session_id'] !== null): ?><span><?= icon('activity', 'icon--sm') ?></span><?php endif; ?>
                             </figcaption>
                             <?php if (!empty($file['notes'])): ?><p class="media-card__notes"><?= e($file['notes']) ?></p><?php endif; ?>

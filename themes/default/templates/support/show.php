@@ -7,6 +7,7 @@
 /** @var array $users */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -84,7 +85,7 @@ use App\Infrastructure\Security\Csrf;
             <li<?= $reply['is_internal'] ? ' class="note--internal"' : '' ?>>
                 <p><?= nl2br(e($reply['body'])) ?></p>
                 <span class="muted">
-                    <?= e($reply['author_name'] ?? '') ?> · <?= e($reply['created_at']) ?>
+                    <?= e($reply['author_name'] ?? '') ?> · <?= e(local_time($reply['created_at'])) ?>
                     <?= $reply['is_internal'] ? ' · ' . e(t('tickets.internal_note')) : '' ?>
                 </span>
             </li>

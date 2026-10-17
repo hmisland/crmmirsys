@@ -1,0 +1,19 @@
+<p>Gmail and Yahoo reject or hide email from domains that are not authenticated. Your email provider gives you three records to add to your domain's DNS.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Record</th><th>Type / Name</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td>DKIM</td><td>CNAME, e.g. <code>sender._domainkey</code></td><td>signs every email so receivers know it really comes from you</td></tr>
+<tr><td>SPF</td><td>TXT on <code>@</code>, starts with <code>v=spf1</code></td><td>lists the servers allowed to send for your domain</td></tr>
+<tr><td>DMARC</td><td>TXT on <code>_dmarc</code></td><td>tells receivers what to do with mail that fails the checks</td></tr>
+</tbody></table></div>
+<h2>Adding them in cPanel</h2>
+<ol>
+<li>cPanel › <strong>Zone Editor</strong> › <em>Manage</em> for your domain.</li>
+<li><strong>DKIM:</strong> Add Record › CNAME, with the name and value from your provider.</li>
+<li><strong>SPF:</strong> filter by TXT and <strong>edit</strong> the existing <code>v=spf1</code> record — add the provider's <code>include:…</code> before <code>~all</code>. If no SPF exists, add one TXT record.</li>
+<li><strong>DMARC:</strong> Add Record › "DMARC" (or TXT) with name <code>_dmarc</code> and value <code>v=DMARC1; p=none;</code>.</li>
+<li>Wait a few minutes to a few hours, then press the provider's "check records" button.</li>
+</ol>
+<div class="help-callout help-callout--warning"><p><strong>Never create a second SPF record.</strong> A domain must have exactly one <code>v=spf1</code> record; two break all your email, including normal mailboxes.</p></div>
+<div class="help-example"><p><strong>Example (Sender):</strong> existing SPF <code>v=spf1 +a +mx ~all</code> becomes <code>v=spf1 +a +mx include:sendersrv.com ~all</code>; DKIM is <code>sender._domainkey</code> → <code>dkim.sendersrv.com</code>.</p></div>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> <code>p=none</code> only monitors. Once everything has worked for a few weeks you can make DMARC stricter (<code>quarantine</code>), but there is no need to start there.</p></div>

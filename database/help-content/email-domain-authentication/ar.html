@@ -1,0 +1,19 @@
+<p>يرفض Gmail وYahoo البريد القادم من نطاقات غير موثّقة أو يخفيه. تعطيك خدمة البريد ثلاثة سجلات لإضافتها إلى DNS نطاقك.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>السجل</th><th>النوع / الاسم</th><th>وظيفته</th></tr></thead>
+<tbody>
+<tr><td>DKIM</td><td>CNAME، مثل <code>sender._domainkey</code></td><td>يوقّع كل رسالة ليعرف المستلم أنها منك فعلًا</td></tr>
+<tr><td>SPF</td><td>TXT على <code>@</code> يبدأ بـ <code>v=spf1</code></td><td>يحدد الخوادم المسموح لها بالإرسال باسم نطاقك</td></tr>
+<tr><td>DMARC</td><td>TXT على <code>_dmarc</code></td><td>يخبر المستلمين بما يفعلونه بالرسائل التي تفشل في الفحص</td></tr>
+</tbody></table></div>
+<h2>الإضافة في cPanel</h2>
+<ol>
+<li>cPanel › <strong>Zone Editor</strong> › <em>Manage</em> لنطاقك.</li>
+<li><strong>DKIM:</strong> Add Record › CNAME بالاسم والقيمة من الخدمة.</li>
+<li><strong>SPF:</strong> صفِّ حسب TXT و<strong>عدّل</strong> سجل <code>v=spf1</code> الموجود — أضف <code>include:…</code> الخاص بالخدمة قبل <code>~all</code>. إن لم يوجد SPF فأضف سجل TXT واحدًا.</li>
+<li><strong>DMARC:</strong> Add Record › «DMARC» (أو TXT) بالاسم <code>_dmarc</code> والقيمة <code>v=DMARC1; p=none;</code>.</li>
+<li>انتظر من دقائق إلى ساعات، ثم اضغط زر «فحص السجلات» لدى الخدمة.</li>
+</ol>
+<div class="help-callout help-callout--warning"><p><strong>لا تنشئ سجل SPF ثانيًا أبدًا.</strong> يجب أن يكون للنطاق سجل <code>v=spf1</code> واحد بالضبط؛ وجود اثنين يعطّل كل بريدك، بما فيه صناديق البريد العادية.</p></div>
+<div class="help-example"><p><strong>مثال (Sender):</strong> سجل SPF الموجود <code>v=spf1 +a +mx ~all</code> يصبح <code>v=spf1 +a +mx include:sendersrv.com ~all</code>؛ وDKIM هو <code>sender._domainkey</code> ← <code>dkim.sendersrv.com</code>.</p></div>
+<div class="help-callout help-callout--tip"><p><strong>نصيحة:</strong> <code>p=none</code> للمراقبة فقط. بعد أسابيع من العمل السليم يمكنك تشديد DMARC (<code>quarantine</code>)، لكن لا حاجة للبدء بذلك.</p></div>

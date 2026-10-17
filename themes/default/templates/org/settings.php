@@ -9,9 +9,11 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
+use App\Infrastructure\Time\OrganizationTimezone;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? t($errors[$field][0]) : null;
 $profileValue = fn (string $field): string => (string) ($old[$field] ?? $organization[$field] ?? '');
+$currentTimezone = (string) ($old['default_timezone'] ?? $organization['default_timezone'] ?? '');
 ?>
 <div class="page-head">
     <div>
@@ -74,6 +76,15 @@ $profileValue = fn (string $field): string => (string) ($old[$field] ?? $organiz
     </section>
     <?php endif; ?>
 
+    <?php if ($canEdit): ?>
+    <section class="card settings-tile">
+        <h2><span class="kpi__icon kpi__icon--info"><?= icon('send') ?></span><?= e(t('messaging.title')) ?></h2>
+        <div class="settings-tile__links">
+            <a href="/org/messaging"><?= icon('settings') ?><?= e(t('messaging.settings_link')) ?></a>
+        </div>
+    </section>
+    <?php endif; ?>
+
     <?php if ($enabledModules['notifications']): ?>
     <section class="card settings-tile">
         <h2><span class="kpi__icon kpi__icon--warning"><?= icon('bell') ?></span><?= e(t('notif.admin_title')) ?></h2>
@@ -128,8 +139,19 @@ $profileValue = fn (string $field): string => (string) ($old[$field] ?? $organiz
             <option value="fr" <?= $organization['default_language'] === 'fr' ? 'selected' : '' ?>>Français (French)</option>
         </select>
 
-        <label for="default_timezone"><?= e(t('org.default_timezone')) ?></label>
-        <input type="text" id="default_timezone" name="default_timezone" value="<?= e($organization['default_timezone']) ?>">
+        <label for="default_timezone"><?= e(t('org.timezone')) ?></label>
+        <select id="default_timezone" name="default_timezone">
+            <?php if (!OrganizationTimezone::isValid($currentTimezone)): ?><option value="" selected><?= e(t('org.timezone_choose')) ?></option><?php endif; ?>
+            <?php foreach (OrganizationTimezone::choices() as $region => $zones): ?>
+                <optgroup label="<?= e($region) ?>">
+                    <?php foreach ($zones as $id => $label): ?>
+                        <option value="<?= e($id) ?>" <?= $id === $currentTimezone ? 'selected' : '' ?>><?= e($label) ?></option>
+                    <?php endforeach; ?>
+                </optgroup>
+            <?php endforeach; ?>
+        </select>
+        <?php if ($fieldError('default_timezone')): ?><div class="field-error"><?= e($fieldError('default_timezone')) ?></div><?php endif; ?>
+        <p class="field-hint"><?= e(t('org.timezone_hint')) ?></p>
 
         <h3 class="form-section-title"><?= e(t('org.seller_profile')) ?></h3>
         <p class="field-hint"><?= e(t('org.seller_profile_hint')) ?></p>

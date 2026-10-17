@@ -1,0 +1,19 @@
+<p>Gmail et Yahoo rejettent ou masquent les e-mails de domaines non authentifiés. Votre fournisseur vous donne trois enregistrements à ajouter au DNS de votre domaine.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Enregistrement</th><th>Type / Nom</th><th>Rôle</th></tr></thead>
+<tbody>
+<tr><td>DKIM</td><td>CNAME, ex. <code>sender._domainkey</code></td><td>signe chaque e-mail pour prouver qu'il vient bien de vous</td></tr>
+<tr><td>SPF</td><td>TXT sur <code>@</code>, commence par <code>v=spf1</code></td><td>liste les serveurs autorisés à envoyer pour votre domaine</td></tr>
+<tr><td>DMARC</td><td>TXT sur <code>_dmarc</code></td><td>indique quoi faire des e-mails qui échouent aux contrôles</td></tr>
+</tbody></table></div>
+<h2>Les ajouter dans cPanel</h2>
+<ol>
+<li>cPanel › <strong>Zone Editor</strong> › <em>Manage</em> pour votre domaine.</li>
+<li><strong>DKIM :</strong> Add Record › CNAME avec le nom et la valeur fournis.</li>
+<li><strong>SPF :</strong> filtrez par TXT et <strong>modifiez</strong> l'enregistrement <code>v=spf1</code> existant — ajoutez l'<code>include:…</code> du fournisseur avant <code>~all</code>. S'il n'existe pas, ajoutez un seul enregistrement TXT.</li>
+<li><strong>DMARC :</strong> Add Record › « DMARC » (ou TXT), nom <code>_dmarc</code>, valeur <code>v=DMARC1; p=none;</code>.</li>
+<li>Attendez de quelques minutes à quelques heures, puis cliquez sur « vérifier les enregistrements » chez le fournisseur.</li>
+</ol>
+<div class="help-callout help-callout--warning"><p><strong>Ne créez jamais un second enregistrement SPF.</strong> Un domaine doit avoir exactement un <code>v=spf1</code> ; deux cassent tous vos e-mails, boîtes normales comprises.</p></div>
+<div class="help-example"><p><strong>Exemple (Sender) :</strong> le SPF existant <code>v=spf1 +a +mx ~all</code> devient <code>v=spf1 +a +mx include:sendersrv.com ~all</code> ; le DKIM est <code>sender._domainkey</code> → <code>dkim.sendersrv.com</code>.</p></div>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> <code>p=none</code> ne fait que surveiller. Après quelques semaines sans problème, vous pourrez durcir DMARC (<code>quarantine</code>), mais inutile de commencer par là.</p></div>

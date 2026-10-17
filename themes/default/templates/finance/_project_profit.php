@@ -16,9 +16,11 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 
 $money = fn (string $amount, ?string $code = null): string => \App\Infrastructure\Theme\money($amount, $code, $fmt); // currency display policy (L2)
 ?>
+<div class="actions"><?= help_link('finance-project-finance') ?></div>
 <div class="table-responsive">
 <table class="table table--compact">
     <thead><tr>

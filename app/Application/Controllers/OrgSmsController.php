@@ -8,6 +8,7 @@ use App\Application\Services\SmsService;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Security\ActionRateLimiter;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
@@ -26,7 +27,11 @@ use function App\Infrastructure\Theme\t;
  */
 final class OrgSmsController extends BaseController
 {
-    public function __construct(TemplateEngine $templates, private readonly SmsService $sms)
+    public function __construct(
+        TemplateEngine $templates,
+        private readonly SmsService $sms,
+        private readonly ActionRateLimiter $limiter = new ActionRateLimiter(),
+    )
     {
         parent::__construct($templates);
     }
@@ -80,7 +85,13 @@ final class OrgSmsController extends BaseController
     public function test(Request $request): Response
     {
         $this->organizationId();
-        $result =$this->sms->send((string) $request->input('receptor', ''), t('org_sms.test_text'), 'org.test');
+        // Test SMS are real (and billed in platform mode): shared limit, config messaging.test_sends.
+        if (!$this->limiter->allowTestSend(CurrentUser::user())) {
+            Session::setFlash('error', t('email_providers.error_test_rate_limited'));
+
+            return $this->redirect('/org/sms');
+        }
+        $result = $this->sms->send((string) $request->input('receptor', ''), t('org_sms.test_text'), 'org.test');
 
         Session::setFlash(
             $result->success ? 'success' : 'error',

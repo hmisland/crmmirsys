@@ -1,0 +1,16 @@
+<p>Sender (<a href="https://www.sender.net/" target="_blank" rel="noopener">sender.net</a>) is an email service with a free plan. The CRM uses your account through its official API.</p>
+<h2>Steps</h2>
+<ol>
+<li>Open <a href="https://www.sender.net/" target="_blank" rel="noopener">sender.net</a> and choose <strong>Sign up</strong>. Use a business email address of your own domain if you have one.</li>
+<li>Confirm the email Sender sends you and complete the short account profile (company name, address — required by anti-spam laws and shown in email footers).</li>
+<li>In Sender, open <strong>Settings › API access tokens</strong> and create a new token. Give it a recognizable name, e.g. "CRM".</li>
+<li>Copy the token immediately — it is long (about 1,000 characters) and Sender shows it only once.</li>
+<li>Before sending, authenticate your domain (see "Verifying your sender domain").</li>
+</ol>
+<h2>Rules</h2>
+<ul>
+<li>Paste the token <strong>in one piece</strong>, without spaces or line breaks. The CRM rejects a token that contains spaces.</li>
+<li>Treat the token like a password: it can send email in your name. Don't share it in chat or email; if it leaks, delete it in Sender and create a new one.</li>
+<li>One organization = one Sender account. Each organization in the CRM enters its own token.</li>
+</ul>
+<div class="help-callout help-callout--warning"><p><strong>Attention:</strong> deleting the token in Sender immediately stops campaigns in the CRM. Create the new token first, save it in the CRM, then delete the old one.</p></div>

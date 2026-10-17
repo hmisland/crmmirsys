@@ -92,7 +92,7 @@ final class ContractService
     /** `expired` is computed: an active contract whose end date has passed. */
     public function effectiveStatus(array $contract, ?string $today = null): string
     {
-        $today ??= date('Y-m-d');
+        $today ??= \App\Infrastructure\Time\OrganizationTimezone::shared()->today(); // the organization's date, not the server's
 
         if ($contract['status'] === 'active' && !empty($contract['end_date']) && $contract['end_date'] < $today) {
             return 'expired';
@@ -578,7 +578,8 @@ final class ContractService
             throw new ValidationException(['start_date' => ['contracts.error.start_date_required_to_activate']]);
         }
 
-        $signedAt = date('Y-m-d H:i:s');
+        // signed_at is a local value (a typed date + 00:00:00); without one it is the organization's local now.
+        $signedAt = \App\Infrastructure\Time\OrganizationTimezone::shared()->localNow();
         if ($signedOn !== null && trim($signedOn) !== '') {
             $signedAt = $this->validDate($signedOn, 'signed_at') . ' 00:00:00';
         }

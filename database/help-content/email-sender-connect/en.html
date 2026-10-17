@@ -1,0 +1,26 @@
+<p>Open <strong>Organization settings › Messaging providers</strong>, card <strong>Email — Sender</strong>.</p>
+<h2>Fields</h2>
+<ul>
+<li><strong>API token:</strong> the token from Sender (one piece, no spaces). Leave it empty later to keep the saved one.</li>
+<li><strong>Sender email:</strong> an address of your <em>authenticated</em> domain, e.g. <code>news@yourdomain.com</code>.</li>
+<li><strong>Sender name:</strong> what recipients see, e.g. your business name.</li>
+<li><strong>Reply-to:</strong> not supported by Sender's API — replies go to the sender email.</li>
+</ul>
+<h2>Buttons</h2>
+<ul>
+<li><strong>Save and test connection:</strong> the token is checked with Sender before it is stored. If Sender rejects it, nothing is saved.</li>
+<li><strong>Test connection:</strong> re-checks the stored token; status and "last successful test" are updated.</li>
+<li><strong>Send test email:</strong> one real email to the address you type.</li>
+<li><strong>Disconnect:</strong> deletes the stored token; email campaigns using Sender stop.</li>
+</ul>
+<h2>Common errors</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Message contains</th><th>Meaning</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td>HTTP 401</td><td>token wrong, deleted or incomplete</td><td>create a new token in Sender and paste it in one piece</td></tr>
+<tr><td>does not have a DMARC policy</td><td>the domain has no DMARC record</td><td>add <code>_dmarc</code> (see "Verifying your sender domain")</td></tr>
+<tr><td>HTTP 422</td><td>a field was refused (often the sender address)</td><td>use an address of your verified domain</td></tr>
+<tr><td>Could not reach Sender</td><td>the server cannot connect out</td><td>ask your host to allow outbound HTTPS</td></tr>
+<tr><td>Too many test emails</td><td>test limit reached</td><td>wait a few minutes</td></tr>
+</tbody></table></div>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> Sender's own <em>Transactional › Logs</em> page shows every email the CRM sent, with delivery and open status — useful when a test seems missing.</p></div>

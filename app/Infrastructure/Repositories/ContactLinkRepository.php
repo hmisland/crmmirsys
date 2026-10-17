@@ -25,7 +25,7 @@ final class ContactLinkRepository extends TenantScopedRepository
         'invoices' => ['invoices', 'contact_id = :contact_id'],
         'proformas' => ['proformas', 'contact_id = :contact_id'],
         'deals' => ['deals', 'contact_id = :contact_id'],
-        'tasks' => ['tasks', "related_type = 'contact' AND related_id = :contact_id AND archived_at IS NULL"],
+        'tasks' => ['tasks', "related_type = 'contact' AND related_id = :contact_id AND archived_at IS NULL AND deleted_at IS NULL"],
         'followups' => ['follow_ups', "related_type = 'contact' AND related_id = :contact_id"],
         'appointments' => ['appointments', 'contact_id = :contact_id'],
         'tickets' => ['tickets', 'contact_id = :contact_id'],
@@ -91,7 +91,7 @@ final class ContactLinkRepository extends TenantScopedRepository
                 ORDER BY x.created_at DESC",
             'tasks' => "SELECT x.id, x.title, x.due_at, x.priority, x.status
                 FROM tasks x WHERE x.organization_id = :org_id AND x.related_type = 'contact' AND x.related_id = :contact_id
-                    AND x.archived_at IS NULL{$ownerSql}
+                    AND x.archived_at IS NULL AND x.deleted_at IS NULL{$ownerSql}
                 ORDER BY x.due_at IS NULL, x.due_at DESC",
             'followups' => "SELECT x.id, x.title, x.type, x.due_at, x.priority, x.status
                 FROM follow_ups x WHERE x.organization_id = :org_id AND x.related_type = 'contact' AND x.related_id = :contact_id{$ownerSql}
@@ -147,8 +147,8 @@ final class ContactLinkRepository extends TenantScopedRepository
 
     /**
      * Tables whose rows carry an owner — the column OWN-scoped viewers
-     * are filtered on. Tasks/tickets have no owner column; for those an
-     * OWN scope falls back to "created by".
+     * are filtered on. Tickets have no owner column; for those an OWN
+     * scope falls back to "created by". Tasks: created by or assigned to.
      *
      * @return array{0: string, 1: array}
      */
@@ -159,10 +159,18 @@ final class ContactLinkRepository extends TenantScopedRepository
         }
 
         $column = match ($type) {
-            'tasks', 'tickets' => 'created_by_user_id',
+            'tickets' => 'created_by_user_id',
             'notes' => 'user_id',
             default => 'owner_id',
         };
+
+        // A task is "own" when the user created it or is one of its assignees
+        // (the Sales TaskService rule), not only when they created it.
+        if ($type === 'tasks') {
+            return [" AND ({$alias}created_by_user_id = :owner_id OR {$alias}assigned_to_user_id = :owner_id2"
+                . " OR {$alias}id IN (SELECT task_id FROM task_assignees WHERE user_id = :owner_id3))",
+                ['owner_id' => $ownerId, 'owner_id2' => $ownerId, 'owner_id3' => $ownerId]];
+        }
 
         return [" AND {$alias}{$column} = :owner_id", ['owner_id' => $ownerId]];
     }

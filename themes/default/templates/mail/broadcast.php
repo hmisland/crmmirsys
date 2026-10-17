@@ -2,6 +2,7 @@
 /** @var array $recentBroadcasts */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -49,7 +50,7 @@ use App\Infrastructure\Security\Csrf;
                 <td><?= e($b['subject']) ?></td>
                 <td><?= e($b['recipient_count']) ?></td>
                 <td><?= e($b['failed_count']) ?></td>
-                <td class="muted"><?= e($b['created_at']) ?></td>
+                <td class="muted"><?= e(local_time($b['created_at'])) ?></td>
             </tr>
         <?php endforeach; ?>
         <?php if ($recentBroadcasts === []): ?>

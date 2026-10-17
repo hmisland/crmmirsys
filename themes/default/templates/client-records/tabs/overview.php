@@ -10,6 +10,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
@@ -108,7 +109,7 @@ $doneFor = function (array $service) use ($sessions): int {
                 <dt><?= e(t('client_records.source')) ?></dt>
                 <dd><?= e($contact['source'] ?: '—') ?></dd>
                 <dt><?= e(t('client_records.opened_on')) ?></dt>
-                <dd><?= e(substr((string) $record['created_at'], 0, 10)) ?></dd>
+                <dd><?= e(substr((string) local_time($record['created_at']), 0, 10)) ?></dd>
             </dl>
             <?php if (!$can['sensitive']): ?>
                 <p class="locked"><?= icon('lock') ?><?= e(t('client_records.sensitive_locked')) ?></p>
@@ -128,7 +129,7 @@ $doneFor = function (array $service) use ($sessions): int {
                 <?php foreach ($notes as $note): ?>
                     <li>
                         <p class="prose-text"><?= e($note['body']) ?></p>
-                        <span class="muted"><?= e(substr((string) $note['created_at'], 0, 16)) ?><?= isset($users[$note['user_id']]) ? ' · ' . e($users[$note['user_id']]) : '' ?></span>
+                        <span class="muted"><?= e(substr((string) local_time($note['created_at']), 0, 16)) ?><?= isset($users[$note['user_id']]) ? ' · ' . e($users[$note['user_id']]) : '' ?></span>
                         <?php if ($can['edit']): ?>
                             <form method="post" action="/client-records/<?= e($record['id']) ?>/notes/<?= e($note['id']) ?>/delete" class="inline-form">
                                 <?= Csrf::field() ?>

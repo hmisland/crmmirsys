@@ -1,0 +1,21 @@
+<ul class="help-flow">
+<li>Proforma</li>
+<li>Dönüştür</li>
+<li>Taslak fatura</li>
+<li>Kes</li>
+<li>Ödeme</li>
+</ul>
+<h2>Sistem kuralları</h2>
+<ul>
+<li><strong>Proforma</strong> bir fiyat teklifidir, borç değildir. Durumlar: taslak, gönderildi, kabul edildi, reddedildi, süresi doldu, dönüştürüldü. Dönüştürülene kadar düzenlenebilir ve silinebilir.</li>
+<li><strong>Dönüştürme</strong> aynı satırlarla bir <em>taslak</em> fatura oluşturur. Proforma "dönüştürüldü" olur, kilitlenir ve yalnızca bir kez dönüştürülür.</li>
+<li><strong>Fatura:</strong> taslak → kesildi → (iptal). Taslak serbestçe düzenlenir veya silinir.</li>
+<li><strong>Kesim</strong> (genellikle yalnızca kuruluş yöneticileri) sıradaki numarayı verir ve faturayı <strong>dondurur</strong>. Fatura tarihi kapalı bir mali dönemdeyse reddedilir.</li>
+<li>Kesilmiş fatura asla düzenlenmez; düzeltme bir <a href="/help/finance-credit-notes-cancel">alacak dekontu</a> ile yapılır.</li>
+</ul>
+<div class="help-example">
+<p><strong>Örnek:</strong> 3 lisans için proforma gönderirsiniz. Müşteri kabul eder; dönüştürür, vade tarihini ayarlar ve kesersiniz: <code>INV-00007</code>. O andan itibaren tutar size borçludur.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finans ipucu:</strong> proforma gelir değildir. Yalnızca kesilmiş fatura bir <em>alacak</em> doğurur. Gecikmiş faturaları görebilmek için her zaman vade tarihi girin.</p>
+</div>

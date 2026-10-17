@@ -452,10 +452,13 @@ img, svg { vertical-align: middle; }
 
 .topbar-search {
     position: relative;
-    flex: 0 1 20rem;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 0 1 26rem;
     min-width: 9rem;
 }
-.topbar-search .icon {
+.topbar-search > .icon {
     position: absolute;
     inset-inline-start: var(--space-3);
     top: 50%;
@@ -464,6 +467,8 @@ img, svg { vertical-align: middle; }
     pointer-events: none;
 }
 .topbar-search input[type="search"] {
+    flex: 1 1 auto;
+    min-width: 0;
     width: 100%;
     max-width: none;
     height: var(--control-h-sm);
@@ -2438,3 +2443,26 @@ body.nav-locked { overflow: hidden; }
 .help-source { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--text-sm); }
 .help-content:lang(fa) ol { list-style-type: persian; }
 .help-content:lang(ar) ol { list-style-type: arabic-indic; }
+
+/* ---- Messaging providers (Organization settings) & Marketing ---- */
+.provider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); gap: var(--space-4); align-items: start; }
+.provider-card { display: flex; flex-direction: column; gap: var(--space-3); }
+.provider-card__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.provider-card__head h2 { display: flex; align-items: center; gap: var(--space-3); margin: 0; font-size: var(--text-lg); }
+/* A provider whose module the organization has not purchased: visible, muted, not interactive. */
+.provider-card--unavailable { background: var(--gray-50); }
+.provider-card--unavailable > :not(.provider-card__head):not(.locked) { opacity: 0.6; }
+.capability-list { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.capability-list li { display: flex; align-items: center; gap: var(--space-2); }
+.capability-list .icon { width: 1rem; height: 1rem; color: var(--color-muted); }
+.message-preview { padding: var(--space-3) var(--space-4); border: 1px dashed var(--color-border-strong); border-radius: var(--radius-md); background: var(--gray-50); white-space: pre-wrap; unicode-bidi: plaintext; overflow-wrap: anywhere; }
+.message-preview--html { white-space: normal; }
+.marketing-progress { display: grid; gap: var(--space-2); }
+.marketing-progress progress.progress { width: 100%; }
+.email-preview { display: block; inline-size: 100%; block-size: 28rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.segment-builder { display: grid; gap: var(--space-3); }
+.seg-groups { display: grid; gap: var(--space-3); }
+.seg-group { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); display: grid; gap: var(--space-2); min-width: 0; }
+.seg-group legend { padding-inline: var(--space-2); font-weight: var(--weight-semibold); }
+.seg-conditions { display: grid; gap: var(--space-2); }
+.segment-rules { margin: 0; padding-inline-start: var(--space-5); display: grid; gap: var(--space-2); }

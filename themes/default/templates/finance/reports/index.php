@@ -12,11 +12,12 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 
 $money = fn (string $amount, ?string $code = null): string => \App\Infrastructure\Theme\money($amount, $code, $fmt); // currency display policy (L2)
 ?>
 <section class="card">
-    <h1><?= e(t('reports.title')) ?></h1>
+    <h1><?= e(t('reports.title')) ?><?= help_link('finance-reports') ?></h1>
 
     <form method="get" action="/finance/reports" class="inline-form-row">
         <label for="start_date" style="margin:0"><?= e(t('reports.from')) ?></label>

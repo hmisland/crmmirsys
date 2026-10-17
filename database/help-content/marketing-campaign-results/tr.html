@@ -1,0 +1,24 @@
+<h2>Alıcı başına durumlar</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Durum</th><th>Anlamı</th></tr></thead>
+<tbody>
+<tr><td>Kuyrukta</td><td>gönderilmeyi bekliyor</td></tr>
+<tr><td>Sağlayıcı kabul etti</td><td>Kavenegar, Sender veya Brevo mesajı aldı. Bu teslim <strong>değildir</strong>.</td></tr>
+<tr><td>Teslim edildi</td><td>sağlayıcı teslimi bildirdi (Kavenegar raporu, Brevo olayı)</td></tr>
+<tr><td>Başarısız</td><td>sağlayıcı reddetti, mesajı gösterilir (kredi yok, geçersiz numara, sınır doldu…)</td></tr>
+<tr><td>Atlandı</td><td>bilerek gönderilmedi: geçersiz adres veya çıkış yapmış</td></tr>
+<tr><td>İptal edildi</td><td>kampanya bu mesaj gönderilmeden iptal edildi</td></tr>
+</tbody></table></div>
+<h2>Teslim raporları</h2>
+<ul>
+<li><strong>SMS:</strong> teslim durumu gönderimden sonra 48 saat boyunca otomatik alınır.</li>
+<li><strong>Brevo ile e-posta:</strong> teslim, geri dönme, spam ve çıkış olayları webhook ile gelir.</li>
+<li><strong>Sender ile e-posta:</strong> CRM'e yalnızca "kabul edildi" bildirilir; teslim ve açılmaları Sender'ın kayıtlarında görün.</li>
+</ul>
+<h2>Başarısız mesajları yeniden denemek</h2>
+<ul>
+<li>Ağ sorunları ve hız sınırları otomatik yeniden denenir (gecikmeyle en fazla 3 deneme).</li>
+<li><em>Başarısız mesajları yeniden dene</em> kalan başarısızları yeniden kuyruğa alır — önce nedeni giderin (örn. kredi yükleyin).</li>
+<li><strong>Zaten gitmiş olabilecek</strong> bir mesaj (sağlayıcı zamanında yanıt vermedi) işaretlenir ve çift gönderimi önlemek için <strong>asla</strong> yeniden denenmez.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> pano son 30 günü kanal bazında gösterir. Bir gönderimden sonra çok sayıda başarısızlık veya geri dönme, listenizin veya alan adınızın ilgi beklediğini gösterir.</p></div>

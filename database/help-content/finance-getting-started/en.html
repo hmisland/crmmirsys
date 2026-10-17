@@ -1,0 +1,16 @@
+<p>Before your first invoice, open <strong>Finance › Settings</strong>. These settings are the defaults for every document that follows.</p>
+<h2>System rules</h2>
+<ul>
+<li><strong>Entity type:</strong> legal (the company's legal name is required) or natural person (first name required). This name is printed on invoices.</li>
+<li><strong>Tax profile:</strong> the default tax for new documents. Without one, documents are calculated untaxed.</li>
+<li><strong>Invoice prefix:</strong> e.g. <code>INV-</code>, giving <code>INV-00001</code>, <code>INV-00002</code>… A number is assigned only when an invoice is <em>issued</em>; numbers are consecutive and never reused.</li>
+<li><strong>Pricing mode:</strong> "tax exclusive" adds tax on top of prices; "tax inclusive" means the entered price already contains the tax.</li>
+<li><strong>Final invoice rounding:</strong> OFF by default (see "Final invoice rounding").</li>
+<li>Only users allowed to edit finance settings can save this page.</li>
+</ul>
+<div class="help-example">
+<p><strong>Example:</strong> "Novaran Ltd" is a legal entity with prefix <code>NV-</code> and 10% tax, tax exclusive. An item priced 1,000,000 IRR becomes 1,000,000 + 100,000 tax = <strong>1,100,000 IRR</strong>, and the first issued invoice is <code>NV-00001</code>.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finance tip — currencies don't add up:</strong> 100 USD + 5,000,000 IRR is not a meaningful number, because exchange rates change every day. That is why every total and report is shown <em>per currency</em> and currencies are never added together.</p>
+</div>

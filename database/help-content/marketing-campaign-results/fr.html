@@ -1,0 +1,24 @@
+<h2>Statuts par destinataire</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Statut</th><th>Signification</th></tr></thead>
+<tbody>
+<tr><td>En attente</td><td>en attente d'envoi</td></tr>
+<tr><td>Accepté par le fournisseur</td><td>Kavenegar, Sender ou Brevo a pris le message. Ce n'est <strong>pas</strong> une remise.</td></tr>
+<tr><td>Remis</td><td>le fournisseur a signalé la remise (rapport Kavenegar, événement Brevo)</td></tr>
+<tr><td>Échec</td><td>le fournisseur a refusé, son message est affiché (crédit épuisé, numéro invalide, limite atteinte…)</td></tr>
+<tr><td>Ignoré</td><td>non envoyé volontairement : adresse invalide ou désinscrit</td></tr>
+<tr><td>Annulé</td><td>la campagne a été annulée avant l'envoi de ce message</td></tr>
+</tbody></table></div>
+<h2>Rapports de remise</h2>
+<ul>
+<li><strong>SMS :</strong> la remise est récupérée automatiquement pendant 48 heures après l'envoi.</li>
+<li><strong>E-mail via Brevo :</strong> remise, rebonds, spam et désinscriptions arrivent par le webhook.</li>
+<li><strong>E-mail via Sender :</strong> seul « accepté » est remonté au CRM ; consultez remise et ouvertures dans les journaux de Sender.</li>
+</ul>
+<h2>Relancer les messages en échec</h2>
+<ul>
+<li>Les problèmes réseau et limites de débit sont relancés automatiquement (jusqu'à 3 tentatives, avec délai).</li>
+<li><em>Relancer les messages en échec</em> remet en file les échecs restants — corrigez d'abord la cause (ex. recharger le crédit).</li>
+<li>Un message <strong>peut-être déjà parti</strong> (le fournisseur n'a pas répondu à temps) est marqué et n'est <strong>jamais</strong> relancé, pour éviter un doublon.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> le tableau de bord montre les 30 derniers jours par canal. Beaucoup d'échecs ou de rebonds après un envoi signalent un problème de liste ou de domaine.</p></div>

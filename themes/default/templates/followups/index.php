@@ -4,6 +4,7 @@
 /** @var bool $overdueFilter */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_now;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
@@ -41,7 +42,7 @@ use function App\Infrastructure\Theme\icon;
         <tbody>
         <?php foreach ($followUps as $f): ?>
             <?php
-                $isOverdue = $f['due_at'] !== null && in_array($f['status'], ['pending', 'scheduled', 'in_progress'], true) && $f['due_at'] < date('Y-m-d H:i:s');
+                $isOverdue = $f['due_at'] !== null && in_array($f['status'], ['pending', 'scheduled', 'in_progress'], true) && $f['due_at'] < local_now();
             ?>
             <tr>
                 <td class="cell-check"><input type="checkbox" name="ids[]" value="<?= e($f['id']) ?>" form="bulk-form" data-bulk-item aria-label="<?= e(t('bulk.select_row')) ?>" <?= ($canDelete[(int) $f['id']] ?? false) ? '' : 'disabled' ?>></td>

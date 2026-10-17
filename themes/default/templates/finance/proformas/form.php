@@ -10,6 +10,7 @@
 /** @var array $old */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -45,7 +46,7 @@ if ($rows === []) {
         <div class="field-hint"><?= e(t('finance.custom_number_hint')) ?></div>
 
         <label for="issue_date"><?= e(t('proformas.issue_date')) ?></label>
-        <input type="text" class="crm-datepicker" id="issue_date" name="issue_date" value="<?= $val('issue_date', date('Y-m-d')) ?>" required>
+        <input type="text" class="crm-datepicker" id="issue_date" name="issue_date" value="<?= $val('issue_date', local_today()) ?>" required>
         <?php if ($fieldError('issue_date')): ?><div class="field-error"><?= e($fieldError('issue_date')) ?></div><?php endif; ?>
 
         <label for="expiry_date"><?= e(t('proformas.expiry_date')) ?></label>

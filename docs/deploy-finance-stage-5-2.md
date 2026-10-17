@@ -91,6 +91,22 @@ invoices issued with rounding; dropping 0023 removes duplicate-submission
 protection. Restoring the database backup is the alternative if nothing has
 been recorded since the deployment.
 
+## Addendum — Finance help guides (core migration 0078)
+
+Shipped in the same `upload.zip`: 12 Finance help guides in 5 languages and
+"?" buttons on the Finance pages. `/system/migrate` also applies core
+migration `0078_seed_finance_help_articles` (data only; it inserts guides
+that don't exist yet and never overwrites edited ones). Expected in the
+response: `"core":["0078_seed_finance_help_articles"]`. Check afterwards:
+
+```sql
+SELECT COUNT(*) FROM help_articles WHERE slug LIKE 'finance-%';   -- 12
+```
+
+Rollback (only if wanted): `DELETE FROM help_articles WHERE slug LIKE 'finance-%';`
+and `DELETE FROM migrations WHERE migration = '0078_seed_finance_help_articles';`
+(the translations are removed by the foreign key).
+
 ## Production status
 
 PRODUCTION VERIFICATION PENDING — confirm InnoDB, isolation level, and locking

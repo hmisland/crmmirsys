@@ -1,0 +1,23 @@
+<h2>Permissions (set per role in Organization settings › Roles)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Permission</th><th>Allows</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td>View marketing</td><td>dashboard, campaigns, segments, history, using segments</td><td>admin, member</td></tr>
+<tr><td>Create campaigns</td><td>drafts and test sends</td><td>admin, member</td></tr>
+<tr><td>Send campaigns</td><td>approve and send, cancel, retry failures</td><td>admin</td></tr>
+<tr><td>Send transactional messages</td><td>choose the "transactional" type</td><td>admin</td></tr>
+<tr><td>Manage segments</td><td>create, edit, delete segments and static members</td><td>admin</td></tr>
+<tr><td>Manage templates</td><td>reusable templates</td><td>admin</td></tr>
+<tr><td>Manage opt-outs</td><td>add or remove opt-out entries</td><td>admin</td></tr>
+<tr><td>Edit organization settings</td><td>SMS and email provider settings</td><td>admin</td></tr>
+</tbody></table></div>
+<h2>Business rules</h2>
+<ul>
+<li><strong>Four-eyes by default:</strong> members can prepare drafts; someone with "send campaigns" approves them.</li>
+<li><strong>Contact privacy:</strong> without access to Contacts you can still work with groups, tags and segments, but you never see names, numbers or emails — previews use placeholders like <code>[first_name]</code> and lists are masked.</li>
+<li><strong>Test limits:</strong> test SMS and test emails share one limit — by default 5 per user per 10 minutes and 20 per organization per hour.</li>
+<li><strong>Module access:</strong> without the Marketing module the pages are unavailable; without the Email Marketing module email cannot be configured or sent. Hiding a button is never the only protection — the server checks every action.</li>
+<li><strong>Opt-outs</strong> are always honoured for marketing; unsubscribe links work even if the module is switched off later.</li>
+<li><strong>No double sending or charging:</strong> every recipient is sent once per campaign, and retries never charge SMS credit twice.</li>
+<li><strong>Organizations are separate:</strong> no campaign, segment, contact or setting is ever visible to another organization.</li>
+</ul>

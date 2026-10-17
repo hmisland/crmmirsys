@@ -119,6 +119,8 @@ final class Permission
     public const TASKS_DELETE = 'tasks.delete';
     public const TASKS_CHANGE_STATUS = 'tasks.change_status';
     public const TASKS_ARCHIVE = 'tasks.archive';
+    /** Completed or cancelled → open again (Task Manager Phase 0). */
+    public const TASKS_REOPEN = 'tasks.reopen';
 
     public const FOLLOWUPS_VIEW = 'followups.view';
     public const FOLLOWUPS_CREATE = 'followups.create';
@@ -273,7 +275,7 @@ final class Permission
             self::DEALS_VIEW, self::DEALS_CREATE, self::DEALS_EDIT, self::DEALS_DELETE, self::DEALS_CHANGE_STAGE,
             self::PIPELINES_MANAGE,
             self::TASKS_VIEW, self::TASKS_CREATE, self::TASKS_EDIT, self::TASKS_DELETE,
-            self::TASKS_CHANGE_STATUS, self::TASKS_ARCHIVE,
+            self::TASKS_CHANGE_STATUS, self::TASKS_ARCHIVE, self::TASKS_REOPEN,
             self::FOLLOWUPS_VIEW, self::FOLLOWUPS_CREATE, self::FOLLOWUPS_EDIT, self::FOLLOWUPS_DELETE,
             self::FOLLOWUPS_ASSIGN, self::FOLLOWUPS_COMPLETE, self::FOLLOWUPS_CANCEL, self::FOLLOWUPS_EXPORT,
             self::FOLLOWUPS_MANAGE_RULES, self::FOLLOWUPS_MANAGE_REMINDERS,

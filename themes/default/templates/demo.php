@@ -2,6 +2,7 @@
 /** @var array $notes */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use App\Infrastructure\Security\Csrf;
 ?>
 <section class="card">
@@ -19,7 +20,7 @@ use App\Infrastructure\Security\Csrf;
 
     <ul>
         <?php foreach ($notes as $note): ?>
-            <li><?= e($note['body']) ?> <span class="muted">(<?= e($note['created_at']) ?>)</span></li>
+            <li><?= e($note['body']) ?> <span class="muted">(<?= e(local_time($note['created_at'])) ?>)</span></li>
         <?php endforeach; ?>
         <?php if ($notes === []): ?>
             <li class="muted">No notes yet.</li>

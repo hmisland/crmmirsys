@@ -17,6 +17,8 @@
 /** @var \App\Infrastructure\Theme\ThemeLoader $theme */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
@@ -32,7 +34,7 @@ $facts = array_filter([
     ['calendar', t('contracts.start_date'), $contract['start_date'] ? $fmt->date($contract['start_date']) : null, false],
     ['calendar', t('contracts.end_date'), $contract['end_date'] ? $fmt->date($contract['end_date']) : null, false],
     ['check-circle', t('contracts.signed_at'), $contract['signed_at'] ? $fmt->date($contract['signed_at']) : null, false],
-    ['ban', t('contracts.terminated_at'), $contract['terminated_at'] ? $fmt->date($contract['terminated_at']) : null, false],
+    ['ban', t('contracts.terminated_at'), $contract['terminated_at'] ? $fmt->date(local_time($contract['terminated_at'])) : null, false],
     ['coins', t('contracts.value'), $contract['value'] !== null ? $contractValue($fmt, $contract['value'], $currencyCode) : null, false],
     ['bell', t('contracts.renewal_notice_days'), $contract['renewal_notice_days'] !== null ? $fmt->number((string) $contract['renewal_notice_days']) : null, false],
     ['refresh', t('contracts.auto_renew'), !empty($contract['auto_renew']) ? t('common.yes') : null, false],
@@ -121,7 +123,7 @@ $hasLifecycle = $actions['submit'] || $actions['return_to_draft'] || $actions['a
             <form method="post" action="<?= e($base) ?>/<?= e($activation) ?>" class="inline-form-row">
                 <?= Csrf::field() ?>
                 <label for="signed_on_<?= e($activation) ?>"><?= e(t('contracts.signed_on')) ?></label>
-                <input type="text" class="crm-datepicker" id="signed_on_<?= e($activation) ?>" name="signed_on" value="<?= e(date('Y-m-d')) ?>">
+                <input type="text" class="crm-datepicker" id="signed_on_<?= e($activation) ?>" name="signed_on" value="<?= e(local_today()) ?>">
                 <button type="submit" class="btn btn--primary"><?= icon($activationIcon) ?><?= e(t('contracts.action.' . $activation)) ?></button>
             </form>
             <?php break; ?>

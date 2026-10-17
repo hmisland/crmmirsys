@@ -526,7 +526,7 @@ $tests['16. visibility: a document the user may not open is "restricted" — no 
     $a->as($ownViewer);
     $page = $a->request('GET', "/contracts/{$k}")['body'];
     $a->as($a->admin);
-    $start = strpos($page, '<h3>' . htmlspecialchars($en['finance.installment.title'], ENT_QUOTES) . '</h3>');
+    $start = strpos($page, '<h3>' . htmlspecialchars($en['finance.installment.title'], ENT_QUOTES));
     LiteAssert::true($start !== false, 'schedule shown');
     $section = substr($page, $start);
     LiteAssert::contains($en['finance.installment.document_restricted'], $section);
@@ -558,7 +558,7 @@ $tests['18. Patch B kept: no credit-note amount or label in the schedule for a u
     $a->as($viewer);
     $page = $a->request('GET', "/contracts/{$k}")['body'];
     $a->as($a->admin);
-    $section = substr($page, (int) strpos($page, '<h3>' . htmlspecialchars($en['finance.installment.title'], ENT_QUOTES) . '</h3>'));
+    $section = substr($page, (int) strpos($page, '<h3>' . htmlspecialchars($en['finance.installment.title'], ENT_QUOTES)));
     LiteAssert::notContains('321', $section);
     LiteAssert::notContains($en['finance.credited'], $section);
     LiteAssert::notContains($en['credit_notes.total_credited'], $section);
@@ -568,7 +568,7 @@ $tests['19. panel: schedule + add form for a manager; no schedule without invoic
     $a = $boot();
     $k = $contract($a);
     $add($a, $k);
-    $title = '<h3>' . htmlspecialchars($en['finance.installment.title'], ENT_QUOTES) . '</h3>';
+    $title = '<h3>' . htmlspecialchars($en['finance.installment.title'], ENT_QUOTES);
     $form = 'action="/finance/contracts/' . $k . '/installments"';
     $page = fn (array $u) => (function () use ($a, $u, $k) { $a->as($u); try { return $a->request('GET', "/contracts/{$k}")['body']; } finally { $a->as($a->admin); } })();
 

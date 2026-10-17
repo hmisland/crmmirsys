@@ -1,0 +1,17 @@
+<p>Brevo (<a href="https://www.brevo.com/" target="_blank" rel="noopener">brevo.com</a>) est un second service d'e-mail pris en charge. Son atout dans le CRM : il renvoie les événements de <strong>remise, rebond, spam et désinscription</strong>, pour des résultats de campagne plus complets.</p>
+<h2>Étapes</h2>
+<ol>
+<li>Inscrivez-vous chez Brevo et confirmez votre compte.</li>
+<li><strong>Senders, domains & IPs :</strong> ajoutez votre adresse d'expéditeur et authentifiez votre domaine (SPF, DKIM, DMARC — guide « Vérifier le domaine d'envoi »). L'expéditeur doit être <em>actif</em>.</li>
+<li><strong>SMTP & API › API keys :</strong> créez une clé API (elle commence par <code>xkeysib-</code>).</li>
+<li>Dans le CRM : <strong>Paramètres de l'organisation › Fournisseurs de messagerie › E-mail — Brevo</strong> : clé, e-mail et nom d'expéditeur, adresse de réponse facultative → <em>Enregistrer et tester la connexion</em>.</li>
+<li>Cliquez sur <em>Enregistrer le webhook</em> pour que les événements de remise arrivent dans le CRM. Le CRM doit être servi en <code>https://</code>.</li>
+<li>Envoyez un e-mail de test.</li>
+</ol>
+<h2>Ce que vérifie le test de connexion</h2>
+<ul>
+<li>Que la clé est valide (compte Brevo).</li>
+<li>Que votre e-mail d'expéditeur est un <strong>expéditeur actif</strong> chez Brevo — sinon un avertissement s'affiche ; corrigez-le chez Brevo avant les campagnes.</li>
+<li>Il ne peut pas vérifier SPF/DKIM — l'avertissement sur l'authentification du domaine reste affiché en rappel.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> vous pouvez connecter Sender et Brevo ; chaque campagne e-mail choisit l'un des deux.</p></div>

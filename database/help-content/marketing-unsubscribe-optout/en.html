@@ -1,0 +1,20 @@
+<p>Sending marketing messages to people who asked you to stop is illegal in many countries and damages your sender reputation. The CRM keeps one <strong>opt-out list</strong> per organization: <strong>Marketing › Opt-outs</strong>.</p>
+<h2>How addresses get on the list</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Reason</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>Unsubscribed</td><td>the link in a marketing email, or the provider's unsubscribe event</td></tr>
+<tr><td>Bounced</td><td>the address does not exist (Brevo hard bounce)</td></tr>
+<tr><td>Spam report</td><td>the recipient marked your email as spam</td></tr>
+<tr><td>Blocked</td><td>the mobile number blocked promotional SMS at the operator</td></tr>
+<tr><td>Added manually</td><td>a user added the number or email</td></tr>
+</tbody></table></div>
+<h2>System rules</h2>
+<ul>
+<li>Marketing campaigns <strong>skip every address on the list</strong> — at review, and again at the moment of sending.</li>
+<li>Transactional (service) messages skip bounced, spam-reported and blocked addresses, but not "unsubscribed".</li>
+<li>Unsubscribe links are signed and keep working even if the Marketing module is later switched off.</li>
+<li>Adding or removing entries needs the "manage opt-outs" permission; users without access to contacts see addresses masked.</li>
+<li>Removing an entry means that address can receive marketing again — only do it if the person asked.</li>
+</ul>
+<div class="help-callout help-callout--warning"><p><strong>Never</strong> re-add unsubscribed people through a new group or import. The list is checked by address, so they stay protected — and that is intentional.</p></div>

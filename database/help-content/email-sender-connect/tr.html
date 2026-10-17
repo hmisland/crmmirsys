@@ -1,0 +1,26 @@
+<p><strong>Kuruluş ayarları › Mesajlaşma sağlayıcıları</strong> sayfasını açın, <strong>E-posta — Sender</strong> kartı.</p>
+<h2>Alanlar</h2>
+<ul>
+<li><strong>API anahtarı:</strong> Sender'dan alınan anahtar (tek parça, boşluksuz). Daha sonra boş bırakırsanız kayıtlı olan korunur.</li>
+<li><strong>Gönderen e-postası:</strong> <em>doğrulanmış</em> alan adınızdan bir adres, örn. <code>news@yourdomain.com</code>.</li>
+<li><strong>Gönderen adı:</strong> alıcıların gördüğü ad, örn. işletmenizin adı.</li>
+<li><strong>Yanıt adresi:</strong> Sender API'si desteklemez — yanıtlar gönderen adresine gelir.</li>
+</ul>
+<h2>Düğmeler</h2>
+<ul>
+<li><strong>Kaydet ve bağlantıyı test et:</strong> anahtar kaydedilmeden önce Sender ile kontrol edilir. Sender reddederse hiçbir şey kaydedilmez.</li>
+<li><strong>Bağlantıyı test et:</strong> kayıtlı anahtarı yeniden kontrol eder; durum ve "son başarılı test" güncellenir.</li>
+<li><strong>Test e-postası gönder:</strong> yazdığınız adrese gerçek bir e-posta.</li>
+<li><strong>Bağlantıyı kes:</strong> kayıtlı anahtarı siler; Sender kullanan e-posta kampanyaları durur.</li>
+</ul>
+<h2>Sık görülen hatalar</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Mesaj içeriği</th><th>Anlamı</th><th>Çözüm</th></tr></thead>
+<tbody>
+<tr><td>HTTP 401</td><td>anahtar yanlış, silinmiş veya eksik</td><td>Sender'da yeni anahtar oluşturup tek parça yapıştırın</td></tr>
+<tr><td>does not have a DMARC policy</td><td>alan adında DMARC kaydı yok</td><td><code>_dmarc</code> ekleyin ("Gönderim alan adını doğrulama")</td></tr>
+<tr><td>HTTP 422</td><td>bir alan reddedildi (çoğunlukla gönderen adresi)</td><td>doğrulanmış alan adınızdan bir adres kullanın</td></tr>
+<tr><td>Could not reach Sender</td><td>sunucu dışarı bağlanamıyor</td><td>barındırma firmasından giden HTTPS izni isteyin</td></tr>
+<tr><td>Çok fazla test e-postası</td><td>test sınırına ulaşıldı</td><td>birkaç dakika bekleyin</td></tr>
+</tbody></table></div>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> Sender'daki <em>Transactional › Logs</em> sayfası CRM'in gönderdiği her e-postayı teslim ve açılma durumuyla gösterir — bir test kaybolmuş görünüyorsa işe yarar.</p></div>

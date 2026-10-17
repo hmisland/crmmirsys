@@ -25,6 +25,8 @@
 use App\Infrastructure\Security\Csrf;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
@@ -118,7 +120,7 @@ $signedLabel = fn (array $row): string => ($row['entry_type'] === 'correction' &
             <label for="correction_amount"><?= e(t('finance.expense.amount')) ?> (<span class="ltr"><?= e($code) ?></span>)</label>
             <input type="text" inputmode="decimal" id="correction_amount" name="amount" required>
             <label for="correction_date"><?= e(t('finance.expense.date')) ?></label>
-            <input type="text" class="crm-datepicker" id="correction_date" name="expense_date" value="<?= e(date('Y-m-d')) ?>" required>
+            <input type="text" class="crm-datepicker" id="correction_date" name="expense_date" value="<?= e(local_today()) ?>" required>
             <label for="correction_description"><?= e(t('finance.expense.description')) ?></label>
             <input type="text" id="correction_description" name="description" maxlength="255" required>
             <label for="correction_reference"><?= e(t('finance.expense.reference')) ?></label>
@@ -173,7 +175,7 @@ $signedLabel = fn (array $row): string => ($row['entry_type'] === 'correction' &
     <h2><?= e(t('finance.expense.history')) ?></h2>
     <ul class="item-list">
         <?php foreach ($timeline as $ev): ?>
-            <li><span class="muted nowrap"><?= e($ev['created_at']) ?></span> — <?= e($ev['description']) ?></li>
+            <li><span class="muted nowrap"><?= e(local_time($ev['created_at'])) ?></span> — <?= e($ev['description']) ?></li>
         <?php endforeach; ?>
         <?php if ($timeline === []): ?><li class="muted">—</li><?php endif; ?>
     </ul>

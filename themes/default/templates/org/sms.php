@@ -12,16 +12,18 @@
 use App\Infrastructure\Security\Csrf;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\help_link;
 
 $isOwn = $settings['mode'] === 'own';
 $money = fn (?string $v) => $v === null ? '—' : number_format((float) $v);
 $selectedProvider = $settings['provider'] !== '' ? $settings['provider'] : ($providers[0]->key ?? '');
 ?>
 <section class="card">
-    <h1><?= e(t('org_sms.title')) ?></h1>
+    <h1><?= e(t('org_sms.title')) ?><?php if (\App\Infrastructure\Localization\Locale::get()?->locale() === 'fa'): ?><?= help_link('sms-kavenegar-account-modes') ?><?php endif; ?></h1>
 
     <?php if ($providers === []): ?>
         <div class="alert alert--info"><?= e(t('org_sms.no_provider_for_region')) ?></div>
@@ -132,7 +134,7 @@ $selectedProvider = $settings['provider'] !== '' ? $settings['provider'] : ($pro
         <tbody>
         <?php foreach ($logs as $log): ?>
             <tr>
-                <td class="muted"><span class="ltr"><?= e($log['created_at']) ?></span></td>
+                <td class="muted"><span class="ltr"><?= e(local_time($log['created_at'])) ?></span></td>
                 <td><span class="ltr"><?= e($log['receptor']) ?></span></td>
                 <td class="muted"><?= e($log['context'] ?? '—') ?></td>
                 <td><?= e(str_ends_with((string) $log['provider'], '-own') ? t('org_sms.mode_own') : t('org_sms.mode_platform')) ?></td>

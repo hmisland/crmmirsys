@@ -9,6 +9,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
@@ -117,7 +118,7 @@ $customDisplay = function (array $def, ?string $value): string {
                 <dt><?= e(t('client_records.opened_by')) ?></dt>
                 <dd><?= e($users[$record['owner_id']] ?? '—') ?></dd>
                 <dt><?= e(t('client_records.opened_on')) ?></dt>
-                <dd><?= e(substr((string) $record['created_at'], 0, 10)) ?></dd>
+                <dd><?= e(substr((string) local_time($record['created_at']), 0, 10)) ?></dd>
             </dl>
         </section>
     </div>

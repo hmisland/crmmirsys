@@ -1,0 +1,22 @@
+<p>E-posta kampanyaları, bir e-posta hizmetindeki (Sender veya Brevo) <strong>kuruluşunuzun kendi hesabı</strong> üzerinden gönderilir. CRM pazarlama e-postasını asla ortak bir sunucudan göndermez.</p>
+<h2>Dört adım</h2>
+<ol class="help-flow">
+<li>Modül etkin</li>
+<li>Sağlayıcı hesabı</li>
+<li>Alan adı doğrulandı</li>
+<li>Bağlandı ve test edildi</li>
+</ol>
+<ol>
+<li><strong>Modül:</strong> platform yöneticisi kuruluşunuz için <em>Pazarlama</em> ve <em>E-posta Pazarlaması</em> modüllerini etkinleştirir. Bunlar olmadan ayarlardaki e-posta kartları soluk ve "Modül satın alınmadı" etiketiyle görünür.</li>
+<li><strong>Sağlayıcı hesabı:</strong> Sender'a ("Sender'a kaydolma" rehberi) veya Brevo'ya kaydolun ve bir API anahtarı oluşturun.</li>
+<li><strong>Alan adı:</strong> sağlayıcının verdiği SPF, DKIM ve DMARC kayıtlarını alan adınızın DNS'ine ekleyin ("Gönderim alan adını doğrulama" rehberi).</li>
+<li><strong>Bağlantı:</strong> <strong>Kuruluş ayarları › Mesajlaşma sağlayıcıları</strong> → anahtarı, gönderen e-postasını ve adını girin → <em>Kaydet ve bağlantıyı test et</em> → <em>Test e-postası gönder</em>.</li>
+</ol>
+<h2>Sistem kuralları</h2>
+<ul>
+<li>Bu sayfayı yalnızca kuruluş ayarlarını düzenleyebilen kullanıcılar görür.</li>
+<li>API anahtarı şifreli saklanır ve bir daha gösterilmez; yalnızca son 4 karakteri görünür.</li>
+<li>Başarılı bir bağlantı testi, alan adınızın gönderim yapabileceğini <em>kanıtlamaz</em>; bu DNS kayıtlarına bağlıdır.</li>
+<li>Test mesajları sınırlıdır (varsayılan olarak kullanıcı başına 10 dakikada 5, kuruluş başına saatte 20).</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> ilk testi kendi Gmail adresinize gönderin. Ulaşırsa kurulum tamamdır; hangi klasöre (Primary, Promotions, Spam) düştüğü ayrı bir konudur.</p></div>

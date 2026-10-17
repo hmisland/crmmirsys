@@ -113,7 +113,7 @@ final class WalletGiftService
         if ($gift['status'] !== 'active') {
             throw new ValidationException(['code' => [$gift['status'] === 'redeemed' ? 'wallet_gift.error_used' : 'wallet_gift.error_revoked']]);
         }
-        if ($gift['expires_at'] !== null && $gift['expires_at'] < date('Y-m-d')) {
+        if ($gift['expires_at'] !== null && $gift['expires_at'] < \App\Infrastructure\Time\OrganizationTimezone::shared()->today($organizationId)) {
             throw new ValidationException(['code' => ['wallet_gift.error_expired']]);
         }
         if ($gift['organization_id'] !== null && (int) $gift['organization_id'] !== $organizationId) {

@@ -1,0 +1,15 @@
+<p>Her sözleşme sayfasında finans bölümünde bir taksit planı bulunur: her taksidin tutarı ve vade tarihi.</p>
+<h2>Sistem kuralları</h2>
+<ul>
+<li>Taksit yalnızca bir <strong>plandır</strong>: fatura, gelir veya alacak değildir.</li>
+<li>Taksitten bir proforma veya fatura oluşturulur (taksit başına tek aktif belge).</li>
+<li>Durum o belgeyi izler: faturalanmadı, faturalandı, kısmen ödendi, kapandı, geçersiz. Vadesi geçmiş ve kapanmamışsa <strong>gecikmiş</strong> olarak işaretlenir.</li>
+<li>Taksitler yalnızca <em>aktif</em> sözleşmede eklenir veya düzenlenir; belgeler sözleşme aktif veya süresi dolmuşken oluşturulabilir. Geçersiz kılmak gerekçe ister.</li>
+<li>Taksitlerin toplamı sözleşme değerine eşit değilse uyarı gösterilir (kayıt engellenmez).</li>
+</ul>
+<div class="help-example">
+<p><strong>Örnek:</strong> 120 milyon IRR'lik sözleşme, 30 milyonluk 4 üç aylık taksit. İlki faturalanır ve ödenir → "kapandı". İkincinin vadesi ödenmeden geçer → "gecikmiş".</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finans ipucu — nakit akışı:</strong> kârlı olmak yetmez; paranın <em>ne zaman</em> geleceğini bilmelisiniz. Taksit planı gelecek nakit tahmininizdir; onu yaklaşan giderlerle karşılaştırın.</p>
+</div>

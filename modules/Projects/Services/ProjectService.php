@@ -223,7 +223,7 @@ final class ProjectService
             if ($date !== '' && !$this->isIsoDate($date)) {
                 throw new ValidationException(['actual_end_date' => ['projects.error.invalid_date']]);
             }
-            $fields['actual_end_date'] = $date !== '' ? $date : date('Y-m-d');
+            $fields['actual_end_date'] = $date !== '' ? $date : \App\Infrastructure\Time\OrganizationTimezone::shared()->today();
         } elseif ($action === 'reopen') {
             $fields['actual_end_date'] = null;
         }

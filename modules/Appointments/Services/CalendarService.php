@@ -95,9 +95,10 @@ final class CalendarService
     public function week(string $weekStart, array $rows): array
     {
         $days = [];
+        $today = \App\Infrastructure\Time\OrganizationTimezone::shared()->today(); // the organization's today, not the server's
         for ($i = 0; $i < 7; $i++) {
             $date = date('Y-m-d', strtotime($weekStart . ' +' . $i . ' days'));
-            $days[$date] = ['date' => $date, 'weekday' => (int) date('w', strtotime($date)), 'items' => [], 'is_today' => $date === date('Y-m-d')];
+            $days[$date] = ['date' => $date, 'weekday' => (int) date('w', strtotime($date)), 'items' => [], 'is_today' => $date === $today];
         }
 
         foreach ($rows as $row) {

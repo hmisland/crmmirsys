@@ -29,6 +29,7 @@ use App\Infrastructure\Security\Csrf;
 use Modules\Finance\SubmissionKeyRepository;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 
@@ -105,7 +106,7 @@ $selectedContract = $contract !== null ? (string) $contract['id'] : '';
         <?php if ($fieldError('category') !== null): ?><div class="field-error"><?= e($fieldError('category')) ?></div><?php endif; ?>
 
         <label for="expense_date"><?= e(t('finance.expense.date')) ?></label>
-        <input type="text" class="crm-datepicker" id="expense_date" name="expense_date" value="<?= e($val('expense_date', date('Y-m-d'))) ?>" required>
+        <input type="text" class="crm-datepicker" id="expense_date" name="expense_date" value="<?= e($val('expense_date', local_today())) ?>" required>
         <?php if ($fieldError('expense_date') !== null): ?><div class="field-error"><?= e($fieldError('expense_date')) ?></div><?php endif; ?>
 
         <label for="payee_contact_id"><?= e(t('finance.expense.payee_contact')) ?></label>

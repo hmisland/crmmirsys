@@ -4,6 +4,7 @@
 /** @var array $logs */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
@@ -33,7 +34,7 @@ use App\Infrastructure\Security\Csrf;
         <tbody>
         <?php foreach ($transactions as $tx): ?>
             <tr>
-                <td><?= e($tx['created_at']) ?></td>
+                <td><?= e(local_time($tx['created_at'])) ?></td>
                 <td><?= e(t('notif.credit_type.' . $tx['type'])) ?></td>
                 <td><?= e(number_format((float) $tx['amount'], 0)) ?></td>
                 <td><?= e(number_format((float) $tx['balance_after'], 0)) ?></td>
@@ -56,7 +57,7 @@ use App\Infrastructure\Security\Csrf;
         <tbody>
         <?php foreach ($logs as $log): ?>
             <tr>
-                <td><?= e($log['created_at']) ?></td>
+                <td><?= e(local_time($log['created_at'])) ?></td>
                 <td><?= e(t('notif.channel.' . $log['channel'])) ?></td>
                 <td><?= badge(t('notif.log_status.' . $log['status']), $log['status']) ?></td>
                 <td class="muted"><?= e($log['detail'] ?? '') ?></td>

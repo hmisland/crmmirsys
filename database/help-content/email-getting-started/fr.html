@@ -1,0 +1,22 @@
+<p>Les campagnes e-mail partent par le <strong>propre compte de votre organisation</strong> chez un service d'e-mail (Sender ou Brevo). Le CRM n'envoie jamais d'e-mail marketing depuis un serveur partagé.</p>
+<h2>Les quatre étapes</h2>
+<ol class="help-flow">
+<li>Module activé</li>
+<li>Compte fournisseur</li>
+<li>Domaine vérifié</li>
+<li>Connecté et testé</li>
+</ol>
+<ol>
+<li><strong>Module :</strong> l'administrateur de la plateforme active <em>Marketing</em> et <em>Marketing e-mail</em> pour votre organisation. Sans eux, les cartes e-mail des paramètres apparaissent grisées avec « Module non acheté ».</li>
+<li><strong>Compte fournisseur :</strong> inscrivez-vous chez Sender (guide « S'inscrire chez Sender ») ou Brevo et créez une clé API.</li>
+<li><strong>Domaine :</strong> ajoutez au DNS de votre domaine les enregistrements SPF, DKIM et DMARC fournis (guide « Vérifier le domaine d'envoi »).</li>
+<li><strong>Connexion :</strong> <strong>Paramètres de l'organisation › Fournisseurs de messagerie</strong> → saisissez la clé, l'e-mail et le nom de l'expéditeur → <em>Enregistrer et tester la connexion</em> → <em>Envoyer un e-mail de test</em>.</li>
+</ol>
+<h2>Règles du système</h2>
+<ul>
+<li>Seuls les utilisateurs autorisés à modifier les paramètres de l'organisation voient cette page.</li>
+<li>La clé API est stockée chiffrée et n'est plus jamais affichée ; seuls ses 4 derniers caractères apparaissent.</li>
+<li>Un test de connexion réussi ne prouve <em>pas</em> que votre domaine peut envoyer : cela dépend des enregistrements DNS.</li>
+<li>Les envois de test sont limités (par défaut 5 par utilisateur toutes les 10 minutes, 20 par organisation et par heure).</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> envoyez le premier test à votre propre adresse Gmail. S'il arrive, la configuration est terminée ; le dossier où il arrive (Principale, Promotions, Spam) est un autre sujet.</p></div>

@@ -1,0 +1,37 @@
+<h2>Hesaplama sırası</h2>
+<ol>
+<li><strong>Her satır:</strong> miktar × birim fiyat − satır indirimi (yüzde veya sabit tutar) = satır toplamı.</li>
+<li><strong>Ara toplam:</strong> tüm satırların toplamı.</li>
+<li><strong>Fatura indirimi:</strong> tek bir sabit tutar, en fazla ara toplam kadar.</li>
+<li><strong>Vergi:</strong> indirimlerden <em>sonraki</em> tutar üzerinden.</li>
+<li><strong>Genel toplam</strong> = ara toplam − fatura indirimi + vergi.</li>
+</ol>
+<h2>Hassasiyet kuralları</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Değer</th><th>En fazla ondalık</th></tr></thead>
+<tbody>
+<tr><td>IRR tutarı</td><td>3 (riyal asla otomatik olarak tam sayıya yuvarlanmaz)</td></tr>
+<tr><td>Diğer para birimleri</td><td>para biriminin hassasiyeti (ör. USD 2)</td></tr>
+<tr><td>Birim fiyat</td><td>para birimi hassasiyeti + 2 (IRR 5, USD 4)</td></tr>
+<tr><td>Miktar ve yüzde indirim</td><td>4</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>Daha hassas bir sayı mesajla <strong>reddedilir</strong>; asla sessizce kesilmez.</li>
+<li>"1,000" kabul edilir. "1e3", negatif sayılar, %100'ü veya satır tutarını aşan indirimler reddedilir.</li>
+<li>Yuvarlama yarım yukarıdır: 1,0005 IRR → 1,001.</li>
+</ul>
+<div class="help-example">
+<p><strong>Örnek (%10 vergi, vergi hariç):</strong></p>
+<ul>
+<li>Satır 1: 3 × 250.000, %10 indirimle = 675.000</li>
+<li>Satır 2: 2 × 100.000, 20.000 indirimle = 180.000</li>
+<li>Ara toplam 855.000 − fatura indirimi 5.000 = 850.000; vergi 85.000; <strong>genel toplam 935.000</strong></li>
+</ul>
+<p>Vergi dahil modda %10 vergili 1.100.000 fiyat, 1.000.000 net + 100.000 vergi demektir.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finans ipucu:</strong> indirim vergiden önce uygulanır, bu yüzden vergiyi de düşürür. Tahsil ettiğiniz vergi geliriniz değildir; vergi idaresi adına tuttuğunuz bir emanettir.</p>
+</div>

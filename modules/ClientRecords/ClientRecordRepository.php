@@ -50,7 +50,8 @@ final class ClientRecordRepository extends TenantScopedRepository
                 FROM client_records r
                 INNER JOIN contacts c ON c.id = r.contact_id AND c.organization_id = r.organization_id
                 WHERE " . ($orgScoped ? 'r.organization_id = :org_id' : '1 = 1');
-        $params = ['now' => date('Y-m-d H:i:s')];
+        // session_at is the organization's local wall clock: compare with its local "now".
+        $params = ['now' => \App\Infrastructure\Time\OrganizationTimezone::shared()->localNow()];
         if ($orgScoped) {
             $params['org_id'] = OrganizationContext::id();
         }

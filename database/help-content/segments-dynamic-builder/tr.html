@@ -1,0 +1,25 @@
+<p><strong>Pazarlama › Segmentler › Yeni dinamik segment.</strong> Her <em>koşul</em> <strong>alan + koşul + değer</strong>'dir, örn. "Şehir · eşittir · Tebriz".</p>
+<h2>VE ve VEYA</h2>
+<ul>
+<li>Koşullar <strong>gruplarda</strong> yer alır. Grup içinde <em>Tüm koşullar (VE)</em> veya <em>Herhangi bir koşul (VEYA)</em> seçin.</li>
+<li>Gruplar arasında <em>tüm gruplarla eşleşen (VE)</em> veya <em>herhangi bir grup (VEYA)</em> seçin.</li>
+<li>Böylece <code>(A VE B) VEYA (C VE D)</code> gibi ifadeler kurulur.</li>
+</ul>
+<h2>Kullanılabilir alanlar</h2>
+<p>Ad, e-posta, cep telefonu (yalnızca kişilere erişimi olanlar için), durum, cinsiyet, şehir, il, ülke, kaynak, unvan, kişi oluşturulma (önce / sonra / tarihinde / son N gün), doğum tarihi, doğum ayı, kişi grubu, etiket, şirket, ilgi alanı ve pazarlama çıkışı (SMS veya e-posta).</p>
+<h2>Örnekler</h2>
+<div class="help-example">
+<ul>
+<li><strong>Yeni kişiler:</strong> Durum Etkin VE son 30 günde oluşturuldu.</li>
+<li><strong>Bu ay doğanlar:</strong> Doğum ayı (bu ay) VE Durum Etkin.</li>
+<li><strong>İki şehir:</strong> <em>Herhangi bir koşul</em> seçili tek grup: Şehir Tebriz, Şehir Şiraz.</li>
+<li><strong>Grup dışındaki etiket:</strong> "VIP" etiketine sahip VE kişi grubu "Ortaklar" içinde değil.</li>
+</ul>
+</div>
+<h2>Sistem kuralları</h2>
+<ul>
+<li>Yalnızca listelenen alanlar ve koşullar kabul edilir; en az bir koşul gerekir; en fazla 10 grup ve 50 koşul.</li>
+<li><em>Önizleme</em> eşleşen sayıyı (ve izniniz varsa kişileri) kaydetmeden gösterir.</li>
+<li>"Son N gün" her seferinde bugünden sayılır — yenilemeye gerek yoktur.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> yeni segmentler "Durum Etkin" ile başlar — gerçekten pasif kişileri istemiyorsanız koruyun.</p></div>

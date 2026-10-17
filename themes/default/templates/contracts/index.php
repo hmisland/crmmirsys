@@ -40,6 +40,7 @@ include __DIR__ . '/_helpers.php';
             <input type="hidden" name="<?= e($partyKey) ?>" value="<?= e($partyId) ?>">
         <?php endforeach; ?>
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('contracts.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select name="status" aria-label="<?= e(t('contracts.status')) ?>">
             <option value=""><?= e(t('contracts.all_statuses')) ?></option>
             <?php foreach (['draft', 'pending_approval', 'active', 'expired', 'terminated', 'cancelled'] as $s): ?>

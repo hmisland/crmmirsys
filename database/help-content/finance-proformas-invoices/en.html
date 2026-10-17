@@ -1,0 +1,21 @@
+<ul class="help-flow">
+<li>Proforma</li>
+<li>Convert</li>
+<li>Draft invoice</li>
+<li>Issue</li>
+<li>Payment</li>
+</ul>
+<h2>System rules</h2>
+<ul>
+<li>A <strong>proforma</strong> is a price offer, not a debt. Statuses: draft, sent, accepted, rejected, expired, converted. Until converted it can be edited or deleted.</li>
+<li><strong>Converting</strong> creates a <em>draft</em> invoice with the same lines. The proforma becomes "converted", is locked, and can be converted only once.</li>
+<li><strong>Invoice:</strong> draft → issued → (cancelled). A draft can be edited or deleted freely.</li>
+<li><strong>Issuing</strong> (usually organization admins only) assigns the next number and <strong>freezes</strong> the invoice. It is refused if the invoice date is in a closed financial period.</li>
+<li>An issued invoice is never edited; corrections are made with a <a href="/help/finance-credit-notes-cancel">credit note</a>.</li>
+</ul>
+<div class="help-example">
+<p><strong>Example:</strong> you send a proforma for 3 licences. The customer accepts; you convert it, set the due date and issue it: <code>INV-00007</code>. From that moment the amount is owed to you.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finance tip:</strong> a proforma is not revenue. Only an issued invoice creates a <em>receivable</em>. Always set a due date so you can spot overdue invoices.</p>
+</div>

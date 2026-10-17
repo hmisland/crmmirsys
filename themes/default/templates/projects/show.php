@@ -16,6 +16,7 @@
 /** @var \App\Infrastructure\Theme\ThemeLoader $theme */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
@@ -102,7 +103,7 @@ $lifecycle = array_filter(array_keys($projectActionIcons), fn (string $a) => !em
             <?= Csrf::field() ?>
             <input type="hidden" name="action" value="complete">
             <label for="actual_end_date"><?= e(t('projects.actual_end_date')) ?></label>
-            <input type="text" class="crm-datepicker" id="actual_end_date" name="actual_end_date" value="<?= e(date('Y-m-d')) ?>">
+            <input type="text" class="crm-datepicker" id="actual_end_date" name="actual_end_date" value="<?= e(local_today()) ?>">
             <button type="submit" class="btn btn--primary"><?= icon('check-circle') ?><?= e(t('projects.action.complete')) ?></button>
         </form>
     <?php endif; ?>

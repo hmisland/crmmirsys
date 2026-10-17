@@ -3,6 +3,7 @@
 /** @var array $userCounts */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
@@ -13,6 +14,7 @@ use function App\Infrastructure\Theme\icon;
 
     <form method="get" action="/admin/organizations" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('filters.search_organization')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
         <?php if ($pagination->filterQuery() !== []): ?><a href="/admin/organizations" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
     </form>
@@ -29,7 +31,7 @@ use function App\Infrastructure\Theme\icon;
                 <td><code><?= e($organization['slug']) ?></code></td>
                 <td><?= badge(t('org.user_status.' . $organization['status']), $organization['status']) ?></td>
                 <td><?= e($userCounts[$organization['id']] ?? 0) ?></td>
-                <td><?= e($organization['created_at']) ?></td>
+                <td><?= e(local_time($organization['created_at'])) ?></td>
                 <td><a href="/admin/organizations/<?= e($organization['id']) ?>/modules"><?= e(t('admin.manage_modules')) ?></a></td>
             </tr>
         <?php endforeach; ?>

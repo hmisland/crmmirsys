@@ -42,7 +42,7 @@ final class AppointmentController extends BaseController
     {
         $user = CurrentUser::user();
         $view = $request->query('view') === 'week' ? 'week' : 'day';
-        $date = $this->dateOr($request->query('date'), date('Y-m-d'));
+        $date = $this->dateOr($request->query('date'), \App\Infrastructure\Time\OrganizationTimezone::shared()->today());
         $resourceId = (int) $request->query('resource_id', 0) ?: null;
         $locale = $this->locale();
 
@@ -138,7 +138,7 @@ final class AppointmentController extends BaseController
             'contact_id' => (int) $request->query('contact_id', 0) ?: '',
             'resource_id' => (int) $request->query('resource_id', 0) ?: '',
             'appointment_type_id' => (int) $request->query('appointment_type_id', 0) ?: '',
-            'date' => $this->dateOr($request->query('date'), date('Y-m-d')),
+            'date' => $this->dateOr($request->query('date'), \App\Infrastructure\Time\OrganizationTimezone::shared()->today()),
             'start_time' => preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) $request->query('time', '')) ? (string) $request->query('time') : '',
             'status' => 'scheduled',
         ];

@@ -1,0 +1,21 @@
+<h2>İşe yarayan bir yapı</h2>
+<ol>
+<li><strong>Konu (yaklaşık 50 karakterden kısa):</strong> somut ve dürüst. "{{first_name}}, %15 indiriminiz cuma bitiyor", "BÜLTEN #12"den iyidir.</li>
+<li><strong>İlk satır:</strong> adıyla selamlayın ve neden yazdığınızı söyleyin.</li>
+<li><strong>Tek mesaj, tek eylem:</strong> bir teklif veya haber ve tek net bağlantı ya da düğme.</li>
+<li><strong>Kısa:</strong> 3–6 kısa paragraf. İnsanlar telefonda göz gezdirir.</li>
+<li><strong>İmza:</strong> işletme adınız ve iletişim yolu.</li>
+</ol>
+<h2>Sistem kuralları</h2>
+<ul>
+<li>Yalnızca listelenen değişkenler çalışır ("E-posta pazarlamasının temelleri"); bilinmeyen biri reddedilir.</li>
+<li>Kişinin adı yoksa <code>{{first_name}}</code> boş olur — cümle yine okunacak şekilde yazın.</li>
+<li>Pazarlama e-postalarına her zaman alta bir abonelikten çıkma bağlantısı eklenir. Kendiniz yerleştirmek için <code>{{unsubscribe_url}}</code>'yi bir bağlantıya koyun.</li>
+<li>HTML gövde yazıldığı gibi gönderilir; önizleme yalıtılmış bir çerçevede güvenle gösterilir.</li>
+</ul>
+<div class="help-example">
+<p><strong>Örnek:</strong></p>
+<p>Konu: <code>{{first_name}}, size yeni bir hizmet</code></p>
+<p><code>&lt;p&gt;Merhaba {{first_name}},&lt;/p&gt;&lt;p&gt;Gelecek haftadan itibaren şehrinizde eve teslimat da yapıyoruz.&lt;/p&gt;&lt;p&gt;&lt;a href="https://yourdomain.com/delivery"&gt;Nasıl çalıştığını görün&lt;/a&gt;&lt;/p&gt;&lt;p&gt;— {{organization}} ekibi&lt;/p&gt;</code></p>
+</div>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> tüm metni bir görselin içine koymayın — birçok e-posta uygulaması görselleri varsayılan olarak engeller ve mesajınız boş görünür.</p></div>

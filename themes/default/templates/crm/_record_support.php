@@ -7,6 +7,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -72,7 +73,7 @@ $base = "/records/{$type}/{$id}";
         <?php foreach ($notes as $note): ?>
             <li>
                 <p><?= nl2br(e($note['body'])) ?></p>
-                <span class="muted"><?= e($note['created_at']) ?></span>
+                <span class="muted"><?= e(local_time($note['created_at'])) ?></span>
                 <form method="post" action="<?= e($base) ?>/notes/<?= e($note['id']) ?>/delete" class="inline-form">
                     <?= Csrf::field() ?>
                     <button type="submit" class="link-button link-button--danger" data-confirm><?= icon('trash') ?><?= e(t('common.delete')) ?></button>
@@ -87,7 +88,7 @@ $base = "/records/{$type}/{$id}";
     <h2><?= e(t('common.timeline')) ?></h2>
     <ul class="timeline-list">
         <?php foreach ($timeline as $event): ?>
-            <li><span class="muted"><?= e($event['created_at']) ?></span> — <?= e($event['description']) ?></li>
+            <li><span class="muted"><?= e(local_time($event['created_at'])) ?></span> — <?= e($event['description']) ?></li>
         <?php endforeach; ?>
         <?php if ($timeline === []): ?><li class="muted"><?= e(t('common.nothing_yet')) ?></li><?php endif; ?>
     </ul>

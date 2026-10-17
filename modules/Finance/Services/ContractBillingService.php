@@ -69,7 +69,7 @@ final class ContractBillingService
 
         $draft = [
             'contact_id' => !empty($contract['contact_id']) ? (string) $contract['contact_id'] : '',
-            'issue_date' => date('Y-m-d'),
+            'issue_date' => \App\Infrastructure\Time\OrganizationTimezone::shared()->today(),
             'due_date' => (string) $installment['due_date'],
             'terms' => (string) ($contract['terms'] ?? ''),
             'items' => [[
@@ -126,7 +126,7 @@ final class ContractBillingService
 
         $draft = [
             'contact_id' => !empty($contract['contact_id']) ? (string) $contract['contact_id'] : '',
-            'issue_date' => date('Y-m-d'),
+            'issue_date' => \App\Infrastructure\Time\OrganizationTimezone::shared()->today(),
             'terms' => (string) ($contract['terms'] ?? ''),
             'items' => [[
                 'item_name' => '',

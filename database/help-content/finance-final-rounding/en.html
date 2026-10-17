@@ -1,0 +1,16 @@
+<p>Sometimes an invoice total has decimals (e.g. 1,000,000.4 IRR) and you want the customer to pay a round number. This feature does it <strong>transparently</strong>.</p>
+<h2>System rules</h2>
+<ul>
+<li>The organization default is in <strong>Finance › Settings</strong> and is <strong>OFF</strong> initially.</li>
+<li>When issuing, a "Round the payable" option is shown next to the Issue button, set to that default; the issuer can change it for that invoice.</li>
+<li>IRR rounds to a <strong>whole rial</strong>; other currencies to their own precision (USD 2 decimals). Method: half-up.</li>
+<li>The invoice records "Total before rounding", the "Rounding adjustment" (positive or negative) and the final grand total.</li>
+<li>The decision is taken once, at issue, and never recalculated. Earlier invoices are not changed.</li>
+<li>Payments, balance, credit notes and reports all use the <strong>final amount</strong>; the adjustment is counted exactly once.</li>
+</ul>
+<div class="help-example">
+<p><strong>Example:</strong> 1,000,000.4 → 1,000,000 (adjustment −0.4). 2,500.5 → 2,501 (+0.5). USD 10.555 → 10.56. After issue, a payment of 1,000,000 settles the first invoice completely.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finance tip:</strong> don't tweak line prices to get a round total; that distorts tax and discount figures. A recorded rounding adjustment is a small, visible difference, and that transparency matters in an audit.</p>
+</div>

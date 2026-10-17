@@ -110,6 +110,9 @@ final class DealController extends BaseController
 
         $contact = $deal['contact_id'] !== null ? $this->contacts->findById((int) $deal['contact_id']) : null;
         $company = $deal['company_id'] !== null ? $this->companies->findById((int) $deal['company_id']) : null;
+        $user = CurrentUser::user();
+        // Only the deal's tasks this user may see (tasks.view and its scope).
+        $tasks = $this->tasks->visibleForSubject($user, 'deal', $id);
 
         return $this->viewWithLayout('sales/show', 'layout', [
             'deal' => $deal,
@@ -117,9 +120,10 @@ final class DealController extends BaseController
             'stages' => $this->pipelines->stagesFor((int) $deal['pipeline_id']),
             'contact' => $contact,
             'company' => $company,
-            'tasks' => $this->tasks->forSubject('deal', $id),
-            'taskCan' => $this->tasks->capabilities(CurrentUser::user()),
-            'users' => $this->users->findAllInOrganization((int) CurrentUser::user()['organization_id']),
+            'tasks' => $tasks,
+            'taskCan' => $this->tasks->capabilities($user),
+            'taskActions' => $this->tasks->actionsFor($user, $tasks),
+            'users' => $this->tasks->assignableUsers((int) $user['organization_id']),
         ]);
     }
 

@@ -9,7 +9,6 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
-use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
@@ -19,12 +18,9 @@ use function App\Infrastructure\Theme\t;
 
 final class TaskController extends BaseController
 {
-    private const ALLOWED_TYPES = ['contact', 'company', 'lead', 'deal'];
-
     public function __construct(
         TemplateEngine $templates,
         private readonly TaskService $tasks,
-        private readonly UserRepository $users,
     ) {
         parent::__construct($templates);
     }
@@ -32,15 +28,19 @@ final class TaskController extends BaseController
     public function myTasks(Request $request): Response
     {
         $user = CurrentUser::user();
-        $archived = $request->query('view') === 'archived';
+        $view = in_array($request->query('view'), TaskService::LIST_VIEWS, true) ? (string) $request->query('view') : 'mine';
         $status = in_array($request->query('status'), TaskService::STATUSES, true) ? (string) $request->query('status') : '';
+        $tasks = $this->tasks->listFor($user, $view, $status !== '' ? $status : null);
 
         return $this->viewWithLayout('sales/tasks', 'layout', [
-            'tasks' => $this->tasks->forUser($user, $archived, $status !== '' ? $status : null),
-            'users' => $this->users->findAllInOrganization((int) $user['organization_id']),
-            'archived' => $archived,
+            'tasks' => $tasks,
+            'users' => $this->tasks->assignableUsers((int) $user['organization_id']),
+            'view' => $view,
+            'canListAll' => $this->tasks->canListAll($user),
+            'archived' => $view === 'archived',
             'statusFilter' => $status,
             'can' => $this->tasks->capabilities($user),
+            'taskActions' => $this->tasks->actionsFor($user, $tasks),
         ]);
     }
 
@@ -51,8 +51,8 @@ final class TaskController extends BaseController
         try {
             $this->tasks->changeStatus(CurrentUser::user(), (int) $request->attribute('id'), $status);
             Session::setFlash('success', t('tasks.flash.status_changed', ['status' => t('tasks.status.' . $status)]));
-        } catch (ValidationException) {
-            Session::setFlash('error', t('tasks.invalid_status'));
+        } catch (ValidationException $e) {
+            Session::setFlash('error', $this->firstError($e));
         }
 
         return $this->redirect($this->backTo($request));
@@ -76,19 +76,24 @@ final class TaskController extends BaseController
 
     public function show(Request $request): Response
     {
+        $user = CurrentUser::user();
         $id = (int) $request->attribute('id');
-        $task = $this->tasks->find(CurrentUser::user(), $id);
-        $organizationId = (int) CurrentUser::user()['organization_id'];
-        $allUsers = $this->users->findAllInOrganization($organizationId);
+        $task = $this->tasks->find($user, $id);
         $assigneeIds = $this->tasks->assigneeIds($id);
+        if (!empty($task['assigned_to_user_id'])) {
+            $assigneeIds[] = (int) $task['assigned_to_user_id'];
+        }
+        // Active users, plus the task's current (possibly inactive) assignees.
+        $users = $this->tasks->assignableUsers((int) $user['organization_id'], $assigneeIds);
+        $mayDelete = fn (array $row): array => $row + ['can_delete' => $this->tasks->mayDeleteItem($user, $task, $row['user_id'] ?? null)];
 
         return $this->viewWithLayout('sales/task-show', 'layout', [
             'task' => $task,
-            'users' => $allUsers,
-            'assignees' => array_values(array_filter($allUsers, fn ($u) => in_array((int) $u['id'], $assigneeIds, true))),
-            'comments' => $this->tasks->comments($id),
-            'attachments' => $this->tasks->attachments($id),
-            'can' => $this->tasks->capabilities(CurrentUser::user()),
+            'users' => $users,
+            'assignees' => array_values(array_filter($users, fn ($u) => in_array((int) $u['id'], $assigneeIds, true))),
+            'comments' => array_map($mayDelete, $this->tasks->comments($id)),
+            'attachments' => array_map($mayDelete, $this->tasks->attachments($id)),
+            'actions' => $this->tasks->actionsFor($user, [$task])[$id],
             'errors' => [],
         ]);
     }
@@ -99,7 +104,7 @@ final class TaskController extends BaseController
             $this->tasks->create(CurrentUser::user(), $request->all());
             Session::setFlash('success', t('tasks.flash.added'));
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not add task.');
+            Session::setFlash('error', $this->firstError($e));
         }
 
         return $this->redirect($this->backTo($request));
@@ -113,7 +118,7 @@ final class TaskController extends BaseController
             $this->tasks->update(CurrentUser::user(), $id, $request->all());
             Session::setFlash('success', t('tasks.flash.updated'));
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not update task.');
+            Session::setFlash('error', $this->firstError($e));
         }
 
         return $this->redirect('/tasks/' . $id);
@@ -121,7 +126,11 @@ final class TaskController extends BaseController
 
     public function toggleComplete(Request $request): Response
     {
-        $this->tasks->toggleComplete(CurrentUser::user(), (int) $request->attribute('id'));
+        try {
+            $this->tasks->toggleComplete(CurrentUser::user(), (int) $request->attribute('id'));
+        } catch (ValidationException $e) {
+            Session::setFlash('error', $this->firstError($e));
+        }
 
         return $this->redirect($this->backTo($request));
     }
@@ -131,7 +140,10 @@ final class TaskController extends BaseController
         $this->tasks->delete(CurrentUser::user(), (int) $request->attribute('id'));
         Session::setFlash('success', t('tasks.flash.deleted'));
 
-        return $this->redirect($this->backTo($request));
+        // The task page itself is gone now; never send the user back to it.
+        $back = $this->backTo($request);
+
+        return $this->redirect(preg_match('#^/tasks/\d+$#', $back) === 1 ? '/tasks' : $back);
     }
 
     public function addComment(Request $request): Response
@@ -141,7 +153,7 @@ final class TaskController extends BaseController
         try {
             $this->tasks->addComment(CurrentUser::user(), $id, (string) $request->input('body', ''));
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not add comment.');
+            Session::setFlash('error', $this->firstError($e));
         }
 
         return $this->redirect('/tasks/' . $id);
@@ -149,9 +161,15 @@ final class TaskController extends BaseController
 
     public function deleteComment(Request $request): Response
     {
-        $this->tasks->deleteComment(CurrentUser::user(), (int) $request->attribute('id'), (int) $request->attribute('commentId'));
+        $id = (int) $request->attribute('id');
 
-        return $this->redirect('/tasks/' . (int) $request->attribute('id'));
+        try {
+            $this->tasks->deleteComment(CurrentUser::user(), $id, (int) $request->attribute('commentId'));
+        } catch (ValidationException $e) {
+            Session::setFlash('error', $this->firstError($e));
+        }
+
+        return $this->redirect('/tasks/' . $id);
     }
 
     public function uploadAttachment(Request $request): Response
@@ -160,7 +178,7 @@ final class TaskController extends BaseController
         $file = $request->file('file');
 
         if ($file === null) {
-            Session::setFlash('error', 'Choose a file first.');
+            Session::setFlash('error', t('tasks.error.choose_file'));
 
             return $this->redirect('/tasks/' . $id);
         }
@@ -168,7 +186,7 @@ final class TaskController extends BaseController
         try {
             $this->tasks->addAttachment(CurrentUser::user(), $id, $file);
         } catch (ValidationException $e) {
-            Session::setFlash('error', array_values($e->errors)[0][0] ?? 'Could not upload file.');
+            Session::setFlash('error', $this->firstError($e));
         }
 
         return $this->redirect('/tasks/' . $id);
@@ -176,9 +194,15 @@ final class TaskController extends BaseController
 
     public function deleteAttachment(Request $request): Response
     {
-        $this->tasks->deleteAttachment(CurrentUser::user(), (int) $request->attribute('id'), (int) $request->attribute('attachmentId'));
+        $id = (int) $request->attribute('id');
 
-        return $this->redirect('/tasks/' . (int) $request->attribute('id'));
+        try {
+            $this->tasks->deleteAttachment(CurrentUser::user(), $id, (int) $request->attribute('attachmentId'));
+        } catch (ValidationException $e) {
+            Session::setFlash('error', $this->firstError($e));
+        }
+
+        return $this->redirect('/tasks/' . $id);
     }
 
     public function downloadAttachment(Request $request): Response
@@ -205,10 +229,28 @@ final class TaskController extends BaseController
             ->withHeader('Content-Disposition', 'attachment; filename="' . str_replace('"', '', $match['filename']) . '"');
     }
 
+    /** Services put translated messages in their ValidationExceptions. */
+    private function firstError(ValidationException $e): string
+    {
+        $first = array_values($e->errors)[0][0] ?? null;
+
+        return is_string($first) && $first !== '' ? $first : t('tasks.error.generic');
+    }
+
+    /**
+     * Where a task action returns to. Only the task pages (list with its
+     * view/status filter, one task) and a deal page are accepted — never
+     * another host, a protocol-relative URL, or anything malformed.
+     */
     private function backTo(Request $request): string
     {
-        $returnTo = (string) $request->input('return_to', '');
+        $returnTo = $request->input('return_to', '');
 
-        return $returnTo !== '' ? $returnTo : '/tasks';
+        return is_string($returnTo) && self::isSafeReturnTo($returnTo) ? $returnTo : '/tasks';
+    }
+
+    public static function isSafeReturnTo(string $path): bool
+    {
+        return preg_match('#^/(tasks(/\d+)?(\?[A-Za-z0-9_=&]*)?|deals/\d+)$#D', $path) === 1;
     }
 }

@@ -1,0 +1,19 @@
+<p>Gmail و Yahoo ایمیل دامنه‌هایی را که احراز نشده‌اند رد یا پنهان می‌کنند. سرویس ایمیل سه رکورد به شما می‌دهد که باید در DNS دامنه ثبت شود.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>رکورد</th><th>نوع / نام</th><th>کاربرد</th></tr></thead>
+<tbody>
+<tr><td>DKIM</td><td>CNAME، مثلاً <code>sender._domainkey</code></td><td>هر ایمیل را امضا می‌کند تا گیرنده بداند واقعاً از طرف شماست</td></tr>
+<tr><td>SPF</td><td>TXT روی <code>@</code>، با <code>v=spf1</code> شروع می‌شود</td><td>سرورهایی را که اجازهٔ ارسال از طرف دامنه دارند فهرست می‌کند</td></tr>
+<tr><td>DMARC</td><td>TXT روی <code>_dmarc</code></td><td>به گیرنده می‌گوید با ایمیلی که بررسی‌ها را رد کند چه کند</td></tr>
+</tbody></table></div>
+<h2>ثبت در cPanel</h2>
+<ol>
+<li>cPanel › <strong>Zone Editor</strong> › گزینهٔ <em>Manage</em> برای دامنه.</li>
+<li><strong>DKIM:</strong> Add Record › CNAME با نام و مقداری که سرویس داده است.</li>
+<li><strong>SPF:</strong> فیلتر TXT را بزنید و رکورد موجود <code>v=spf1</code> را <strong>ویرایش</strong> کنید — عبارت <code>include:…</code> سرویس را قبل از <code>~all</code> اضافه کنید. اگر SPF ندارید، یک رکورد TXT بسازید.</li>
+<li><strong>DMARC:</strong> Add Record › «DMARC» (یا TXT) با نام <code>_dmarc</code> و مقدار <code>v=DMARC1; p=none;</code>.</li>
+<li>چند دقیقه تا چند ساعت صبر کنید و دکمهٔ «بررسی رکوردها»ی سرویس را بزنید.</li>
+</ol>
+<div class="help-callout help-callout--warning"><p><strong>هرگز رکورد SPF دوم نسازید.</strong> هر دامنه باید دقیقاً یک رکورد <code>v=spf1</code> داشته باشد؛ دو رکورد تمام ایمیل‌های دامنه، حتی صندوق‌های معمولی را خراب می‌کند.</p></div>
+<div class="help-example"><p><strong>مثال (Sender):</strong> SPF موجود <code>v=spf1 +a +mx ~all</code> تبدیل می‌شود به <code>v=spf1 +a +mx include:sendersrv.com ~all</code>؛ DKIM هم <code>sender._domainkey</code> ← <code>dkim.sendersrv.com</code> است.</p></div>
+<div class="help-callout help-callout--tip"><p><strong>نکته:</strong> <code>p=none</code> فقط نظارت می‌کند. وقتی چند هفته همه چیز درست کار کرد، می‌توانید DMARC را سخت‌گیرانه‌تر کنید (<code>quarantine</code>)، ولی لازم نیست از اول این کار را بکنید.</p></div>

@@ -34,3 +34,10 @@ desktop.ini
 .env.local
 *.sql
 .dev-credentials
+
+# --- Local data & edit backups (never commit) ---
+kala.db
+kala.db-shm
+kala.db-wal
+.backup/
+backups/

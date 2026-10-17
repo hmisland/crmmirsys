@@ -1,0 +1,17 @@
+<p>Brevo (<a href="https://www.brevo.com/" target="_blank" rel="noopener">brevo.com</a>) خدمة بريد ثانية مدعومة. ميزتها في CRM: تعيد أحداث <strong>التسليم والارتداد والبريد المزعج وإلغاء الاشتراك</strong>، فتكتمل نتائج الحملة أكثر.</p>
+<h2>الخطوات</h2>
+<ol>
+<li>سجّل في Brevo وأكّد حسابك.</li>
+<li><strong>Senders, domains & IPs:</strong> أضف عنوان المرسل ووثّق نطاقك (SPF وDKIM وDMARC — دليل «توثيق نطاق الإرسال»). يجب أن يكون المرسل <em>نشطًا</em>.</li>
+<li><strong>SMTP & API › API keys:</strong> أنشئ مفتاح API (يبدأ بـ <code>xkeysib-</code>).</li>
+<li>في CRM: <strong>إعدادات المؤسسة › مزوّدو الرسائل › البريد — Brevo</strong>: المفتاح وبريد المرسل واسمه وعنوان رد اختياري ← <em>حفظ واختبار الاتصال</em>.</li>
+<li>اضغط <em>تسجيل الـWebhook</em> لتصل أحداث التسليم إلى CRM. يتطلب ذلك تشغيل CRM عبر <code>https://</code>.</li>
+<li>أرسل بريدًا تجريبيًا.</li>
+</ol>
+<h2>ما يفحصه اختبار الاتصال</h2>
+<ul>
+<li>صلاحية المفتاح (حساب Brevo).</li>
+<li>أن بريد المرسل <strong>مرسل نشط</strong> في Brevo — وإلا يظهر تحذير؛ أصلحه في Brevo قبل إرسال الحملات.</li>
+<li>لا يستطيع فحص SPF/DKIM — يظهر تحذير توثيق النطاق دائمًا للتذكير.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>نصيحة:</strong> يمكنك ربط Sender وBrevo معًا؛ وكل حملة بريد تختار أحدهما.</p></div>

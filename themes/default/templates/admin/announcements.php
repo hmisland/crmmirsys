@@ -8,6 +8,7 @@
 use App\Infrastructure\Security\Csrf;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 
@@ -69,7 +70,7 @@ $audience = ($old['audience'] ?? 'all') === 'single' ? 'single' : 'all';
             <?php foreach ($sent as $row): ?>
                 <tr>
                     <td><a href="/admin/announcements/<?= e($row['id']) ?>"><?= e($row['title']) ?></a></td>
-                    <td class="nowrap"><?= e($fmt->date($row['created_at'])) ?> <span class="muted ltr"><?= e($fmt->digits(substr((string) $row['created_at'], 11, 5))) ?></span></td>
+                    <td class="nowrap"><?= e($fmt->date(local_time($row['created_at']))) ?> <span class="muted ltr"><?= e($fmt->digits(substr((string) local_time($row['created_at']), 11, 5))) ?></span></td>
                     <td><?= e(t('announcements.audience_' . ($row['audience'] === 'single' ? 'single_short' : 'all_short'))) ?></td>
                     <td><?= e($fmt->digits((int) $row['seen'] . ' / ' . (int) $row['recipients'])) ?></td>
                     <td class="nowrap">

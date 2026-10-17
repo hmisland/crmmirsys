@@ -5,6 +5,7 @@
 /** @var string $categoryId */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 ?>
@@ -18,6 +19,7 @@ use function App\Infrastructure\Theme\icon;
 
     <form method="get" action="/kb/articles" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('kb.search_placeholder')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select aria-label="<?= e(t('contacts.category')) ?>" name="category_id">
             <option value=""><?= e(t('kb.all_categories')) ?></option>
             <?php foreach ($categories as $cat): ?>
@@ -39,7 +41,7 @@ use function App\Infrastructure\Theme\icon;
                 <td><a href="/kb/articles/<?= e($article['id']) ?>"><?= e($article['title']) ?></a></td>
                 <td><?= e($article['category_name'] ?? '—') ?></td>
                 <td><?= e($article['author_name'] ?? '—') ?></td>
-                <td class="muted"><?= e($article['updated_at']) ?></td>
+                <td class="muted"><?= e(local_time($article['updated_at'])) ?></td>
             </tr>
         <?php endforeach; ?>
         <?php if ($articles === []): ?>

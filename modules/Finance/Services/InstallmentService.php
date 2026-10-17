@@ -81,7 +81,7 @@ final class InstallmentService
      */
     public static function contractStatus(array $contract, ?string $today = null): string
     {
-        $today ??= date('Y-m-d');
+        $today ??= \App\Infrastructure\Time\OrganizationTimezone::shared()->today(); // identical to ContractService::effectiveStatus()
 
         if (($contract['status'] ?? '') === 'active' && !empty($contract['end_date']) && $contract['end_date'] < $today) {
             return 'expired';
@@ -366,7 +366,7 @@ final class InstallmentService
                 'void' => $void,
                 'void_reason' => $void ? (string) $i['void_reason'] : null,
                 'status' => $derived,
-                'overdue' => $derived !== null && !in_array($derived, ['paid', 'void'], true) && $i['due_date'] < date('Y-m-d'),
+                'overdue' => $derived !== null && !in_array($derived, ['paid', 'void'], true) && $i['due_date'] < \App\Infrastructure\Time\OrganizationTimezone::shared()->today(),
                 'document' => $document,
                 'restricted' => $restricted,
                 'review' => $review,

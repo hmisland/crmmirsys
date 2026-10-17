@@ -3,6 +3,7 @@
 /** @var array $currencies */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -21,7 +22,7 @@ use App\Infrastructure\Security\Csrf;
                 <td><?= e(number_format((float) $r['rate'], 0)) ?></td>
                 <td><?= e($r['rate_source']) ?></td>
                 <td><?= e($r['created_by_name'] ?? '—') ?></td>
-                <td class="muted"><?= e($r['effective_at']) ?></td>
+                <td class="muted"><?= e(local_time($r['effective_at'])) ?></td>
             </tr>
         <?php endforeach; ?>
         <?php if ($rates === []): ?>

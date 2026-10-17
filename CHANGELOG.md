@@ -4,6 +4,89 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Bale messaging (Safir) — new module `bale_messaging`
+- **New module `modules/MarketingBale`** (key `bale_messaging`, depends on `marketing`; Super Admin enables it per organization). Adds a **Bale** channel to Marketing, so the existing campaigns, audiences (one contact, selected contacts, group, tag, static/dynamic segment, all), review, approval, snapshot, queue, worker, opt-outs and reports are reused. No new permission keys.
+- **Safir** (`https://safir.bale.ai/api/v3/send_message`, verified against docs.bale.ai/safir): one request per recipient, `api-access-key` header, integer `bot_id`, number as `98` + 10 digits, text only (≤ 4,000 characters, an application limit), stable `request_id` per message.
+- **Organization settings → Messaging providers → Bale:** the organization's own key (encrypted with SecretBox, only the last 4 characters shown) and bot id; save, replace, pause/resume, remove. Safir has no connection test, so the status is "Configured — not verified" until Safir accepts a message. Muted, and refused on the server, without both modules.
+- **Outcomes:** accepted (never shown as delivered — Safir has no delivery/read reports); 8/4 → failed; 17 → "unsupported recipient"; 3 / HTTP 429 → back to the queue with the same `request_id`, batch stopped, organization paused 60 s; 20 / 21 → batch stopped, nothing failed, organization paused 10 min; key refused (401/403) → sending blocked until a new key is saved; timeout after sending, 5xx, code 2, unreadable answers and interrupted workers → **unknown**, never retried automatically. An unknown message can be sent again only one by one, by a `marketing.send` user, after confirming the duplicate risk.
+- **Safety:** consent confirmation and an approval rate limit (20/hour per user) for Bale campaigns; a separate Bale opt-out list (SMS opt-outs are not applied to Bale); non-Iranian numbers skipped as unsupported before sending; internal throttle 5 requests/second and 200 messages per campaign per worker run (configurable in `config/messaging.php`, not Safir limits).
+- **Shared Marketing changes (backward compatible):** optional channel interfaces `PhoneTextChannel` and `RecoverableChannel`, optional `DispatchResult` fields (`stopBatch`, `pauseReason`, `skipReason`), "unknown" and "unsupported" counters on the campaign page, `ChannelRegistry` exposed as a service, "Send Bale message" on the contact page. Core: `MessagingSettingsCards` lets a module add a card to `/org/messaging`.
+- **Future billing seam only:** `BillableMessageSink` (+ `NullBillableMessageSink`, the default) receives one idempotent event per final Safir outcome (`bale:{request_id}:{outcome}`). No Wallet, ledger, price or finance change.
+- Migration: MarketingBale `0001_create_organization_bale_settings_table` (new table only). Notification's Bot-API `BaleGateway` is unchanged.
+- New suites `BaleSafirProvidersTest` (8, no database) and `BaleMessagingFlowTest` (25, crm_local, Safir mocked); 19 mutation checks. No real message was sent. See `docs/bale-messaging-module.md`.
+- **Help guide (Persian only):** «راهنمای پیام‌رسانی بله (سفیر)» — bot via @botfather, Bale business panel (business.bale.ai), «افزایش اعتبار», where to copy «توکن وب‌سرویس (API)» and «شناسهٔ بازو (Bot_id)» (ارسال پیام › وب‌سرویس), CRM settings, test send, sending, report statuses, common errors, opt-outs, FAQ. Seeded by MarketingBale migration `0002_seed_bale_help_article` (data only, idempotent); linked from the Bale card in Persian only; hidden in other languages.
+
+### Time zone — business logic on the organization's clock (P1 backlog)
+- **Follow-ups:** "Overdue" (list, page, filter, client-record tab) now switches at the organization's local deadline time, not 3.5 hours later. Automatic follow-ups from deal rules get their due time from the organization's local clock (they were 3.5 hours early); reminders are due by the follow-up organization's clock, including daylight-saving zones.
+- **Client records:** next / last visit, "upcoming in 7 days" and the visit tab groups use the organization's local time; new sessions default to the local date and time.
+- **Appointments:** free slots no longer include times that have already passed locally; the calendar's "today", its default day and the "Today" button use the organization's date.
+- **Business dates:** contract expiry and "expiring" filters, installment overdue, default issue/expense/payment/signing/end dates, the finance report's default end date and gift-code expiry use the organization's date — correct between midnight and 03:30 Tehran time. Contract activation without a typed date stores the local time.
+- No data changed, no new migration. New suite `TimezoneBusinessLogicTest` (11).
+
+### Organization time zone + UTC storage
+- **Each organization has a time zone** (Organization Settings → Timezone): a grouped list of IANA zones with their UTC offset, e.g. "(UTC+03:30) Asia/Tehran"; validated on the server (offsets such as `+03:30` are refused). New organizations start on `Asia/Tehran` (`ORGANIZATION_TIMEZONE`).
+- **All system times are now stored in UTC.** Before, MySQL wrote `created_at`/`updated_at` in the server's zone (Tehran) while PHP wrote UTC. Migration `0083` converts the 151 MySQL-stamped columns once (plus two derived copies), then every connection uses UTC. Times typed by users (due dates, appointment times, dates) are not converted.
+- **Times are shown in the organization's zone** on lists and detail pages (contacts, mail, tasks, wallet, marketing, files, support, announcements, settings logs…), and the dashboard's "overdue / due today" uses the organization's today.
+- New central `OrganizationTimezone` service for later modules (now, today, conversions, day ranges incl. daylight saving).
+- Migrations: core `0083_convert_timestamps_to_utc_storage`, `0084_normalize_organization_timezones` (existing organizations on `UTC`/empty/invalid → `Asia/Tehran`; explicit zones kept). Both have `down()` methods for development use only — the authorized production rollback is restoring the pre-deployment backup (runbook §7). Not yet deployed — see `docs/deploy-organization-timezone-utc.md` for the deployment runbook and `docs/organization-timezone-design.md` §4 for the remaining P2/P3 items (the P1 items are fixed, see the entry above).
+- New suite `OrganizationTimezoneTest` (14). The UTC session check treats only a missing `storage_timezone_state` table as "not converted"; any other database error is rethrown instead of silently writing old-zone timestamps.
+
+### Marketing Phase 2 — final audit fixes
+- **Large dynamic segments are frozen at approval:** background preparation now evaluates "last N days" as of the approval time and ignores contacts created after approval (the snapshot stores `as_of` and `max_contact_id`; older snapshots still work).
+- **Stored rules that no longer validate** (removed field, edited row) now quietly match nobody instead of failing with a database error during preview, approval or preparation; an invalid fixed-choice value can no longer turn "not opted out" into "everyone".
+- **Privacy:** without `contacts.view`, values typed into name/email/phone rules show as `•••` on the segment page, and such a segment's edit form is not available (it can still be used and deleted).
+- **Dashboard:** "queue stalled" and the 30-day statistics use the database clock (they were off by the PHP/MySQL time-zone difference).
+- No migrations. New suite `MarketingSegmentsAuditTest` (9): every filter, date boundaries under several PHP time zones, tampered rules, snapshot freezing, privacy, dashboard windows.
+
+### Marketing help guides (21 articles)
+- **21 short guides in the Help center**, with business rules, an example and a practical tip:
+  - email setup: getting started, signing up for Sender and creating a token, SPF/DKIM/DMARC in cPanel, connecting Sender (with common errors), Sender free-plan limits (as of October 2026, with a link to sender.net/pricing for the latest), Brevo, Promotions/Spam placement;
+  - email marketing: basics, writing a good email, unsubscribe and the opt-out list, marketing vs transactional, reading campaign results;
+  - Kavenegar SMS: signing up, platform vs own account, rules for promotional SMS in Iran, the first SMS campaign;
+  - segments: introduction, the dynamic rule builder, static segments, segments in campaigns;
+  - an overview of Marketing permissions and business rules.
+- **Languages:** the Kavenegar guides are **Persian only** (Kavenegar serves Iran); all others are in all five languages.
+- **Help center change:** a reader only sees articles that exist in their language or in English. Persian-only guides no longer appear as empty pages in other languages; the Super Admin list still shows everything.
+- **"?" buttons** on Messaging providers, SMS settings (Persian only), the Marketing dashboard, campaign form and page, opt-outs and segment pages.
+- **Core migration `0082_seed_marketing_help_articles`** (data only, idempotent: it never overwrites a guide the Super Admin has edited). New suite `MarketingHelpTest` (9).
+
+### Marketing Phase 2 — Segments & Audiences
+- **Segments** (Marketing → Segments): reusable audiences, either **static** (a hand-picked list of contacts; members are added through a paginated search and removed explicitly) or **dynamic** (rules recalculated every time the segment is previewed or used).
+- **Rule builder:** contact fields, status, gender, location, creation date / last N days, birthday month, contact group, tag, company, interest and marketing opt-out. Conditions combine with AND/OR inside groups and AND/OR between groups. Every field and operator is checked against a server-side allowlist, and values are only ever bound parameters.
+- **Campaigns** can target a saved segment. Before approval it is re-resolved; opt-outs, invalid addresses and duplicates are removed; an estimate is shown separately from the final count; a change between preview and approval is refused. At approval the segment's definition is frozen on the campaign, and large segments use the existing background preparation (3.1).
+- **Privacy and permissions:** new `marketing.manage_segments` (org_admin by default). Without `contacts.view`, previews show counts only, there are no static segments, and rules on name, email or phone are not allowed.
+- **Deleting a segment** is soft: campaigns that already used it keep working and keep their history.
+- **Extension point** for future data providers such as WooCommerce (`SegmentConditionProvider` / `SegmentConditionRegistry`); nothing purchase-related is implemented.
+- Migrations: Marketing `0009`–`0012` (additive). New suite `MarketingSegmentsTest` (21). Details: `docs/marketing-segments.md`.
+
+### Marketing 3.1 — hardening (audit F1–F7)
+- **Contact privacy (F1):** Marketing shows contact names, numbers and emails only to users who may view contacts. Without `contacts.view` there is no contact picker, individual selection is refused, previews and test sends use `[first_name]`-style placeholders, and recipient lists, history and the opt-out list are masked.
+- **Transactional (F2):** new permission `marketing.send_transactional` (org_admin by default). Transactional campaigns can only target individually selected contacts, up to a configurable limit; this is re-checked at approval.
+- **Unsubscribe (F3):** links from earlier campaigns keep working when the Marketing module is switched off; they stay signed and organization-scoped.
+- **Super Admin (F4):** Marketing pages answer 404 instead of a server error.
+- **Large audiences (F5):** above `MARKETING_SYNC_AUDIENCE_LIMIT` (default 2,000 contacts), recipients are prepared in the background by the worker, in resumable chunks; smaller campaigns work as before.
+- **Test-send limit (F6):** one shared, database-backed limit for test SMS (`/org/sms`), provider test emails and campaign test sends: per user and per organization, set in `config/messaging.php` (overridable in `.env`).
+- **SMS billing on crash (F7):** each message records what it paid for; a retried or recovered message is never charged twice, and a final failure is refunded. After a worker crash, Kavenegar is asked by `localid` before anything is resent.
+- Migrations: core `0081_create_rate_limit_hits_table`; Marketing `0007_grant_marketing_send_transactional`, `0008_add_background_preparation_and_billing_marker` (additive). New suite `MarketingHardeningTest` (20).
+
+### Marketing — Core, SMS campaigns, Email (Sender, Brevo)
+- **Organization settings → Messaging providers** (`/org/messaging`): one page with the SMS — Kavenegar card (summary of the existing `/org/sms` settings, unchanged) and the Email — Sender and Email — Brevo cards (API key stored encrypted and never shown again, sender identity, connection test, test email, disconnect, Brevo webhook registration). Cards for a module the organization has not purchased are shown muted, and their actions are refused server-side.
+- **Marketing module** (`marketing`; email channel in `marketing_email`): dashboard, campaigns, templates, message history, opt-out list, basic 30-day analytics, and a "Marketing messages" panel on the contact page.
+- **Campaigns:** SMS or email; recipients are one or more contacts, a contact group, contacts with a tag, or all active contacts (explicit confirmation). The review page shows the recipient count, missing/invalid/duplicate/opted-out counts, a personalized preview and a test send. Approval (`marketing.send`) queues the campaign. Sending runs in the background (cron worker or the open campaign page), with per-recipient status, provider reference and delivery state. Cancel and "retry failed" are available.
+- **Safety:** no duplicate sends (atomic claims, Kavenegar `localid`, ambiguous emails never retried automatically); retries with delays for outages and rate limits; organization-scoped queries; signed unsubscribe links with `List-Unsubscribe`; idempotent, bearer-authenticated Brevo webhooks; "accepted" is kept separate from "delivered".
+- **SMS (backward compatible):** `SmsSenderInterface` is unchanged. Kavenegar gains `localid` sends and `sms/status.json` delivery reports through a new optional interface. Platform/own account modes and billing are untouched.
+- Migrations: core `0080`; Marketing `0001`–`0006` (additive). New permission keys `marketing.view|create|send|manage_templates|manage_suppressions`. Cron: `modules/Marketing/bin/worker.php` every minute. `public/.htaccess` now passes the `Authorization` header to PHP (webhooks). Details: `docs/marketing-module.md`.
+- New suites `MarketingProvidersTest` (15) and `MarketingFlowTest` (27). Scheduled sending is not included.
+
+### Finance help guides (12 articles, 5 languages)
+- **12 short guides in the Help center**, each with the system's business rules, a worked example and a general finance tip:
+  - getting started; proformas and invoices; amounts, discounts and tax; final invoice rounding;
+  - payments and balance; credit notes and cancelling; contract installments; expenses;
+  - project finance; financial periods; the financial report; permissions and audit trail.
+- **"?" buttons on the Finance pages** open the matching guide in a popup: settings, invoice and proforma lists and pages, line items, payments, credit notes, financial history, installments, expenses, project budget / costs / profit, periods and reports. The invoice and proforma lists now point to the Finance guide instead of the general deal/contract guide.
+- **Core migration `0078_seed_finance_help_articles`** (data only) seeds them from `database/help-content/finance-*`. It is idempotent: a guide that already exists, for example one edited by the Super Admin, is never overwritten.
+- New suite `FinanceHelpTest` (7). No Finance logic changed.
+
 ### Finance Stage 5.2 — audit findings L1–L5 closed (local; Production not yet migrated)
 - **Duplicate submissions (L1, migration 0023):** expense, payment and credit-note forms carry a one-time key. A double click or retry gets the original record back, with no second record and no second audit event. A failed attempt does not block its corrected retry.
 - **Period locking (L5):** issuing, cancelling, payments, credit notes and expenses re-check the period inside their transaction with a locking read, in one fixed lock order. Closing or reopening a period re-checks its status under a row lock. A lock conflict gets a "please retry" message, not a server error.

@@ -1,0 +1,26 @@
+<p>افتح <strong>إعدادات المؤسسة › مزوّدو الرسائل</strong>، بطاقة <strong>البريد الإلكتروني — Sender</strong>.</p>
+<h2>الحقول</h2>
+<ul>
+<li><strong>رمز API:</strong> الرمز من Sender (قطعة واحدة بلا مسافات). اتركه فارغًا لاحقًا للإبقاء على المحفوظ.</li>
+<li><strong>بريد المرسل:</strong> عنوان من نطاقك <em>الموثّق</em>، مثل <code>news@yourdomain.com</code>.</li>
+<li><strong>اسم المرسل:</strong> ما يراه المستلم، مثل اسم نشاطك.</li>
+<li><strong>عنوان الرد:</strong> لا تدعمه واجهة Sender — تصل الردود إلى بريد المرسل.</li>
+</ul>
+<h2>الأزرار</h2>
+<ul>
+<li><strong>حفظ واختبار الاتصال:</strong> يُفحص الرمز مع Sender قبل حفظه. إن رفضه Sender لا يُحفظ شيء.</li>
+<li><strong>اختبار الاتصال:</strong> يعيد فحص الرمز المحفوظ ويحدّث الحالة و«آخر اختبار ناجح».</li>
+<li><strong>إرسال بريد تجريبي:</strong> رسالة حقيقية واحدة إلى العنوان الذي تكتبه.</li>
+<li><strong>قطع الاتصال:</strong> يحذف الرمز المحفوظ؛ وتتوقف حملات البريد عبر Sender.</li>
+</ul>
+<h2>الأخطاء الشائعة</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>تحتوي الرسالة على</th><th>المعنى</th><th>الحل</th></tr></thead>
+<tbody>
+<tr><td>HTTP 401</td><td>الرمز خاطئ أو محذوف أو ناقص</td><td>أنشئ رمزًا جديدًا في Sender والصقه كاملًا</td></tr>
+<tr><td>does not have a DMARC policy</td><td>لا يوجد سجل DMARC للنطاق</td><td>أضف <code>_dmarc</code> (دليل «توثيق نطاق الإرسال»)</td></tr>
+<tr><td>HTTP 422</td><td>رُفض أحد الحقول (غالبًا عنوان المرسل)</td><td>استخدم عنوانًا من نطاقك الموثّق</td></tr>
+<tr><td>Could not reach Sender</td><td>الخادم لا يستطيع الاتصال بالخارج</td><td>اطلب من الاستضافة السماح بـ HTTPS الصادر</td></tr>
+<tr><td>عدد كبير من رسائل الاختبار</td><td>بلغت حد الاختبار</td><td>انتظر بضع دقائق</td></tr>
+</tbody></table></div>
+<div class="help-callout help-callout--tip"><p><strong>نصيحة:</strong> صفحة <em>Transactional › Logs</em> في Sender تعرض كل رسالة أرسلها CRM مع حالة التسليم والفتح — مفيدة حين تبدو رسالة الاختبار مفقودة.</p></div>

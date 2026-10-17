@@ -16,11 +16,12 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 
 $money = fn ($amount, ?string $code = null): string => \App\Infrastructure\Theme\money($amount, $code); // currency display policy (L2)
 ?>
 <section class="card">
-    <h1><?= e(t('finance.expense.title')) ?></h1>
+    <h1><?= e(t('finance.expense.title')) ?><?= help_link('finance-expenses') ?></h1>
     <?php if ($canCreate): ?>
     <div class="actions">
         <a href="/finance/expenses/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('finance.expense.new')) ?></a>

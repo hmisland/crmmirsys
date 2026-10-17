@@ -15,6 +15,7 @@ use function App\Infrastructure\Theme\icon;
 
     <form method="get" action="/finance/products" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('products.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
         <?php if ($pagination->filterQuery() !== []): ?><a href="/finance/products" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
     </form>

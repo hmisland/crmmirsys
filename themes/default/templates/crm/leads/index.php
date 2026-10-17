@@ -19,6 +19,7 @@ $statuses = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
 
     <form method="get" action="/leads" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('leads.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select aria-label="<?= e(t('leads.status')) ?>" name="status">
             <option value=""><?= e(t('leads.all_statuses')) ?></option>
             <?php foreach ($statuses as $s): ?>

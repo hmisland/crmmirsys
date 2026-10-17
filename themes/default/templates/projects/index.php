@@ -36,6 +36,7 @@ include __DIR__ . '/_helpers.php';
             <input type="hidden" name="<?= e($partyKey) ?>" value="<?= e($partyId) ?>">
         <?php endforeach; ?>
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('projects.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select name="status" aria-label="<?= e(t('projects.status')) ?>">
             <option value=""><?= e(t('projects.all_statuses')) ?></option>
             <?php foreach (['draft', 'planned', 'active', 'on_hold', 'completed', 'cancelled'] as $s): ?>

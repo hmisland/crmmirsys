@@ -7,6 +7,7 @@ namespace Modules\Followups;
 use App\Infrastructure\Repositories\OrganizationContext;
 use App\Infrastructure\Repositories\SuperAdminContext;
 use App\Infrastructure\Repositories\TenantScopedRepository;
+use App\Infrastructure\Time\OrganizationTimezone;
 
 final class FollowUpRepository extends TenantScopedRepository
 {
@@ -53,7 +54,8 @@ final class FollowUpRepository extends TenantScopedRepository
 
         if (!empty($filters['overdue_only'])) {
             $sql .= " AND f.status IN ('pending', 'scheduled', 'in_progress') AND f.due_at IS NOT NULL AND f.due_at < :now";
-            $params['now'] = date('Y-m-d H:i:s');
+            // due_at is the organization's local wall clock: compare with its local "now", not UTC.
+            $params['now'] = OrganizationTimezone::shared()->localNow();
         }
 
         $sql .= ' ORDER BY f.due_at IS NULL, f.due_at ASC, f.id DESC';

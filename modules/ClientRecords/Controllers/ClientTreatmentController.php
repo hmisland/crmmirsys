@@ -99,8 +99,8 @@ final class ClientTreatmentController extends BaseController
             'service_record_id' => $serviceId,
             'session_number' => $this->treatment->nextSessionNumber($record, $serviceId),
             'status' => $scheduled ? 'scheduled' : 'completed',
-            'session_date' => date('Y-m-d'),
-            'session_time' => $scheduled ? '' : date('H:i'),
+            'session_date' => \App\Infrastructure\Time\OrganizationTimezone::shared()->today(),
+            'session_time' => $scheduled ? '' : \App\Infrastructure\Time\OrganizationTimezone::shared()->now()->format('H:i'),
             'provider_user_id' => $record['assigned_user_id'] ?? CurrentUser::id(),
         ];
 

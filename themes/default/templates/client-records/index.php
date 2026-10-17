@@ -50,6 +50,7 @@ $exportQuery = $filters['q'] !== '' ? '?q=' . rawurlencode($filters['q']) : '';
 <section class="card">
     <form method="get" action="/client-records" class="inline-form-row" role="search">
         <input type="text" name="q" value="<?= e($filters['q']) ?>" placeholder="<?= e(t('client_records.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select name="status" aria-label="<?= e(t('client_records.status')) ?>">
             <option value=""><?= e(t('client_records.all_statuses')) ?></option>
             <?php foreach ($statuses as $s): ?>

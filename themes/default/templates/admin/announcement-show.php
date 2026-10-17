@@ -7,8 +7,9 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
+use function App\Infrastructure\Theme\local_time;
 
-$when = fn (?string $at): string => $at === null ? '—' : $fmt->date($at) . ' ' . $fmt->digits(substr($at, 11, 5));
+$when = fn (?string $at): string => ($at = local_time($at)) === null ? '—' : $fmt->date($at) . ' ' . $fmt->digits(substr($at, 11, 5));
 $seen = count(array_filter($recipients, fn ($r) => $r['seen_at'] !== null));
 ?>
 <section class="card">

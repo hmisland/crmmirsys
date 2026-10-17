@@ -1,0 +1,18 @@
+<p>Une <strong>campagne</strong> est un message (SMS ou e-mail) envoyé à une <strong>audience</strong>. Tout se passe dans <strong>Marketing</strong>.</p>
+<ol class="help-flow"><li>Brouillon</li><li>Vérification</li><li>Test</li><li>Approbation</li><li>Envoi</li><li>Résultats</li></ol>
+<h2>Les éléments</h2>
+<ul>
+<li><strong>Campagne :</strong> nom, canal (e-mail), fournisseur (Sender ou Brevo), objet, corps HTML, version texte facultative.</li>
+<li><strong>Audience :</strong> contacts sélectionnés, un groupe de contacts, les contacts d'une étiquette, un segment enregistré ou tous les contacts actifs.</li>
+<li><strong>Modèle :</strong> objet et corps réutilisables (<em>Marketing › Modèles</em>), chargés dans une nouvelle campagne.</li>
+<li><strong>Personnalisation :</strong> <code>{{first_name}}</code>, <code>{{last_name}}</code>, <code>{{full_name}}</code>, <code>{{company}}</code>, <code>{{email}}</code>, <code>{{phone}}</code>, <code>{{organization}}</code>, <code>{{unsubscribe_url}}</code>.</li>
+</ul>
+<h2>Règles du système</h2>
+<ul>
+<li>Une campagne est enregistrée en <strong>brouillon</strong> ; la page de vérification affiche le nombre de destinataires, les contacts ignorés (sans adresse, invalides, désinscrits, doublons) et un aperçu personnalisé.</li>
+<li><strong>Approuver et envoyer</strong> exige le droit « envoyer des campagnes ». Le nombre confirmé doit toujours être juste — si les contacts ont changé, vérifiez à nouveau.</li>
+<li>L'envoi se fait en arrière-plan (tâche planifiée du CRM, ou tant que la page de la campagne est ouverte). Vous pouvez fermer la page.</li>
+<li>Chaque personne reçoit un e-mail distinct ; personne ne voit les autres destinataires.</li>
+<li>Une variable inconnue comme <code>{{coupon}}</code> est refusée — sinon elle partirait telle quelle.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> faites toujours un <em>Envoyer un test</em> vers vous-même avant d'approuver, et lisez-le sur votre téléphone — la plupart des e-mails y sont ouverts.</p></div>

@@ -95,7 +95,7 @@ final class ContractRepository extends TenantScopedRepository
     {
         $where = SuperAdminContext::isActive() ? '1 = 1' : 'c.organization_id = :org_id';
         $params = SuperAdminContext::isActive() ? [] : ['org_id' => OrganizationContext::id()];
-        $today = $filters['today'] ?? date('Y-m-d');
+        $today = $filters['today'] ?? \App\Infrastructure\Time\OrganizationTimezone::shared()->today(); // end_date is a local business date
 
         if (!empty($filters['search'])) {
             // Parenthesized OR; distinct placeholders (real prepared statements can't reuse one).

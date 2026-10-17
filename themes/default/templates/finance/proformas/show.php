@@ -7,6 +7,7 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 use App\Infrastructure\Security\Csrf;
 
 // Stage 5.2 (L2/L3): amounts at the proforma currency's display precision.
@@ -51,7 +52,7 @@ $proformaCurrency = \App\Infrastructure\Finance\CurrencyPrecision::currency((int
 </section>
 
 <section class="card">
-    <h2><?= e(t('proformas.line_items')) ?></h2>
+    <h2><?= e(t('proformas.line_items')) ?><?= help_link('finance-amounts-discounts-tax') ?></h2>
     <div class="table-responsive">
     <table class="table">
         <thead><tr><th><?= e(t('contacts.description')) ?></th><th><?= e(t('proformas.qty')) ?></th><th><?= e(t('proformas.unit_price')) ?></th><th><?= e(t('proformas.line_total')) ?></th></tr></thead>

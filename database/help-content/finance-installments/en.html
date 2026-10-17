@@ -1,0 +1,15 @@
+<p>On each contract page, the finance section has an installment schedule: the amount and due date of each installment.</p>
+<h2>System rules</h2>
+<ul>
+<li>An installment is only a <strong>plan</strong>: not an invoice, not revenue, not a receivable.</li>
+<li>A proforma or invoice is created from an installment (one active document per installment).</li>
+<li>The status follows that document: not invoiced, invoiced, partially paid, settled, void. If the due date has passed and it is not settled, it is flagged <strong>overdue</strong>.</li>
+<li>Installments are added or edited only on an <em>active</em> contract; documents can be created while it is active or expired. Voiding requires a reason.</li>
+<li>If the installments don't add up to the contract value, a warning is shown (saving is not blocked).</li>
+</ul>
+<div class="help-example">
+<p><strong>Example:</strong> a contract of 120 million IRR with 4 quarterly installments of 30 million. The first is invoiced and paid → "settled". The second's due date passes unpaid → "overdue".</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finance tip — cash flow:</strong> being profitable is not enough; you need to know <em>when</em> money arrives. The installment schedule is your forecast of incoming cash; compare it with upcoming expenses.</p>
+</div>

@@ -180,7 +180,7 @@ final class InvoiceService
 
             $header = [
                 'contact_id' => $proforma['contact_id'],
-                'issue_date' => date('Y-m-d'),
+                'issue_date' => \App\Infrastructure\Time\OrganizationTimezone::shared()->today(),
                 'due_date' => null,
                 'currency_id' => $proforma['currency_id'],
                 'pricing_mode' => $proforma['pricing_mode'],

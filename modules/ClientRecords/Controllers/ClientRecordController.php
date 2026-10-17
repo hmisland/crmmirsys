@@ -62,7 +62,8 @@ final class ClientRecordController extends BaseController
         // statuses, so they never count records the user can't see.
         $unfiltered = $filters['q'] === '' && $filters['status'] === '' && $filters['assigned_user_id'] === '';
         $all = $unfiltered ? $rows : $this->records->list($user, []);
-        $soon = date('Y-m-d H:i:s', strtotime('+7 days'));
+        // next_visit_at is local wall clock: "within 7 days" counts from the organization's local now.
+        $soon = \App\Infrastructure\Time\OrganizationTimezone::shared()->now()->modify('+7 days')->format('Y-m-d H:i:s');
 
         // KPIs above use every row; the table shows one page.
         [$rows, $pagination] = Pagination::slice($rows, $request);
@@ -371,7 +372,7 @@ final class ClientRecordController extends BaseController
     /** Header/overview numbers derived from rows already loaded for the page. */
     private function summary(array $services, array $sessions, array $invoices): array
     {
-        $now = date('Y-m-d H:i:s');
+        $now = \App\Infrastructure\Time\OrganizationTimezone::shared()->localNow(); // session_at is local wall clock
         $lastVisit = null;
         $nextVisit = null;
         $completed = 0;

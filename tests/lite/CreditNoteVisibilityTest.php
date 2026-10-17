@@ -167,7 +167,8 @@ $hasAmount = fn (string $s, string $n): bool => preg_match($amountPattern($n), $
 $without = fn (string $s, string $n): string => (string) preg_replace($amountPattern($n), '', $s);
 /** Section of the invoice page from the credit-notes heading on ('' when absent). */
 $creditSection = function (string $html) use ($en): string {
-    $at = strpos($html, '<h2>' . htmlspecialchars($en['credit_notes.title'], ENT_QUOTES) . '</h2>');
+    // The heading may carry a "?" help button after its text (Finance help guides), so match its opening only.
+    $at = strpos($html, '<h2>' . htmlspecialchars($en['credit_notes.title'], ENT_QUOTES));
 
     return $at === false ? '' : substr($html, $at, strpos($html, '</section>', $at) - $at);
 };

@@ -8,6 +8,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 
@@ -93,7 +94,7 @@ if (in_array($type, ['invoices', 'proformas'], true)) {
         <?php elseif ($type === 'tickets'): ?>
             <td><a href="/support/tickets/<?= e($r['id']) ?>"><?= e($r['subject']) ?></a></td>
             <td><?= e(t('tickets.priority.' . $r['priority'])) ?></td>
-            <td><span class="ltr"><?= e($dateOnly($r['created_at'])) ?></span></td>
+            <td><span class="ltr"><?= e($dateOnly(local_time($r['created_at']))) ?></span></td>
             <td><?= badge(t('tickets.status.' . $r['status']), $r['status']) ?></td>
         <?php endif; ?>
         </tr>

@@ -2,13 +2,14 @@
 /** @var array $followUp */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_now;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
 
 $isOpen = in_array($followUp['status'], ['pending', 'scheduled', 'in_progress'], true);
-$isOverdue = $isOpen && $followUp['due_at'] !== null && $followUp['due_at'] < date('Y-m-d H:i:s');
+$isOverdue = $isOpen && $followUp['due_at'] !== null && $followUp['due_at'] < local_now(); // due_at is the organization's local wall clock
 ?>
 <section class="card">
     <h1><?= e($followUp['title']) ?></h1>

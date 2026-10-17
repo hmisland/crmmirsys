@@ -1,0 +1,16 @@
+<p>Bazen fatura toplamı küsuratlıdır (ör. 1.000.000,4 IRR) ve müşterinin yuvarlak bir tutar ödemesini istersiniz. Bu özellik bunu <strong>şeffaf</strong> biçimde yapar.</p>
+<h2>Sistem kuralları</h2>
+<ul>
+<li>Kuruluş varsayılanı <strong>Finans › Ayarlar</strong>'dadır ve başlangıçta <strong>KAPALI</strong>dır.</li>
+<li>Kesim sırasında Kes düğmesinin yanında bu varsayılanla "Ödenecek tutarı yuvarla" seçeneği görünür; kesen kişi bunu o fatura için değiştirebilir.</li>
+<li>IRR <strong>tam riyale</strong>, diğer para birimleri kendi hassasiyetine (USD 2 ondalık) yuvarlanır. Yöntem: yarım yukarı.</li>
+<li>Faturada "Yuvarlama öncesi toplam", "Yuvarlama farkı" (artı veya eksi) ve son genel toplam kaydedilir.</li>
+<li>Karar kesimde bir kez verilir ve yeniden hesaplanmaz. Önceki faturalar değişmez.</li>
+<li>Ödemeler, bakiye, alacak dekontları ve raporlar hep <strong>son tutarı</strong> kullanır; fark tam olarak bir kez sayılır.</li>
+</ul>
+<div class="help-example">
+<p><strong>Örnek:</strong> 1.000.000,4 → 1.000.000 (fark −0,4). 2.500,5 → 2.501 (+0,5). 10,555 USD → 10,56. Kesimden sonra 1.000.000'lık bir ödeme ilk faturayı tamamen kapatır.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finans ipucu:</strong> yuvarlak bir toplam için satır fiyatlarıyla oynamayın; bu vergi ve indirim rakamlarını bozar. Kayıtlı bir yuvarlama farkı küçük ve görünür bir farktır; bu şeffaflık denetimde önemlidir.</p>
+</div>

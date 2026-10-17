@@ -9,7 +9,7 @@ namespace App\Infrastructure\Sms;
  * like the inner sender, but is logged as "<provider>-own" so
  * platform-paid and own-account sends can be told apart.
  */
-final class OrganizationAccountSender implements SmsSenderInterface
+final class OrganizationAccountSender implements SmsSenderInterface, SmsDeliveryReportingInterface
 {
     public function __construct(private readonly SmsSenderInterface $inner)
     {
@@ -38,5 +38,22 @@ final class OrganizationAccountSender implements SmsSenderInterface
     public function accountInfo(): array
     {
         return $this->inner->accountInfo();
+    }
+
+    public function sendWithLocalId(string $receptor, string $message, int $localId, ?string $sender = null): SmsResult
+    {
+        return $this->inner instanceof SmsDeliveryReportingInterface
+            ? $this->inner->sendWithLocalId($receptor, $message, $localId, $sender)
+            : $this->inner->send([$receptor], $message, $sender);
+    }
+
+    public function deliveryStatuses(array $messageIds): array
+    {
+        return $this->inner instanceof SmsDeliveryReportingInterface ? $this->inner->deliveryStatuses($messageIds) : [];
+    }
+
+    public function findByLocalId(int $localId): ?array
+    {
+        return $this->inner instanceof SmsDeliveryReportingInterface ? $this->inner->findByLocalId($localId) : null;
     }
 }

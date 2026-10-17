@@ -52,6 +52,16 @@ final class SecretBox
         return $plain === false ? null : $plain;
     }
 
+    /**
+     * A separate 32-byte key for one purpose (e.g. signing unsubscribe
+     * links), derived from the same secret as the encryption key but
+     * never equal to it.
+     */
+    public static function derivedKey(string $purpose): string
+    {
+        return hash_hmac('sha256', 'derived|' . $purpose, self::key(), true);
+    }
+
     private static function key(): string
     {
         $appKey = (string) env('APP_KEY', '');

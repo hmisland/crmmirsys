@@ -10,6 +10,7 @@
 use App\Infrastructure\Security\Csrf;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
@@ -86,7 +87,7 @@ $statusTone = ['active' => 'active', 'redeemed' => 'paid', 'revoked' => 'cancell
                 <td><?= badge(t('wallet_gift.status.' . $c['status']), $statusTone[$c['status']] ?? $c['status']) ?></td>
                 <td class="muted">
                     <?php if ($c['status'] === 'redeemed'): ?>
-                        <?= e(trim((string) $c['redeemed_by_name'])) ?> — <?= e($c['redeemed_organization_name'] ?? '') ?><br><span class="ltr"><?= e($c['redeemed_at']) ?></span>
+                        <?= e(trim((string) $c['redeemed_by_name'])) ?> — <?= e($c['redeemed_organization_name'] ?? '') ?><br><span class="ltr"><?= e(local_time($c['redeemed_at'])) ?></span>
                     <?php else: ?>—<?php endif; ?>
                 </td>
                 <td class="actions-cell">

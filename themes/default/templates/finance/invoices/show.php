@@ -23,9 +23,11 @@
 /** @var int $roundingPrecision final-rounding target decimals (IRR 0) */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 use function App\Infrastructure\Theme\money;
 use App\Infrastructure\Security\Csrf;
 use Modules\Finance\SubmissionKeyRepository;
@@ -36,6 +38,7 @@ $isDraft = $invoice['status'] === 'draft';
     <h1>
         <?= e(t('invoices.title_single')) ?>
         <?= !empty($invoice['custom_number']) ? e($invoice['custom_number']) : ($invoice['invoice_number'] !== null ? e($invoice['invoice_number']) : '#' . e($invoice['id']) . ' (' . e(t('invoices.not_issued_yet')) . ')') ?>
+        <?= help_link('finance-proformas-invoices') ?>
     </h1>
     <p class="muted">
         <?= e(t('proformas.issue_date')) ?>: <?= e($invoice['issue_date']) ?>
@@ -69,7 +72,7 @@ $isDraft = $invoice['status'] === 'draft';
                 <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/issue" class="inline-form">
                     <?= Csrf::field() ?>
                     <input type="hidden" name="final_rounding" value="0">
-                    <label class="check" title="<?= e(t('finance.final_rounding.issue_hint', ['decimals' => $roundingPrecision])) ?>"><input type="checkbox" name="final_rounding" value="1"<?= $roundingDefault ? ' checked' : '' ?>> <?= e(t('finance.final_rounding.issue_option', ['decimals' => $roundingPrecision])) ?></label>
+                    <label class="check" title="<?= e(t('finance.final_rounding.issue_hint', ['decimals' => $roundingPrecision])) ?>"><input type="checkbox" name="final_rounding" value="1"<?= $roundingDefault ? ' checked' : '' ?>> <?= e(t('finance.final_rounding.issue_option', ['decimals' => $roundingPrecision])) ?></label><?= help_link('finance-final-rounding') ?>
                     <button type="submit" class="btn btn--primary"><?= icon('check-circle') ?><?= e(t('invoices.issue_action')) ?></button>
                 </form>
             <?php else: ?>
@@ -108,7 +111,7 @@ $isDraft = $invoice['status'] === 'draft';
 </section>
 
 <section class="card">
-    <h2><?= e(t('proformas.line_items')) ?></h2>
+    <h2><?= e(t('proformas.line_items')) ?><?= help_link('finance-amounts-discounts-tax') ?></h2>
     <div class="table-responsive">
     <table class="table">
         <thead><tr><th><?= e(t('contacts.description')) ?></th><th><?= e(t('proformas.qty')) ?></th><th><?= e(t('proformas.unit_price')) ?></th><th><?= e(t('proformas.line_total')) ?></th></tr></thead>
@@ -150,7 +153,7 @@ $isDraft = $invoice['status'] === 'draft';
 
 <?php if ($invoice['status'] === 'issued'): ?>
 <section class="card">
-    <h2><?= e(t('payments.title')) ?></h2>
+    <h2><?= e(t('payments.title')) ?><?= help_link('finance-payments-balance') ?></h2>
     <p>
         <?= e(t('payments.outstanding')) ?>: <strong><?= e(money($outstanding, $currencyCode)) ?></strong>
     </p>
@@ -197,7 +200,7 @@ $isDraft = $invoice['status'] === 'draft';
         <input type="text" id="payment_reference" name="payment_reference" placeholder="<?= e(t('payments.reference_placeholder')) ?>">
 
         <label for="payment_date"><?= e(t('payments.payment_date')) ?></label>
-        <input type="text" class="crm-datepicker" id="payment_date" name="payment_date" value="<?= e(date('Y-m-d')) ?>" required>
+        <input type="text" class="crm-datepicker" id="payment_date" name="payment_date" value="<?= e(local_today()) ?>" required>
 
         <label for="payment_notes"><?= e(t('common.notes')) ?></label>
         <input type="text" id="payment_notes" name="notes">
@@ -211,7 +214,7 @@ $isDraft = $invoice['status'] === 'draft';
 <?php $showCreditNoteForm = $canIssueCreditNote && $invoice['status'] === 'issued' && $canCreditMore; ?>
 <?php if ($canViewCreditNotes || $showCreditNoteForm): ?>
 <section class="card">
-    <h2><?= e(t('credit_notes.title')) ?></h2>
+    <h2><?= e(t('credit_notes.title')) ?><?= help_link('finance-credit-notes-cancel') ?></h2>
 
     <?php if ($canViewCreditNotes): ?>
     <div class="table-responsive">
@@ -249,7 +252,7 @@ $isDraft = $invoice['status'] === 'draft';
         <input type="text" id="cn_reason" name="reason" placeholder="<?= e(t('credit_notes.reason_placeholder')) ?>" required>
 
         <label for="cn_issue_date"><?= e(t('proformas.issue_date')) ?></label>
-        <input type="text" class="crm-datepicker" id="cn_issue_date" name="issue_date" value="<?= e(date('Y-m-d')) ?>" required>
+        <input type="text" class="crm-datepicker" id="cn_issue_date" name="issue_date" value="<?= e(local_today()) ?>" required>
 
         <button type="submit" class="btn btn--primary" style="margin-top:0.5rem"><?= icon('receipt') ?><?= e(t('credit_notes.issue_action')) ?></button>
     </form>
@@ -261,7 +264,7 @@ $isDraft = $invoice['status'] === 'draft';
 
 <?php if ($financialHistory !== []): ?>
 <section class="card">
-    <h2><?= icon('activity') ?><?= e(t('finance.history.title')) ?></h2>
+    <h2><?= icon('activity') ?><?= e(t('finance.history.title')) ?><?= help_link('finance-permissions-audit') ?></h2>
     <div class="table-responsive">
     <table class="table">
         <thead><tr><th><?= e(t('finance.history.at')) ?></th><th><?= e(t('finance.history.action')) ?></th><th><?= e(t('finance.history.details')) ?></th><th><?= e(t('finance.history.by')) ?></th></tr></thead>

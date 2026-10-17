@@ -77,6 +77,14 @@ use App\Infrastructure\Sms\KavenegarSmsSender;
 use App\Infrastructure\Sms\SmsProviderDefinition;
 use App\Infrastructure\Sms\SmsProviderRegistry;
 use App\Application\Services\SmsService;
+use App\Application\Services\EmailProviderService;
+use App\Infrastructure\Email\BrevoEmailProvider;
+use App\Infrastructure\Email\EmailProviderDefinition;
+use App\Infrastructure\Email\EmailProviderRegistry;
+use App\Infrastructure\Email\SenderNetEmailProvider;
+use App\Infrastructure\Http\CurlHttpClient;
+use App\Infrastructure\Http\HttpClientInterface;
+use App\Infrastructure\Repositories\OrganizationEmailProviderRepository;
 use App\Infrastructure\Repositories\ContactImportBatchRepository;
 use App\Infrastructure\Repositories\ContactLinkRepository;
 use App\Infrastructure\Repositories\BankRepository;
@@ -123,7 +131,8 @@ final class Application
 
     private function configurePhpRuntime(): void
     {
-        date_default_timezone_set((string) Config::get('app.timezone', 'UTC'));
+        // Storage zone, never an organization's: PHP-made timestamps are UTC (see OrganizationTimezone).
+        date_default_timezone_set(\App\Infrastructure\Time\OrganizationTimezone::STORAGE);
 
         $debug = (bool) Config::get('app.debug', false);
         ini_set('display_errors', $debug ? '1' : '0');
@@ -132,6 +141,7 @@ final class Application
 
     private function registerCoreBindings(): void
     {
+        $this->container->singleton(\App\Infrastructure\Time\OrganizationTimezone::class, fn () => \App\Infrastructure\Time\OrganizationTimezone::shared());
         $this->container->singleton(LoggerInterface::class, fn () => new FileLogger(
             $this->basePath . '/storage/logs',
             (string) Config::get('app.log_level', 'debug')
@@ -167,6 +177,9 @@ final class Application
             $c->make(ModuleGate::class),
             $c->make(LoggerInterface::class)
         ));
+
+        // Extra cards on /org/messaging, filled by modules that bring a provider (e.g. MarketingBale).
+        $this->container->singleton(\App\Infrastructure\Messaging\MessagingSettingsCards::class, fn () => new \App\Infrastructure\Messaging\MessagingSettingsCards());
 
         $this->container->singleton(ModuleServiceRegistrar::class, fn (Container $c) => new ModuleServiceRegistrar($c->make(LoggerInterface::class)));
 
@@ -373,6 +386,42 @@ final class Application
             new SmsLogRepository(),
             new OrganizationSmsSettingsRepository(),
             new OrganizationRepository()
+        ));
+
+        // Email providers (an organization's own Sender / Brevo account),
+        // configured at Organization settings → Messaging providers.
+        // Another provider = one EmailProviderInterface class + one
+        // register() call here. Used by the Marketing module.
+        $this->container->singleton(HttpClientInterface::class, fn () => new CurlHttpClient());
+
+        $this->container->singleton(EmailProviderRegistry::class, function (Container $c) {
+            $http = $c->make(HttpClientInterface::class);
+            $registry = new EmailProviderRegistry();
+            $registry->register(new EmailProviderDefinition(
+                key: SenderNetEmailProvider::KEY,
+                label: 'Sender',
+                factory: fn (string $secret) => new SenderNetEmailProvider($secret, $http),
+                secretLabelKey: 'email_providers.api_token',
+                docsUrl: 'https://api.sender.net/',
+                signupUrl: 'https://www.sender.net/',
+            ));
+            $registry->register(new EmailProviderDefinition(
+                key: BrevoEmailProvider::KEY,
+                label: 'Brevo',
+                factory: fn (string $secret) => new BrevoEmailProvider($secret, $http),
+                secretLabelKey: 'email_providers.api_key',
+                docsUrl: 'https://developers.brevo.com/',
+                signupUrl: 'https://www.brevo.com/',
+            ));
+
+            return $registry;
+        });
+
+        $this->container->singleton(EmailProviderService::class, fn (Container $c) => new EmailProviderService(
+            $c->make(EmailProviderRegistry::class),
+            new OrganizationEmailProviderRepository(),
+            $c->make(TimelineService::class),
+            (string) Config::get('app.url', ''),
         ));
 
         $this->container->singleton(ContactImportExportService::class, fn (Container $c) => new ContactImportExportService(

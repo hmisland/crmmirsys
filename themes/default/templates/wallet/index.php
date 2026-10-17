@@ -8,6 +8,7 @@
 /** @var array $bankAccounts */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
@@ -114,7 +115,7 @@ use App\Infrastructure\Security\Csrf;
         <h3 style="margin-top:1rem"><?= e(t('wallet.your_requests')) ?></h3>
         <ul>
             <?php foreach ($withdrawalRequests as $req): ?>
-                <li><?= e(number_format((float) $req['amount'], 0)) ?> — <?= badge(t('wallet.withdrawal_status.' . $req['status']), $req['status']) ?> <span class="muted">(<?= e($req['requested_at']) ?>)</span></li>
+                <li><?= e(number_format((float) $req['amount'], 0)) ?> — <?= badge(t('wallet.withdrawal_status.' . $req['status']), $req['status']) ?> <span class="muted">(<?= e(local_time($req['requested_at'])) ?>)</span></li>
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>
@@ -129,7 +130,7 @@ use App\Infrastructure\Security\Csrf;
         <tbody>
         <?php foreach ($ledger as $entry): ?>
             <tr>
-                <td><?= e($entry['created_at']) ?></td>
+                <td><?= e(local_time($entry['created_at'])) ?></td>
                 <td><?= e(t('wallet.ledger_type.' . $entry['type'])) ?></td>
                 <td><?= e(number_format((float) $entry['amount'], 0)) ?></td>
                 <td><?= e(number_format((float) $entry['balance_after'], 0)) ?></td>

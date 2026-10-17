@@ -19,6 +19,7 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 
 $money = function (?string $amount, ?string $code = null) use ($fmt): string {
     if ($amount === null) {
@@ -30,11 +31,12 @@ $money = function (?string $amount, ?string $code = null) use ($fmt): string {
 $pct = fn (?string $value): string => $value === null ? '—' : $fmt->number($value, 1) . '%';
 $columns = $showActual ? 7 : 3;
 ?>
-<?php if ($canEdit): ?>
 <div class="actions">
+<?php if ($canEdit): ?>
     <a href="/finance/projects/<?= e($projectId) ?>/budget" class="btn btn--sm"><?= icon($hasBudget ? 'pencil' : 'plus') ?><?= e(t($hasBudget ? 'finance.budget.edit' : 'finance.budget.define')) ?></a>
-</div>
 <?php endif; ?>
+    <?= help_link('finance-project-finance') ?>
+</div>
 <?php if (!$hasBudget): ?>
     <p class="muted"><?= e(t('finance.budget.none')) ?></p>
 <?php endif; ?>

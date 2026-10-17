@@ -129,3 +129,30 @@ function money(mixed $amount, ?string $currencyCode, ?\App\Infrastructure\Locali
     return ($fmt ?? new \App\Infrastructure\Localization\LocaleFormatter('en'))
         ->number($amount, \App\Infrastructure\Finance\CurrencyPrecision::displayDecimals($amount, $currency));
 }
+
+/**
+ * A stored system instant (created_at, updated_at, sent_at … — UTC) in the
+ * current organization's time zone, as "Y-m-d H:i:s" (same shape as the
+ * stored value, so substr() / LocaleFormatter::date() keep working). null
+ * or empty stays null. Never use it on values users typed as local times
+ * (due dates, appointment times, DATE columns) — those are already local.
+ */
+function local_time(?string $stored): ?string
+{
+    return \App\Infrastructure\Time\OrganizationTimezone::shared()->toLocal($stored)?->format('Y-m-d H:i:s');
+}
+
+/**
+ * The current organization's wall clock now ("Y-m-d H:i:s") — compare it
+ * with values users typed as local times (due dates, session times).
+ */
+function local_now(): string
+{
+    return \App\Infrastructure\Time\OrganizationTimezone::shared()->localNow();
+}
+
+/** The current organization's date today (Y-m-d) — e.g. the default of a date field. */
+function local_today(): string
+{
+    return \App\Infrastructure\Time\OrganizationTimezone::shared()->today();
+}

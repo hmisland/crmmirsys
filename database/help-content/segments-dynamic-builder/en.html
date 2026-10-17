@@ -1,0 +1,25 @@
+<p><strong>Marketing › Segments › New dynamic segment.</strong> Each <em>condition</em> is <strong>field + condition + value</strong>, e.g. "City · is · Tabriz".</p>
+<h2>AND and OR</h2>
+<ul>
+<li>Conditions sit in <strong>groups</strong>. Inside a group choose <em>All conditions (AND)</em> or <em>Any condition (OR)</em>.</li>
+<li>Between groups choose <em>matching all groups (AND)</em> or <em>any group (OR)</em>.</li>
+<li>This expresses things like <code>(A AND B) OR (C AND D)</code>.</li>
+</ul>
+<h2>Available fields</h2>
+<p>Name, email, mobile (only for users with access to contacts), status, gender, city, province, country, source, job title, contact created (before / after / on / last N days), date of birth, birthday month, contact group, tag, company, interest, and marketing opt-out (SMS or email).</p>
+<h2>Examples</h2>
+<div class="help-example">
+<ul>
+<li><strong>New contacts:</strong> Status is Active AND Contact created in the last 30 days.</li>
+<li><strong>Birthdays this month:</strong> Birthday month is (current month) AND Status is Active.</li>
+<li><strong>Two cities:</strong> one group with <em>Any condition</em>: City is Tabriz, City is Shiraz.</li>
+<li><strong>A tag outside a group:</strong> Tag has "VIP" AND Contact group is not in "Partners".</li>
+</ul>
+</div>
+<h2>System rules</h2>
+<ul>
+<li>Only the listed fields and conditions are accepted; at least one condition is required; up to 10 groups and 50 conditions.</li>
+<li><em>Preview</em> shows the matching count (and contacts, if you may view them) without saving.</li>
+<li>"Last N days" is counted from today every time — no refresh needed.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> new segments start with "Status is Active" — keep it unless you really want inactive contacts.</p></div>

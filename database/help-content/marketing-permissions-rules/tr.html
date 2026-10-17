@@ -1,0 +1,23 @@
+<h2>Yetkiler (rol başına, Kuruluş ayarları › Roller)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Yetki</th><th>İzin verdiği</th><th>Varsayılan</th></tr></thead>
+<tbody>
+<tr><td>Pazarlamayı görüntüleme</td><td>pano, kampanyalar, segmentler, geçmiş, segment kullanma</td><td>yönetici, üye</td></tr>
+<tr><td>Kampanya oluşturma</td><td>taslaklar ve test gönderimleri</td><td>yönetici, üye</td></tr>
+<tr><td>Kampanya gönderme</td><td>onaylayıp gönderme, iptal, başarısızları yeniden deneme</td><td>yönetici</td></tr>
+<tr><td>İşlemsel mesaj gönderme</td><td>"işlemsel" türünü seçme</td><td>yönetici</td></tr>
+<tr><td>Segmentleri yönetme</td><td>segment ve sabit üyeleri oluşturma, düzenleme, silme</td><td>yönetici</td></tr>
+<tr><td>Şablonları yönetme</td><td>yeniden kullanılabilir şablonlar</td><td>yönetici</td></tr>
+<tr><td>Çıkışları yönetme</td><td>çıkış listesine ekleme veya silme</td><td>yönetici</td></tr>
+<tr><td>Kuruluş ayarlarını düzenleme</td><td>SMS ve e-posta sağlayıcı ayarları</td><td>yönetici</td></tr>
+</tbody></table></div>
+<h2>İş kuralları</h2>
+<ul>
+<li><strong>Varsayılan olarak dört göz:</strong> üyeler taslak hazırlar; "kampanya gönderme" yetkisi olan biri onaylar.</li>
+<li><strong>Kişi gizliliği:</strong> Kişiler erişimi olmadan da grup, etiket ve segmentlerle çalışabilirsiniz, ama ad, numara veya e-posta asla görmezsiniz — önizlemeler <code>[first_name]</code> gibi yer tutucular kullanır, listeler maskelenir.</li>
+<li><strong>Test sınırları:</strong> test SMS ve test e-postaları ortak bir sınır paylaşır — varsayılan kullanıcı başına 10 dakikada 5, kuruluş başına saatte 20.</li>
+<li><strong>Modül erişimi:</strong> Pazarlama modülü olmadan sayfalar kullanılamaz; E-posta Pazarlaması modülü olmadan e-posta yapılandırılamaz veya gönderilemez. Bir düğmeyi gizlemek asla tek koruma değildir — sunucu her işlemi kontrol eder.</li>
+<li><strong>Çıkışlara</strong> pazarlamada her zaman uyulur; çıkış bağlantıları modül sonradan kapatılsa da çalışır.</li>
+<li><strong>Çift gönderim veya ücret yok:</strong> her alıcıya kampanya başına bir kez gönderilir; yeniden denemeler SMS kredisini asla iki kez düşmez.</li>
+<li><strong>Kuruluşlar ayrıdır:</strong> hiçbir kampanya, segment, kişi veya ayar başka bir kuruluşa görünmez.</li>
+</ul>

@@ -13,6 +13,7 @@ use App\Infrastructure\Security\SecretBox;
 use App\Infrastructure\Sms\NullSmsSender;
 use App\Infrastructure\Sms\OrganizationAccountSender;
 use App\Infrastructure\Sms\SmsBillingInterface;
+use App\Infrastructure\Sms\SmsDeliveryReportingInterface;
 use App\Infrastructure\Sms\SmsProviderDefinition;
 use App\Infrastructure\Sms\SmsProviderRegistry;
 use App\Infrastructure\Sms\SmsResult;
@@ -277,6 +278,104 @@ final class SmsService
         $this->refundIfFailed($result, $organizationId, $billable, 1, $context);
 
         return $this->logged($result, $smsSender, [$number], 'template', $template, null, $context);
+    }
+
+    /**
+     * One message to one number with our own unique id — for bulk sends
+     * (Marketing). Same account choice, billing and log as send(); the
+     * id is passed to the provider when it supports deduplication
+     * (Kavenegar localid), so a retried job never sends twice.
+     */
+    /**
+     * Billing is idempotent per message when the caller passes its state:
+     * $alreadyBilledUnits = parts this message has already paid for
+     * (a retry or a crash recovery) → it is not charged again;
+     * $onBilling(int $units) runs right after a charge and
+     * $onBilling(null) after the refund of a failed send, so the caller
+     * can store the state with the message. Only platform-account sends
+     * are billed; nothing changes for the organization's own account.
+     */
+    public function sendOne(string $receptor, string $message, ?string $context, int $localId, ?int $alreadyBilledUnits = null, ?\Closure $onBilling = null): SmsResult
+    {
+        $message = trim($message);
+        $number = self::normalizeNumber($receptor);
+        $organizationId = $this->currentOrganizationId();
+        [$smsSender, $billable] = $this->senderFor($organizationId);
+
+        if ($message === '') {
+            return $this->logged(SmsResult::failure('Message is empty.'), $smsSender, [$receptor], 'text', null, $message, $context);
+        }
+        if ($number === null) {
+            return $this->logged(SmsResult::failure('No valid mobile number.'), $smsSender, [$receptor], 'text', null, $message, $context);
+        }
+
+        $units = $alreadyBilledUnits ?? self::partsFor($message);
+        if ($alreadyBilledUnits === null) {
+            $charge = $this->charge($organizationId, $billable, $units, $context);
+            if ($charge !== null) {
+                return $this->logged($charge, $smsSender, [$number], 'text', null, $message, $context);
+            }
+            if ($billable && $organizationId !== null && $onBilling !== null) {
+                $onBilling($units);
+            }
+        }
+
+        $result = $smsSender instanceof SmsDeliveryReportingInterface
+            ? $smsSender->sendWithLocalId($number, $message, $localId)
+            : $smsSender->send([$number], $message);
+        $this->refundIfFailed($result, $organizationId, $billable, $units, $context);
+        if (!$result->success && $billable && $organizationId !== null && $this->billing !== null && $onBilling !== null) {
+            $onBilling(null);
+        }
+
+        return $this->logged($result, $smsSender, [$number], 'text', null, $message, $context);
+    }
+
+    /**
+     * Asks the account that sent it ($senderName as logged) whether a
+     * message with our id exists. null = cannot tell (other account now,
+     * provider unreachable, or no such feature).
+     *
+     * @return array{found: bool, message_id: ?string, state: string}|null
+     */
+    public function findByLocalId(int $localId, string $senderName): ?array
+    {
+        $sender = $this->senderFor($this->currentOrganizationId())[0];
+        if ($sender->name() !== $senderName || !$sender instanceof SmsDeliveryReportingInterface) {
+            return null;
+        }
+
+        return $sender->findByLocalId($localId);
+    }
+
+    /** Log name of the account the current organization sends with ('kavenegar', 'kavenegar-own', 'none'). */
+    public function currentSenderName(): string
+    {
+        return $this->senderFor($this->currentOrganizationId())[0]->name();
+    }
+
+    /** Whether the current organization can send SMS at all (some account is configured). */
+    public function canSend(): bool
+    {
+        return $this->senderFor($this->currentOrganizationId())[0]->isConfigured();
+    }
+
+    /**
+     * Delivery state of earlier sends, asked from the same account that
+     * sent them ($senderName as logged). Empty when that account is no
+     * longer the organization's or the provider can't report.
+     *
+     * @param string[] $messageIds
+     * @return array<string, array{state: string, code: int, text: string}>
+     */
+    public function deliveryStatuses(array $messageIds, string $senderName): array
+    {
+        $sender = $this->senderFor($this->currentOrganizationId())[0];
+        if ($sender->name() !== $senderName || !$sender instanceof SmsDeliveryReportingInterface) {
+            return [];
+        }
+
+        return $sender->deliveryStatuses($messageIds);
     }
 
     public function recentLog(int $limit = 50, ?int $organizationId = null): array

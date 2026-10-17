@@ -9,6 +9,7 @@
 use App\Infrastructure\Security\Csrf;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
@@ -98,7 +99,7 @@ use function App\Infrastructure\Theme\badge;
         <tbody>
         <?php foreach ($logs as $log): ?>
             <tr>
-                <td class="muted"><span class="ltr"><?= e($log['created_at']) ?></span></td>
+                <td class="muted"><span class="ltr"><?= e(local_time($log['created_at'])) ?></span></td>
                 <td><span class="ltr"><?= e($log['receptor']) ?></span></td>
                 <td class="muted"><?= e($log['context'] ?? '—') ?></td>
                 <td><span class="cell-clip"><?= e($log['kind'] === 'template' ? t('sms.template') . ': ' . $log['template'] : (string) $log['message']) ?></span></td>

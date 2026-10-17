@@ -195,7 +195,7 @@ final class ExpenseService
         }
         $this->assertAttachable($actingUser, $project);
 
-        return ['project_id' => (string) $projectId, 'expense_date' => date('Y-m-d')];
+        return ['project_id' => (string) $projectId, 'expense_date' => \App\Infrastructure\Time\OrganizationTimezone::shared()->today()];
     }
 
     /** @return array{id: int, label: string, url: ?string}|null the project as this user may see it */

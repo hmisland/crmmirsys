@@ -64,7 +64,7 @@ final class ProjectInvoiceService
 
         return [
             'contact_id' => !empty($project['contact_id']) ? (string) $project['contact_id'] : '',
-            'issue_date' => date('Y-m-d'),
+            'issue_date' => \App\Infrastructure\Time\OrganizationTimezone::shared()->today(),
             'items' => [[
                 'item_name' => '',
                 'description' => mb_substr($this->label($project), 0, 255),

@@ -1,0 +1,15 @@
+<p>Sur chaque page de contrat, la partie financière contient un échéancier : le montant et la date de chaque échéance.</p>
+<h2>Règles du système</h2>
+<ul>
+<li>Une échéance n’est qu’un <strong>plan</strong> : ni facture, ni revenu, ni créance.</li>
+<li>Une proforma ou une facture est créée à partir d’une échéance (un seul document actif par échéance).</li>
+<li>Le statut suit ce document : non facturée, facturée, partiellement payée, soldée, annulée. Si l’échéance est passée sans être soldée, elle est marquée <strong>en retard</strong>.</li>
+<li>Les échéances ne s’ajoutent ou ne se modifient que sur un contrat <em>actif</em> ; les documents peuvent être créés tant que le contrat est actif ou expiré. L’annulation exige un motif.</li>
+<li>Si la somme des échéances ne correspond pas à la valeur du contrat, un avertissement s’affiche (l’enregistrement n’est pas bloqué).</li>
+</ul>
+<div class="help-example">
+<p><strong>Exemple :</strong> un contrat de 120 millions IRR avec 4 échéances trimestrielles de 30 millions. La première est facturée et payée → « soldée ». La deuxième dépasse son échéance sans paiement → « en retard ».</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Conseil financier — trésorerie :</strong> être rentable ne suffit pas ; il faut savoir <em>quand</em> l’argent arrive. L’échéancier est votre prévision d’encaissements ; comparez-le aux dépenses à venir.</p>
+</div>

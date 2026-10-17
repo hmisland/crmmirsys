@@ -6,6 +6,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -30,7 +31,7 @@ $categoryKey = $kind === 'media' ? 'client_records.media_category.' : 'client_re
         </select>
 
         <label for="up_taken"><?= e(t('client_records.date')) ?></label>
-        <input type="text" class="crm-datepicker" id="up_taken" name="taken_at" value="<?= e(date('Y-m-d')) ?>">
+        <input type="text" class="crm-datepicker" id="up_taken" name="taken_at" value="<?= e(local_today()) ?>">
 
         <?php if ($sessions !== []): ?>
             <label for="up_session"><?= e(t('client_records.linked_session')) ?></label>

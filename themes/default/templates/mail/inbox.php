@@ -2,6 +2,7 @@
 /** @var array $items */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -18,6 +19,7 @@ use App\Infrastructure\Security\Csrf;
 
     <form method="get" action="/mail" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('filters.search_mail')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <label class="check"><input type="checkbox" name="unread" value="1" <?= $unread ? 'checked' : '' ?>> <?= e(t('filters.unread_only')) ?></label>
         <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
         <?php if ($pagination->filterQuery() !== []): ?><a href="/mail" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
@@ -38,7 +40,7 @@ use App\Infrastructure\Security\Csrf;
                 <td><?= $item['is_read'] ? '' : '●' ?></td>
                 <td><?= e($item['sender_name'] ?? '') ?></td>
                 <td><a href="/mail/thread/<?= e($rootId) ?>"><?= e($item['subject']) ?></a></td>
-                <td class="muted"><?= e($item['message_created_at']) ?></td>
+                <td class="muted"><?= e(local_time($item['message_created_at'])) ?></td>
                 <td>
                     <form method="post" action="/mail/inbox/<?= e($item['message_id']) ?>/delete" class="inline-form">
                         <?= Csrf::field() ?>

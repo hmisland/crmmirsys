@@ -237,6 +237,15 @@ $router->post('/profile/bank-accounts/{id}/delete', fn (Request $r) => $bankAcco
 // are re-checked with the specific permission they need inside the
 // Service itself (defense in depth, see RbacMiddleware's docblock).
 
+$orgMessagingController = new \App\Application\Controllers\OrgMessagingController(
+    $container->make(TemplateEngine::class),
+    $container->make(\App\Application\Services\SmsService::class),
+    $container->make(\App\Application\Services\EmailProviderService::class),
+    $container->make(\App\Infrastructure\Modules\ModuleGate::class),
+    new \App\Infrastructure\Security\ActionRateLimiter(),
+    $container->make(\App\Infrastructure\Messaging\MessagingSettingsCards::class)
+);
+
 $orgSmsController = new \App\Application\Controllers\OrgSmsController(
     $container->make(TemplateEngine::class),
     $container->make(\App\Application\Services\SmsService::class)
@@ -249,7 +258,8 @@ $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     $orgStructureController,
     $orgModulesController,
     $customFieldAdminController,
-    $orgSmsController
+    $orgSmsController,
+    $orgMessagingController
 ) {
     $router->get('/settings', fn (Request $r) => $organizationController->show($r), [new RbacMiddleware('organization.view')]);
     $router->post('/settings', fn (Request $r) => $organizationController->update($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
@@ -258,6 +268,14 @@ $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     $router->get('/sms', fn (Request $r) => $orgSmsController->index($r), [new RbacMiddleware('organization.edit')]);
     $router->post('/sms', fn (Request $r) => $orgSmsController->save($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
     $router->post('/sms/test', fn (Request $r) => $orgSmsController->test($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    // Messaging providers (Organization settings): SMS — Kavenegar summary, Email — Sender / Brevo.
+    // Email actions also require the marketing_email module (checked in the controller).
+    $router->get('/messaging', fn (Request $r) => $orgMessagingController->index($r), [new RbacMiddleware('organization.edit')]);
+    $router->post('/messaging/email/{provider}', fn (Request $r) => $orgMessagingController->saveEmail($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->post('/messaging/email/{provider}/test', fn (Request $r) => $orgMessagingController->testConnection($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->post('/messaging/email/{provider}/test-email', fn (Request $r) => $orgMessagingController->sendTestEmail($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->post('/messaging/email/{provider}/disconnect', fn (Request $r) => $orgMessagingController->disconnect($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->post('/messaging/email/{provider}/webhook', fn (Request $r) => $orgMessagingController->registerWebhook($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
     $router->get('/logo', fn (Request $r) => $organizationController->logo($r));
 
     $router->get('/users', fn (Request $r) => $userManagementController->index($r), [new RbacMiddleware('users.view')]);

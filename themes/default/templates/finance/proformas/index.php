@@ -8,13 +8,14 @@ use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\help_link;
 ?>
 <section class="card">
-    <h1><?= e(t('proformas.title')) ?><?= help_link('deal-contract-sales-project') ?></h1>
+    <h1><?= e(t('proformas.title')) ?><?= help_link('finance-proformas-invoices') ?></h1>
     <div class="actions">
         <a href="/finance/proformas/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('proformas.new')) ?></a>
     </div>
 
     <form method="get" action="/finance/proformas" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($filters['search']) ?>" placeholder="<?= e(t('filters.search_proforma')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <select name="status" aria-label="<?= e(t('deals.status')) ?>">
             <option value=""><?= e(t('filters.all_statuses')) ?></option>
             <?php foreach (['draft', 'sent', 'accepted', 'rejected', 'expired', 'converted'] as $s): ?>

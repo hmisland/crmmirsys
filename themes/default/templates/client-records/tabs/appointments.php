@@ -9,10 +9,11 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_now;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 
-$now = date('Y-m-d H:i:s');
+$now = local_now(); // session_at is local wall clock
 $byTime = function (array $list, bool $asc): array {
     usort($list, fn ($a, $b) => $asc ? strcmp($a['session_at'], $b['session_at']) : strcmp($b['session_at'], $a['session_at']));
 

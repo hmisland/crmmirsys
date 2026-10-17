@@ -83,7 +83,7 @@ final class ExpenseController extends BaseController
             }
         }
 
-        return $this->form(null, [], ['expense_date' => date('Y-m-d')]);
+        return $this->form(null, [], ['expense_date' => \App\Infrastructure\Time\OrganizationTimezone::shared()->today()]);
     }
 
     /** The project chosen in the form, or the expense's own when editing (for the "current" option / fixed notice). */

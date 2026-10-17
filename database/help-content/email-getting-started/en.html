@@ -1,0 +1,22 @@
+<p>Email campaigns are sent through <strong>your organization's own account</strong> at an email service (Sender or Brevo). The CRM never sends marketing email from a shared server.</p>
+<h2>The four steps</h2>
+<ol class="help-flow">
+<li>Module enabled</li>
+<li>Provider account</li>
+<li>Domain verified</li>
+<li>Connected and tested</li>
+</ol>
+<ol>
+<li><strong>Module:</strong> the platform administrator enables <em>Marketing</em> and <em>Email Marketing</em> for your organization. Without them the email cards in settings are shown muted with "Module not purchased".</li>
+<li><strong>Provider account:</strong> sign up at Sender (see "Signing up for Sender") or Brevo, and create an API key.</li>
+<li><strong>Domain:</strong> add the SPF, DKIM and DMARC records the provider gives you to your domain's DNS (see "Verifying your sender domain").</li>
+<li><strong>Connect:</strong> <strong>Organization settings › Messaging providers</strong> → enter the key, sender email and sender name → <em>Save and test connection</em> → <em>Send test email</em>.</li>
+</ol>
+<h2>System rules</h2>
+<ul>
+<li>Only users who may edit organization settings see this page.</li>
+<li>The API key is stored encrypted and is never shown again; only its last 4 characters appear.</li>
+<li>A successful connection test does <em>not</em> prove your domain may send — that depends on the DNS records.</li>
+<li>Test messages are limited (by default 5 per user per 10 minutes, 20 per organization per hour).</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> send your first test to your own Gmail address. If it arrives, your setup is complete; where it lands (Primary, Promotions, Spam) is a separate topic.</p></div>

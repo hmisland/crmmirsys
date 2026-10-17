@@ -14,12 +14,13 @@
 use Modules\Appointments\Services\AppointmentService;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
 
 $current = 'list';
-$date = $filters['from'] !== '' ? $filters['from'] : date('Y-m-d');
+$date = $filters['from'] !== '' ? $filters['from'] : local_today();
 ?>
 <div class="page-head">
     <div>
@@ -40,6 +41,7 @@ $date = $filters['from'] !== '' ? $filters['from'] : date('Y-m-d');
 
     <form method="get" action="/appointments/list" class="inline-form-row" role="search">
         <input type="text" name="q" value="<?= e($filters['q']) ?>" placeholder="<?= e(t('appointments.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <input type="text" class="crm-datepicker" name="from" value="<?= e($filters['from']) ?>" placeholder="<?= e(t('appointments.from')) ?>" aria-label="<?= e(t('appointments.from')) ?>">
         <input type="text" class="crm-datepicker" name="to" value="<?= e($filters['to']) ?>" placeholder="<?= e(t('appointments.to')) ?>" aria-label="<?= e(t('appointments.to')) ?>">
         <select name="status" aria-label="<?= e(t('appointments.status')) ?>">

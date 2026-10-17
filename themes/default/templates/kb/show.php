@@ -2,6 +2,7 @@
 /** @var array $article */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -10,7 +11,7 @@ use App\Infrastructure\Security\Csrf;
     <h1><?= e($article['title']) ?></h1>
     <p class="muted">
         <?= $article['category_name'] ? e($article['category_name']) . ' · ' : '' ?>
-        <?= e($article['author_name'] ?? '') ?> · <?= e(t('kb.updated_lc')) ?> <?= e($article['updated_at']) ?>
+        <?= e($article['author_name'] ?? '') ?> · <?= e(t('kb.updated_lc')) ?> <?= e(local_time($article['updated_at'])) ?>
     </p>
 
     <div><?= nl2br(e($article['body'])) ?></div>

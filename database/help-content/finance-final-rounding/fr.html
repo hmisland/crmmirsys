@@ -1,0 +1,16 @@
+<p>Il arrive qu’un total de facture ait des décimales (ex. 1 000 000,4 IRR) et que vous vouliez un montant rond à payer. Cette fonction le fait de façon <strong>transparente</strong>.</p>
+<h2>Règles du système</h2>
+<ul>
+<li>La valeur par défaut de l’organisation se trouve dans <strong>Finance › Paramètres</strong> et est <strong>désactivée</strong> au départ.</li>
+<li>À l’émission, une option « Arrondir le montant à payer » apparaît à côté du bouton Émettre, réglée sur cette valeur ; l’émetteur peut la changer pour cette facture.</li>
+<li>L’IRR est arrondi au <strong>rial entier</strong>, les autres devises à leur précision (USD 2 décimales). Méthode : demi supérieur.</li>
+<li>La facture enregistre le « Total avant arrondi », l’« Ajustement d’arrondi » (positif ou négatif) et le total général final.</li>
+<li>La décision est prise une seule fois, à l’émission, et n’est jamais recalculée. Les factures antérieures ne changent pas.</li>
+<li>Paiements, solde, avoirs et rapports utilisent tous le <strong>montant final</strong> ; l’ajustement est compté exactement une fois.</li>
+</ul>
+<div class="help-example">
+<p><strong>Exemple :</strong> 1 000 000,4 → 1 000 000 (ajustement −0,4). 2 500,5 → 2 501 (+0,5). 10,555 USD → 10,56. Après émission, un paiement de 1 000 000 solde entièrement la première facture.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Conseil financier :</strong> ne modifiez pas les prix des lignes pour obtenir un total rond ; cela fausse la taxe et les remises. Un ajustement d’arrondi enregistré est un petit écart visible, et cette transparence compte lors d’un audit.</p>
+</div>

@@ -7,6 +7,7 @@ namespace Modules\Followups\Listeners;
 use App\Core\Events\EventInterface;
 use App\Core\Events\ListenerInterface;
 use App\Infrastructure\Repositories\UserRepository;
+use App\Infrastructure\Time\OrganizationTimezone;
 use Modules\Followups\FollowUpReminderRepository;
 use Modules\Followups\FollowUpRuleExecutionRepository;
 use Modules\Followups\FollowUpRuleRepository;
@@ -92,8 +93,11 @@ final class FollowUpRuleEngineListener implements ListenerInterface
     {
         $action = json_decode((string) $rule['action_configuration_json'], true) ?: [];
 
+        // due_at is the organization's local wall clock (like a due date typed by a user):
+        // "N hours from now" is computed in the organization's zone (DST-aware).
+        $timezone = OrganizationTimezone::shared();
         $dueAt = isset($action['due_in_hours'])
-            ? date('Y-m-d H:i:s', strtotime('+' . (int) $action['due_in_hours'] . ' hours'))
+            ? $timezone->now($event->organizationId)->modify('+' . (int) $action['due_in_hours'] . ' hours')->format('Y-m-d H:i:s')
             : null;
 
         $ownerId = match ($action['assign_to'] ?? 'deal_owner') {
@@ -144,7 +148,8 @@ final class FollowUpRuleEngineListener implements ListenerInterface
                     'follow_up_id' => $followUpId,
                     'channel' => 'in_app',
                     'offset_minutes' => (int) $action['reminder_minutes_before'],
-                    'scheduled_at' => date('Y-m-d H:i:s', strtotime($dueAt) - ((int) $action['reminder_minutes_before'] * 60)),
+                    'scheduled_at' => (new \DateTimeImmutable($dueAt, $timezone->forOrganization($event->organizationId)))
+                        ->modify('-' . (int) $action['reminder_minutes_before'] . ' minutes')->format('Y-m-d H:i:s'),
                 ]);
             }
 

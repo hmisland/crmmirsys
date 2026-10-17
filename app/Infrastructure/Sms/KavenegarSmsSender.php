@@ -16,10 +16,23 @@ namespace App\Infrastructure\Sms;
  * bad key, 411 bad receptor, 412 bad sender, 418 no credit, 424 template
  * not found, ...) with a Persian message, which is passed through.
  */
-final class KavenegarSmsSender implements SmsSenderInterface
+final class KavenegarSmsSender implements SmsSenderInterface, SmsDeliveryReportingInterface
 {
     private const BASE_URL = 'https://api.kavenegar.com/v1/';
     private const MAX_RECEPTORS_PER_CALL = 200; // provider limit per send request
+    private const MAX_STATUS_IDS_PER_CALL = 500; // sms/status.json limit
+
+    /**
+     * sms/status.json codes (official table): 1 queued, 2 scheduled,
+     * 4/5 sent to the carrier, 6 failed, 10 delivered, 11 undelivered,
+     * 13 cancelled (refunded), 14 blocked — the recipient opted out of
+     * promotional lines (refunded), 100 unknown/expired id (status is
+     * kept for 48 hours only).
+     */
+    private const STATUS_STATES = [
+        1 => 'queued', 2 => 'queued', 4 => 'sent', 5 => 'sent', 6 => 'failed',
+        10 => 'delivered', 11 => 'undelivered', 13 => 'cancelled', 14 => 'blocked', 100 => 'unknown',
+    ];
 
     /**
      * Kavenegar requires a sender line, and domestic and international
@@ -132,6 +145,99 @@ final class KavenegarSmsSender implements SmsSenderInterface
             'expires_at' => isset($entries['expiredate']) ? (int) $entries['expiredate'] : null,
             'error' => null,
         ];
+    }
+
+    public function sendWithLocalId(string $receptor, string $message, int $localId, ?string $sender = null): SmsResult
+    {
+        if (!$this->isConfigured()) {
+            return SmsResult::failure('Kavenegar API key is not configured.');
+        }
+
+        $international = str_starts_with($receptor, '00');
+        $line = trim((string) ($international ? $this->internationalSender : ($sender ?? $this->defaultSender)));
+        if ($line === '') {
+            return SmsResult::failure($international ? 'No international sender line is set for Kavenegar.' : 'No sender line is set for Kavenegar.', 412);
+        }
+
+        // localid: Kavenegar never sends twice for the same id — a repeat
+        // returns the earlier record, so a retried job cannot double-send.
+        $result = $this->call('sms/send.json', ['receptor' => $receptor, 'message' => $message, 'sender' => $line, 'localid' => (string) $localId]);
+        if (!$result['ok']) {
+            return SmsResult::failure($result['error'], $result['status']);
+        }
+
+        $entries = (array) $result['entries'];
+        $first = $entries[0] ?? $entries;
+
+        return new SmsResult(true, null, 200, array_values(array_filter([(string) ($first['messageid'] ?? '')])), (int) ($first['cost'] ?? 0));
+    }
+
+    public function deliveryStatuses(array $messageIds): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('strval', $messageIds), fn ($id) => ctype_digit($id))));
+        if ($ids === [] || !$this->isConfigured()) {
+            return [];
+        }
+
+        $statuses = [];
+        foreach (array_chunk($ids, self::MAX_STATUS_IDS_PER_CALL) as $chunk) {
+            $result = $this->call('sms/status.json', ['messageid' => implode(',', $chunk)]);
+            if ($result['ok']) {
+                $statuses += self::parseStatusEntries((array) $result['entries']);
+            }
+        }
+
+        return $statuses;
+    }
+
+    /**
+     * sms/statuslocalmessageid.json?localid=… (kept by Kavenegar for 12
+     * hours). Status 100 = no message with that id → not found.
+     */
+    public function findByLocalId(int $localId): ?array
+    {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        $result = $this->call('sms/statuslocalmessageid.json', ['localid' => (string) $localId]);
+        if (!$result['ok']) {
+            return null;
+        }
+
+        return self::parseLocalIdEntries((array) $result['entries']);
+    }
+
+    /** @return array{found: bool, message_id: ?string, state: string} */
+    public static function parseLocalIdEntries(array $entries): array
+    {
+        $first = $entries[0] ?? $entries;
+        $code = (int) ($first['status'] ?? 100);
+        $messageId = (string) ($first['messageid'] ?? '');
+        if ($code === 100 || $messageId === '' || $messageId === '0') {
+            return ['found' => false, 'message_id' => null, 'state' => 'unknown'];
+        }
+
+        return ['found' => true, 'message_id' => $messageId, 'state' => self::STATUS_STATES[$code] ?? 'unknown'];
+    }
+
+    /**
+     * @param array<int, array{messageid?: mixed, status?: mixed, statustext?: mixed}> $entries
+     * @return array<string, array{state: string, code: int, text: string}>
+     */
+    public static function parseStatusEntries(array $entries): array
+    {
+        $statuses = [];
+        foreach ($entries as $entry) {
+            $id = (string) ($entry['messageid'] ?? '');
+            if ($id === '') {
+                continue;
+            }
+            $code = (int) ($entry['status'] ?? 0);
+            $statuses[$id] = ['state' => self::STATUS_STATES[$code] ?? 'unknown', 'code' => $code, 'text' => mb_substr((string) ($entry['statustext'] ?? ''), 0, 100)];
+        }
+
+        return $statuses;
     }
 
     /** @return array{ok: bool, status: ?int, error: string, entries: mixed} */

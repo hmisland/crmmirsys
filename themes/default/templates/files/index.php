@@ -18,6 +18,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -211,7 +212,7 @@ $hidden = function () use ($folderId, $isGrid): string {
                             <a class="file-card__name" href="<?= e($openUrl($doc)) ?>" title="<?= e($doc['original_filename']) ?>"<?= $doc['is_inline'] ? ' target="_blank" rel="noopener"' : '' ?>><?= e($doc['display_title']) ?></a>
                             <span class="media-card__meta">
                                 <span class="ltr"><?= e($fmtSize((int) $doc['size'])) ?></span>
-                                <span class="ltr"><?= e(substr((string) $doc['created_at'], 0, 10)) ?></span>
+                                <span class="ltr"><?= e(substr((string) local_time($doc['created_at']), 0, 10)) ?></span>
                             </span>
                             <?php if ($searching && $doc['folder_path'] !== ''): ?><span class="media-card__meta"><?= icon('folder', 'icon--sm') ?><?= e($doc['folder_path']) ?></span><?php endif; ?>
                         </figcaption>
@@ -255,7 +256,7 @@ $hidden = function () use ($folderId, $isGrid): string {
                     </td>
                     <td class="muted nowrap"><span class="ltr"><?= e($fmtSize((int) $doc['size'])) ?></span></td>
                     <td><?= e($doc['uploader_name'] ?? '—') ?></td>
-                    <td class="muted nowrap"><span class="ltr"><?= e(substr((string) $doc['created_at'], 0, 16)) ?></span></td>
+                    <td class="muted nowrap"><span class="ltr"><?= e(substr((string) local_time($doc['created_at']), 0, 16)) ?></span></td>
                     <td><?php $fileActions($doc); ?></td>
                 </tr>
             <?php endforeach; ?>

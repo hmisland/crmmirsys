@@ -22,11 +22,12 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 
 // Status → badge tone (badge() picks the colour from these raw values).
 $tone = ['unpaid' => 'unpaid', 'issued' => 'issued', 'partially_paid' => 'partial', 'paid' => 'paid', 'void' => 'cancelled'];
 ?>
-<h3><?= e(t('finance.installment.title')) ?></h3>
+<h3><?= e(t('finance.installment.title')) ?><?= help_link('finance-installments') ?></h3>
 <div class="table-responsive">
 <table class="table table--compact">
     <thead><tr>

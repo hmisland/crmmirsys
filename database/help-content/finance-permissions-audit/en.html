@@ -1,0 +1,28 @@
+<h2>Main permissions</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Task</th><th>Permission</th></tr></thead>
+<tbody>
+<tr><td>Finance settings</td><td>view / edit finance settings</td></tr>
+<tr><td>Proforma</td><td>view, create, edit, delete, convert</td></tr>
+<tr><td>Invoice</td><td>view, create, edit, delete, <strong>issue</strong>, <strong>cancel</strong></td></tr>
+<tr><td>Payment / credit note</td><td>view and create, each separately</td></tr>
+<tr><td>Financial period</td><td>view, close, reopen</td></tr>
+<tr><td>Reports, expenses, budgets</td><td>a separate permission for each</td></tr>
+</tbody>
+</table>
+</div>
+<p>Each permission's scope (own, team, department, whole organization) decides which documents a user sees.</p>
+<h2>Audit trail</h2>
+<ul>
+<li>The invoice's "Financial history" card: payments only with permission to view payments, credit notes only with permission to view credit notes; with user, time and the amount before → after.</li>
+<li>Period closing and reopening are recorded on the periods page. Invoice cancellations stay on record with their reason.</li>
+<li>An event is written together with its operation: both are saved or neither. A repeated submission creates no duplicate event.</li>
+<li>Payments and credit notes cannot be edited or deleted.</li>
+</ul>
+<div class="help-example">
+<p><strong>Example:</strong> a "Cashier" role with invoice view and payment view/create records payments, but cannot issue or cancel invoices and does not see credit notes.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finance tip — segregation of duties:</strong> the person who issues invoices should not be the only one recording payments and closing periods. Splitting these tasks between people reduces errors and fraud.</p>
+</div>

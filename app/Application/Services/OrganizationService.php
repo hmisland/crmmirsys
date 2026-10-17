@@ -12,6 +12,7 @@ use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Authorization\Permission;
 use App\Infrastructure\Logging\LoggerInterface;
 use App\Infrastructure\Repositories\OrganizationRepository;
+use App\Infrastructure\Time\OrganizationTimezone;
 use App\Infrastructure\Validation\Validator;
 
 final class OrganizationService extends BaseService
@@ -53,6 +54,7 @@ final class OrganizationService extends BaseService
         return $this->organizations->create([
             'name' => trim($name),
             'slug' => $slug,
+            'default_timezone' => OrganizationTimezone::shared()->defaultIdentifier(),
         ]);
     }
 
@@ -92,8 +94,13 @@ final class OrganizationService extends BaseService
             $fields['default_language'] = $input['default_language'];
         }
 
-        if (isset($input['default_timezone']) && $input['default_timezone'] !== '') {
-            $fields['default_timezone'] = (string) $input['default_timezone'];
+        // Strict IANA identifier (no "+03:30"); empty keeps the current zone.
+        $timezone = trim((string) ($input['default_timezone'] ?? ''));
+        if ($timezone !== '') {
+            if (!OrganizationTimezone::isValid($timezone)) {
+                throw new ValidationException(['default_timezone' => ['org.timezone_invalid']]);
+            }
+            $fields['default_timezone'] = $timezone;
         }
 
         // The settings form always posts every profile field, so an
@@ -116,6 +123,7 @@ final class OrganizationService extends BaseService
         }
 
         $this->organizations->updateOrganization($organizationId, $fields);
+        OrganizationTimezone::shared()->forget($organizationId);
 
         return $this->organizations->findById($organizationId);
     }

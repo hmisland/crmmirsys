@@ -6,6 +6,7 @@
 /** @var array $users */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -25,7 +26,7 @@ use App\Infrastructure\Security\Csrf;
                 <td><?= e($req['user_name'] ?? ('#' . $req['user_id'])) ?></td>
                 <td><?= e(number_format((float) $req['amount'], 0)) ?></td>
                 <td class="muted"><?= e($req['destination_info']) ?></td>
-                <td><?= e($req['requested_at']) ?></td>
+                <td><?= e(local_time($req['requested_at'])) ?></td>
                 <td>
                     <form method="post" action="/org/wallet/withdrawals/<?= e($req['id']) ?>/approve" class="inline-form">
                         <?= Csrf::field() ?>
@@ -147,7 +148,7 @@ use App\Infrastructure\Security\Csrf;
         <tbody>
         <?php foreach ($transactions as $tx): ?>
             <tr>
-                <td><?= e($tx['created_at']) ?></td>
+                <td><?= e(local_time($tx['created_at'])) ?></td>
                 <td><?= e($tx['owner_name'] ?? '') ?></td>
                 <td><?= e(t('wallet.ledger_type.' . $tx['type'])) ?></td>
                 <td><?= e(number_format((float) $tx['amount'], 0)) ?></td>

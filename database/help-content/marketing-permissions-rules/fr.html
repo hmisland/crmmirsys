@@ -1,0 +1,23 @@
+<h2>Droits (par rôle, dans Paramètres de l'organisation › Rôles)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Droit</th><th>Permet</th><th>Par défaut</th></tr></thead>
+<tbody>
+<tr><td>Voir le marketing</td><td>tableau de bord, campagnes, segments, historique, utiliser des segments</td><td>admin, membre</td></tr>
+<tr><td>Créer des campagnes</td><td>brouillons et envois de test</td><td>admin, membre</td></tr>
+<tr><td>Envoyer des campagnes</td><td>approuver et envoyer, annuler, relancer les échecs</td><td>admin</td></tr>
+<tr><td>Envoyer des messages transactionnels</td><td>choisir le type « transactionnel »</td><td>admin</td></tr>
+<tr><td>Gérer les segments</td><td>créer, modifier, supprimer segments et membres statiques</td><td>admin</td></tr>
+<tr><td>Gérer les modèles</td><td>modèles réutilisables</td><td>admin</td></tr>
+<tr><td>Gérer les désinscriptions</td><td>ajouter ou retirer des entrées</td><td>admin</td></tr>
+<tr><td>Modifier les paramètres de l'organisation</td><td>paramètres des fournisseurs SMS et e-mail</td><td>admin</td></tr>
+</tbody></table></div>
+<h2>Règles métier</h2>
+<ul>
+<li><strong>Double validation par défaut :</strong> les membres préparent les brouillons ; une personne ayant « envoyer des campagnes » les approuve.</li>
+<li><strong>Confidentialité des contacts :</strong> sans accès aux Contacts, vous pouvez travailler avec groupes, étiquettes et segments, mais ne voyez jamais noms, numéros ou e-mails — les aperçus utilisent des marqueurs comme <code>[first_name]</code> et les listes sont masquées.</li>
+<li><strong>Limites de test :</strong> SMS et e-mails de test partagent une limite — par défaut 5 par utilisateur toutes les 10 minutes et 20 par organisation et par heure.</li>
+<li><strong>Accès au module :</strong> sans le module Marketing, les pages sont indisponibles ; sans le module Marketing e-mail, l'e-mail ne peut être ni configuré ni envoyé. Masquer un bouton n'est jamais la seule protection — le serveur vérifie chaque action.</li>
+<li>Les <strong>désinscriptions</strong> sont toujours respectées pour le marketing ; les liens fonctionnent même si le module est désactivé ensuite.</li>
+<li><strong>Ni double envoi ni double facturation :</strong> chaque destinataire reçoit un seul envoi par campagne, et une relance ne débite jamais deux fois le crédit SMS.</li>
+<li><strong>Organisations séparées :</strong> aucune campagne, aucun segment, contact ou paramètre n'est visible d'une autre organisation.</li>
+</ul>

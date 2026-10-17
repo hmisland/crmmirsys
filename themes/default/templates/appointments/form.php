@@ -19,6 +19,7 @@ use App\Infrastructure\Security\Csrf;
 use Modules\Appointments\Services\AppointmentService;
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 
@@ -27,7 +28,7 @@ $val = fn (string $key): string => e((string) ($old[$key] ?? ''));
 $err = fn (string $key): string => isset($errors[$key][0]) ? '<div class="field-error">' . e(t($errors[$key][0])) . '</div>' : '';
 $selected = fn (string $key, $value): string => (string) ($old[$key] ?? '') === (string) $value ? ' selected' : '';
 $canForce = isset($errors[AppointmentService::FORCE_KEY]);
-$back = $isEdit ? '/appointments/' . (int) $appointment['id'] : '/appointments?date=' . rawurlencode((string) ($old['date'] ?? date('Y-m-d')));
+$back = $isEdit ? '/appointments/' . (int) $appointment['id'] : '/appointments?date=' . rawurlencode((string) ($old['date'] ?? local_today()));
 $action = $isEdit ? '/appointments/' . (int) $appointment['id'] : '/appointments';
 ?>
 <div class="page-head">

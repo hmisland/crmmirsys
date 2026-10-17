@@ -9,6 +9,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_now;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
@@ -22,7 +23,7 @@ foreach ($sessions as $s) {
         $sessionByFollowUp[(int) $s['follow_up_id']] = $s;
     }
 }
-$now = date('Y-m-d H:i:s');
+$now = local_now(); // due_at is local wall clock
 $groups = ['open' => $open, 'closed' => $closed];
 ?>
 <div class="record-layout">

@@ -7,6 +7,7 @@
  */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
@@ -15,7 +16,7 @@ use App\Infrastructure\Security\Csrf;
 <section class="card">
     <h2><?= e(t('import.last_import')) ?></h2>
     <dl class="fact-row">
-        <div class="fact"><dt><?= icon('clock') ?><?= e(t('import.batch_date')) ?></dt><dd><span class="ltr"><?= e($latestBatch['created_at']) ?></span></dd></div>
+        <div class="fact"><dt><?= icon('clock') ?><?= e(t('import.batch_date')) ?></dt><dd><span class="ltr"><?= e(local_time($latestBatch['created_at'])) ?></span></dd></div>
         <div class="fact"><dt><?= icon('user') ?><?= e(t('import.batch_user')) ?></dt><dd><?= e(trim((string) ($latestBatch['user_name'] ?? '')) ?: '—') ?></dd></div>
         <div class="fact"><dt><?= icon('file-text') ?><?= e(t('import.batch_file')) ?></dt><dd><?= e($latestBatch['file_name'] ?: '—') ?></dd></div>
         <div class="fact"><dt><?= icon('user-plus') ?><?= e(t('import.created')) ?></dt><dd><?= e($latestBatch['created_count']) ?></dd></div>

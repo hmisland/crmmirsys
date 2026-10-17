@@ -1,0 +1,17 @@
+<p>Brevo (<a href="https://www.brevo.com/" target="_blank" rel="noopener">brevo.com</a>) desteklenen ikinci e-posta hizmetidir. CRM'deki avantajı: <strong>teslim, geri dönme, spam ve abonelikten çıkma</strong> olaylarını geri bildirir; kampanya sonuçları daha eksiksiz olur.</p>
+<h2>Adımlar</h2>
+<ol>
+<li>Brevo'ya kaydolun ve hesabınızı onaylayın.</li>
+<li><strong>Senders, domains & IPs:</strong> gönderen adresinizi ekleyin ve alan adınızı doğrulayın (SPF, DKIM, DMARC — "Gönderim alan adını doğrulama"). Gönderen <em>etkin</em> olmalıdır.</li>
+<li><strong>SMTP & API › API keys:</strong> bir API anahtarı oluşturun (<code>xkeysib-</code> ile başlar).</li>
+<li>CRM'de: <strong>Kuruluş ayarları › Mesajlaşma sağlayıcıları › E-posta — Brevo</strong>: anahtar, gönderen e-postası, gönderen adı, isteğe bağlı yanıt adresi → <em>Kaydet ve bağlantıyı test et</em>.</li>
+<li>Teslim olaylarının CRM'e ulaşması için <em>Webhook'u kaydet</em>'e basın. Bunun için CRM'in <code>https://</code> üzerinde çalışması gerekir.</li>
+<li>Bir test e-postası gönderin.</li>
+</ol>
+<h2>Bağlantı testi neyi kontrol eder</h2>
+<ul>
+<li>Anahtarın geçerli olduğunu (Brevo hesabı).</li>
+<li>Gönderen e-postanızın Brevo'da <strong>etkin bir gönderen</strong> olduğunu — değilse uyarı görürsünüz; kampanya göndermeden önce Brevo'da düzeltin.</li>
+<li>SPF/DKIM'i kontrol edemez — alan adı doğrulama uyarısı hatırlatma olarak hep gösterilir.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> hem Sender'ı hem Brevo'yu bağlayabilirsiniz; her e-posta kampanyası bunlardan birini seçer.</p></div>

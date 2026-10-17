@@ -8,6 +8,11 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Pass the Authorization header to PHP (CGI/FastCGI drop it); provider
+    # webhooks authenticate with "Authorization: Bearer ...".
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
     # Serve real files/directories (e.g. /assets/themes/...) directly.
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d

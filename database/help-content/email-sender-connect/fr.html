@@ -1,0 +1,26 @@
+<p>Ouvrez <strong>Paramètres de l'organisation › Fournisseurs de messagerie</strong>, carte <strong>E-mail — Sender</strong>.</p>
+<h2>Champs</h2>
+<ul>
+<li><strong>Jeton API :</strong> le jeton de Sender (d'un seul bloc, sans espace). Laissez-le vide plus tard pour garder celui enregistré.</li>
+<li><strong>E-mail d'expéditeur :</strong> une adresse de votre domaine <em>authentifié</em>, ex. <code>news@yourdomain.com</code>.</li>
+<li><strong>Nom de l'expéditeur :</strong> ce que voient les destinataires, ex. le nom de votre activité.</li>
+<li><strong>Adresse de réponse :</strong> non prise en charge par l'API de Sender — les réponses arrivent à l'e-mail d'expéditeur.</li>
+</ul>
+<h2>Boutons</h2>
+<ul>
+<li><strong>Enregistrer et tester la connexion :</strong> le jeton est vérifié auprès de Sender avant d'être stocké. Si Sender le refuse, rien n'est enregistré.</li>
+<li><strong>Tester la connexion :</strong> revérifie le jeton enregistré ; le statut et le « dernier test réussi » sont mis à jour.</li>
+<li><strong>Envoyer un e-mail de test :</strong> un vrai e-mail à l'adresse saisie.</li>
+<li><strong>Déconnecter :</strong> supprime le jeton ; les campagnes e-mail via Sender s'arrêtent.</li>
+</ul>
+<h2>Erreurs courantes</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Le message contient</th><th>Signification</th><th>Solution</th></tr></thead>
+<tbody>
+<tr><td>HTTP 401</td><td>jeton erroné, supprimé ou incomplet</td><td>créez un nouveau jeton dans Sender et collez-le d'un bloc</td></tr>
+<tr><td>does not have a DMARC policy</td><td>le domaine n'a pas d'enregistrement DMARC</td><td>ajoutez <code>_dmarc</code> (guide « Vérifier le domaine d'envoi »)</td></tr>
+<tr><td>HTTP 422</td><td>un champ a été refusé (souvent l'adresse d'expéditeur)</td><td>utilisez une adresse de votre domaine vérifié</td></tr>
+<tr><td>Could not reach Sender</td><td>le serveur ne peut pas sortir</td><td>demandez à l'hébergeur d'autoriser le HTTPS sortant</td></tr>
+<tr><td>Trop d'e-mails de test</td><td>limite de test atteinte</td><td>attendez quelques minutes</td></tr>
+</tbody></table></div>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> la page <em>Transactional › Logs</em> de Sender liste chaque e-mail envoyé par le CRM, avec remise et ouverture — utile quand un test semble manquer.</p></div>

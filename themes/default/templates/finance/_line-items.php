@@ -15,6 +15,7 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
+use function App\Infrastructure\Theme\help_link;
 
 $lineRow = function (string $key, array $row): string {
     $code = (string) ($row['item_code'] ?? $row['product_sku'] ?? '');
@@ -75,7 +76,7 @@ $lineRow = function (string $key, array $row): string {
 };
 ?>
 <div class="line-items" data-line-items data-lookup-url="/finance/products/lookup" data-empty-text="<?= e(t('finance.no_product_found')) ?>">
-    <h3><?= e(t('proformas.line_items')) ?></h3>
+    <h3><?= e(t('proformas.line_items')) ?><?= help_link('finance-amounts-discounts-tax') ?></h3>
     <p class="field-hint"><?= e(t('finance.item_search_hint')) ?></p>
     <div class="line-items__rows" data-li-rows>
         <?php foreach (array_values($rows) as $i => $row): ?>

@@ -1,0 +1,25 @@
+<h2>Sistem kuralları</h2>
+<ul>
+<li>Bir tarih aralığı seçin; rapor bu aralıkta <strong>kesilmiş</strong> faturaları alır (taslaklar ve iptaller hariç).</li>
+<li>Her para birimi ayrı bir satırdır; para birimleri asla toplanmaz.</li>
+<li><em>Aynı faturaların</em> alacak dekontları ve ödemeleri (tarihleri ne olursa olsun) dahil edilir; dolayısıyla "kalan", bu faturaların <em>bugün</em> hâlâ borçlu olduğu tutardır.</li>
+<li>Her şey saklanan tutarlardan okunur (son yuvarlama dahil).</li>
+</ul>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Sütun</th><th>Anlamı</th></tr></thead>
+<tbody>
+<tr><td>Brüt</td><td>fatura genel toplamları, vergi dahil</td></tr>
+<tr><td>Alacak dekontları</td><td>bu faturaların alacak dekontları</td></tr>
+<tr><td>Net</td><td>brüt − alacak dekontları</td></tr>
+<tr><td>Vergi</td><td>bu faturaların vergisi</td></tr>
+<tr><td>Ödenen / Kalan</td><td>bugüne kadar ödenen / net − ödenen</td></tr>
+</tbody>
+</table>
+</div>
+<div class="help-example">
+<p><strong>Örnek (IRR):</strong> brüt 500 milyon, alacak dekontları 20, net 480, vergi 40, ödenen 350, kalan 130 milyon → 130 milyon hâlâ tahsil edilecek.</p>
+</div>
+<div class="help-callout help-callout--tip">
+<p><strong>Finans ipucu:</strong> satış nakit değildir. "Net" sattığınız, "ödenen" gerçekten gelen paradır. Kalan ÷ net oranını her ay izleyin; yükseliyorsa tahsilat zayıflıyor demektir.</p>
+</div>
