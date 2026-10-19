@@ -424,7 +424,10 @@ return [
     'dispatch without a delivery channel: invitation waits, no link issued' => function () use ($setup, $h, $count) {
         $setup();
         $c = $h->a->container();
-        LiteAssert::false($c->has(TransactionalDeliveryInterface::class), 'nothing bound yet in Phase 1');
+        // Phase 2: Marketing binds the real deliverer; here it offers no channel at all.
+        $none = new RecordingDelivery();
+        $none->channels = [];
+        $c->instance(TransactionalDeliveryInterface::class, $none);
         $links = $count("SELECT COUNT(*) FROM public_links WHERE purpose = 'cx_survey'");
         $stats = $h->invitations->dispatchDue(10);
         LiteAssert::true($stats['waiting'] >= 1);

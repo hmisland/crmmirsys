@@ -16,7 +16,7 @@ WooCommerce ──webhook──▶ /webhooks/integrations/{key} ──▶ integr
                                                                ▼
                          scheduler "cx.invitations" → PublicLinkService (/p/{token})
                                                                ▼
-                         Core TransactionalDeliveryInterface  (implemented by Marketing — Phase 2)
+                         Core TransactionalDeliveryInterface  (implemented by Marketing — Phase 2, done)
                                                                ▼
                                                      SMS / Email / Bale → customer
 ```
@@ -29,7 +29,7 @@ WooCommerce ──webhook──▶ /webhooks/integrations/{key} ──▶ integr
 | WooCommerce | `modules/WooCommerce` (module key `woocommerce`) | REST client, provider (validation, test, sync, webhook verification), its own data tables |
 | Public links | `app/Infrastructure/PublicLinks` (Core) | secure tokens, expiry, revoke, single use, `/p/{token}`, `public_layout` |
 | Customer Satisfaction | `modules/CustomerSatisfaction` (module key `customer_satisfaction`) | surveys, invitations (why/who/which survey/which link/when), responses, follow-up, `/cx` |
-| Delivery | `app/Infrastructure/Messaging/TransactionalDeliveryInterface` (Core contract) | Marketing implements it (Phase 2); CX never calls a provider |
+| Delivery | `app/Infrastructure/Messaging/TransactionalDeliveryInterface` (Core contract) | Marketing implements it (`Modules\Marketing\Services\TransactionalDelivery`, Phase 2); CX never calls a provider |
 | Scheduler | `app/Infrastructure/Scheduling/ScheduledTasks` + `app/bin/scheduler.php` | one cron line for integration + CX background work |
 
 Adding another integration = one class implementing `IntegrationProviderInterface`, registered in
@@ -70,10 +70,14 @@ old jobs purged after 14 days.
 * * * * * /usr/local/bin/php /home/ACCOUNT/public_html/app/bin/scheduler.php >/dev/null 2>&1
 ```
 
-## Phase 2 prerequisites
+## Phase 2 — delivery (done)
 
-* Marketing implements `TransactionalDeliveryInterface` (single transactional message through its
-  existing SMS / Email / Bale channels, honouring opt-outs, logging history) and binds it via
-  `ProvidesServices`. Until then invitations wait as "waiting for a channel".
+* Marketing implements `TransactionalDeliveryInterface` (`Services/TransactionalDelivery`, bound via
+  `ProvidesServices`): one transactional message through its existing SMS / Email / Bale channels,
+  honouring the channel's opt-out list, idempotent per reference, logged in
+  `marketing_transactional_messages` (Marketing migration `0013`) and on the contact timeline. Details:
+  `docs/marketing-module.md` §5a.
+* An organization needs `marketing` (plus `marketing_email` / `bale_messaging` for those channels) and a
+  ready provider; otherwise invitations wait as "waiting for a channel", as before.
 * Super Admin: run module sync so `woocommerce` and `customer_satisfaction` appear, then entitle
   organizations.

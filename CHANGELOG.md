@@ -4,6 +4,15 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Phase 2 — Marketing delivers transactional messages for other modules
+- **Marketing implements Core's `TransactionalDeliveryInterface`** (`modules/Marketing/Services/TransactionalDelivery.php`, bound through `MarketingModule::services()`). Customer Satisfaction invitations, which waited as "waiting for a channel" in Phase 1, are now sent through Marketing's existing SMS, Email (Sender/Brevo) and Bale channels. No module calls a provider directly.
+- **Channels offered** only while the organization holds `marketing` and the channel's module and the provider is ready; email uses the first connected provider with a sender identity.
+- **Safety:** every opt-out on the channel's list blocks the message; idempotent per caller reference (a sent reference is never sent again); a message is claimed before the provider call; an interrupted send is recovered from the provider for SMS (Kavenegar localid) and is "unknown" — never resent — for email/Bale; SMS charges are never taken twice (`billed_units`).
+- **History:** new table `marketing_transactional_messages` (no message text — it can carry a single-use link) and a timeline event on the contact.
+- Small backward-compatible change: `SmsChannel` accepts an optional log label (`sms_context`); campaigns keep `marketing.campaign:{id}`.
+- Migration: Marketing `0013_create_marketing_transactional_messages_table` (new table only). 8 new translation keys `marketing.transactional.error.*` in all five languages.
+- New suite `TransactionalDeliveryTest` (15, fake SMS, nothing sent); `IntegrationsCxTest` updated for the bound deliverer. Not included: delivery reports for transactional messages, a Marketing UI list of them. See `docs/marketing-module.md` §5a.
+
 ### Bale messaging (Safir) — new module `bale_messaging`
 - **New module `modules/MarketingBale`** (key `bale_messaging`, depends on `marketing`; Super Admin enables it per organization). Adds a **Bale** channel to Marketing, so the existing campaigns, audiences (one contact, selected contacts, group, tag, static/dynamic segment, all), review, approval, snapshot, queue, worker, opt-outs and reports are reused. No new permission keys.
 - **Safir** (`https://safir.bale.ai/api/v3/send_message`, verified against docs.bale.ai/safir): one request per recipient, `api-access-key` header, integer `bot_id`, number as `98` + 10 digits, text only (≤ 4,000 characters, an application limit), stable `request_id` per message.

@@ -18,6 +18,7 @@ use App\Infrastructure\Authorization\AuthorizationEngine;
 use App\Infrastructure\Authorization\Permission;
 use App\Infrastructure\Config\Config;
 use App\Infrastructure\Logging\LoggerInterface;
+use App\Infrastructure\Messaging\TransactionalDeliveryInterface;
 use App\Infrastructure\Modules\ModuleGate;
 use App\Infrastructure\Modules\ModuleInterface;
 use App\Infrastructure\Modules\ModuleManifest;
@@ -49,6 +50,7 @@ use Modules\Marketing\Services\MessageComposer;
 use Modules\Marketing\Services\QueueWorker;
 use Modules\Marketing\Services\SuppressionService;
 use Modules\Marketing\Services\TemplateService;
+use Modules\Marketing\Services\TransactionalDelivery;
 use Modules\Marketing\Services\UnsubscribeLinks;
 use Modules\Marketing\Services\WebhookService;
 
@@ -79,6 +81,7 @@ final class MarketingModule implements ModuleInterface, ProvidesServices
     private ?SegmentController $segmentController = null;
     private ?SegmentConditionRegistry $conditions = null;
     private ?ChannelRegistry $channels = null;
+    private ?TransactionalDelivery $transactional = null;
 
     public function manifest(): ModuleManifest
     {
@@ -142,6 +145,12 @@ final class MarketingModule implements ModuleInterface, ProvidesServices
             $container->make(LoggerInterface::class),
             $audience,
         );
+        // Phase 2: single transactional messages for other modules (Core TransactionalDeliveryInterface),
+        // through the same channels, opt-out list and entitlements as campaigns.
+        $this->transactional = new TransactionalDelivery(
+            new TransactionalMessageRepository(), $suppressions, $channels, $entitlements, $composer, $email, $sms, $timeline,
+            $container->make(LoggerInterface::class),
+        );
         $suppressionService = new SuppressionService($suppressions, $messages, $authorization, $timeline);
 
         $this->campaignController = new CampaignController($templates, $this->campaignService, $templateService, $this->worker, $audienceRepository, $messages, $email, $this->segmentService);
@@ -187,7 +196,8 @@ final class MarketingModule implements ModuleInterface, ProvidesServices
     {
         // SegmentConditionRegistry: the extension point for future data providers (e.g. WooCommerce) to add conditions.
         // ChannelRegistry: modules that add a channel (e.g. MarketingBale) register it here.
-        return [ChannelRegistry::class => $this->channels, CampaignService::class => $this->campaignService, QueueWorker::class => $this->worker, SegmentService::class => $this->segmentService, SegmentConditionRegistry::class => $this->conditions];
+        // TransactionalDeliveryInterface: Core's delivery boundary (e.g. Customer Satisfaction invitations).
+        return [TransactionalDeliveryInterface::class => $this->transactional, ChannelRegistry::class => $this->channels, CampaignService::class => $this->campaignService, QueueWorker::class => $this->worker, SegmentService::class => $this->segmentService, SegmentConditionRegistry::class => $this->conditions];
     }
 
     public function routes(Router $router): void

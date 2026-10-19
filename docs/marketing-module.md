@@ -87,6 +87,7 @@ needs someone with `marketing.send` to approve it.
 | Marketing `0004` | `marketing_suppressions` (UNIQUE org+channel+address) |
 | Marketing `0005` | `marketing_webhook_events` (UNIQUE provider+event key) |
 | Marketing `0006` | default permission grants |
+| Marketing `0013` | `marketing_transactional_messages` (UNIQUE org+reference) — Phase 2 transactional delivery, see §5a |
 
 All additive: no existing table or column changes. Rollback: each
 migration's `down()` drops only its own table (`0006` removes only
@@ -133,6 +134,46 @@ stored Sender/Brevo credentials (they must be re-entered).
   message bodies are not copied per recipient; secrets are encrypted
   (`SecretBox`, AES-256-GCM), never returned, never logged.
 
+## 5a. Transactional delivery for other modules (Phase 2)
+
+`Services/TransactionalDelivery` implements Core's
+`TransactionalDeliveryInterface` and is bound in the container through
+`MarketingModule::services()`. Other modules (first: Customer
+Satisfaction survey invitations) hand it ONE message; they never call an
+SMS/Email/Bale provider themselves.
+
+- **Channels:** the same `ChannelRegistry` as campaigns — SMS
+  (`SmsService`, platform or own account, billing/refunds unchanged),
+  Email (the organization's first connected Sender/Brevo account with a
+  sender identity, sent as transactional), Bale (when `bale_messaging` is
+  installed and configured). `availableChannels()` lists a channel only
+  while the organization holds `marketing` and the channel's module and
+  the provider is ready (e.g. Bale not paused).
+- **Opt-outs:** every entry on the channel's opt-out list blocks the
+  message, whatever the reason (including "unsubscribed": a survey
+  request is not a receipt). Recorded as `skipped`.
+- **Idempotency:** one row per (organization, caller reference). Sent →
+  the same "accepted" answer again, nothing sent. A row is claimed before
+  the provider call; a live claim answers "retry later". A row left
+  claimed by a run that died: SMS asks the provider for its dedupe id
+  (found → sent; otherwise resent safely, the localid blocks a duplicate
+  and `billed_units` a second charge); email/Bale → "unknown", final.
+  Provider dedupe ids use their own range (`900 000 000 000` + row id), so
+  they never collide with campaign rows.
+- **Answers:** accepted (provider accepted — not delivered); retry
+  (nothing sent: provider down, rate limited, account paused, channel not
+  ready); failed (invalid address, opted out, unsupported recipient,
+  rejected, unknown). Error values are translation keys
+  (`marketing.transactional.error.*`).
+- **History:** `marketing_transactional_messages` (status, provider id,
+  attempts, error) and a `marketing.transactional_sent` event on the
+  contact's timeline. The message text is not stored: it can carry a
+  single-use public link. (The SMS account's own `sms_logs` still records
+  SMS texts, as for every SMS in the app.)
+- **Not included:** delivery reports for transactional messages (SMS
+  report polling and email webhooks cover campaign rows only), no UI list
+  yet (the caller shows its own status, e.g. the CX invitations list).
+
 ## 6. Provider capabilities (verified against official docs, 2026-10)
 
 | | Sender (`api.sender.net/v2`) | Brevo (`api.brevo.com/v3`) | Kavenegar |
@@ -175,3 +216,12 @@ checks: removing the dedupe id, the cross-org check, webhook idempotency,
 the bearer check, the settings/worker entitlement checks, send-time
 suppression, ambiguous-email protection, the approval count check, or
 secret encryption each makes a test fail.
+
+`TransactionalDeliveryTest` (15, crm_local, fake SMS): binding, available
+channels per entitlement, send + history + timeline, idempotency, opt-out,
+retry vs final failures, live and stale claims (SMS recovered from the
+provider, email unknown), invalid input, tenant safety, and the Customer
+Satisfaction invitation end to end. Mutation checks: removing the opt-out
+check, the sent-reference idempotency, SMS stale recovery, the retry
+mapping, the contact tenant check or the live-claim check each makes a
+test fail.
