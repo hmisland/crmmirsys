@@ -132,6 +132,8 @@ final class ContractsModule implements ModuleInterface, ProvidesServices
             showPath: '/contracts/{id}',
             icon: 'file-text',
             finder: fn (int $id): ?array => $contracts->findById($id),
+            // The contracts this user may see (ContractService's own scope), for other modules' selectors.
+            lister: fn (array $user, int $limit): array => $this->contractService->list($user, [], $limit),
         ));
     }
 

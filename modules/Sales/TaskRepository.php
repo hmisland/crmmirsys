@@ -25,6 +25,27 @@ final class TaskRepository extends TenantScopedRepository
     }
 
     /** A record's tasks (e.g. a deal's), archived ones excluded; finished ones sink to the bottom. */
+    /**
+     * @param int[] $ids
+     * @return array<int, array> by id; deleted tasks are left out
+     */
+    public function findByIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), fn (int $id) => $id > 0)));
+        if ($ids === []) {
+            return [];
+        }
+        $rows = $this->tenantFindMany('SELECT * FROM tasks WHERE id IN (' . implode(',', $ids) . ') AND deleted_at IS NULL');
+
+        return array_column($rows, null, 'id');
+    }
+
+    /** The occurrence generated from this task (T7 recurrence), unless deleted. */
+    public function occurrenceAfter(int $taskId): ?array
+    {
+        return $this->tenantFindOne('SELECT * FROM tasks WHERE recur_parent_id = :id AND deleted_at IS NULL', ['id' => $taskId]);
+    }
+
     public function forSubject(string $relatedType, int $relatedId): array
     {
         return $this->tenantFindMany(
@@ -84,6 +105,128 @@ final class TaskRepository extends TenantScopedRepository
             $sql . " ORDER BY status IN ('completed', 'rejected', 'cancelled'), due_at IS NULL, due_at, id DESC LIMIT 500",
             $params
         );
+    }
+
+    /**
+     * The task list (search + pagination), database-side like the Contacts
+     * list: countList() for the total, pageList() for one page. $criteria:
+     *  - view: mine | created | all | archived (TaskService::LIST_VIEWS)
+     *  - user_id: the viewer (mine / archived = assigned to them, created = by them)
+     *  - status: one status or null
+     *  - search: text matched in title, description and label names, or ''
+     *  - exclude: task ids the viewer may not see (TaskService decides)
+     * Soft-deleted tasks are never included; working views exclude archived ones.
+     */
+    public function countList(array $criteria): int
+    {
+        [$where, $params] = $this->listConditions($criteria);
+        $row = $this->tenantFindOne('SELECT COUNT(*) AS c FROM tasks WHERE ' . $where, $params);
+
+        return (int) ($row['c'] ?? 0);
+    }
+
+    public function pageList(array $criteria, int $limit, int $offset): array
+    {
+        [$where, $params] = $this->listConditions($criteria);
+        $order = ($criteria['view'] ?? '') === 'archived'
+            ? 'archived_at DESC, id DESC'
+            : "status IN ('completed', 'rejected', 'cancelled'), due_at IS NULL, due_at, id DESC";
+
+        return $this->tenantFindMany(
+            'SELECT * FROM tasks WHERE ' . $where . ' ORDER BY ' . $order
+            . ' LIMIT ' . max(1, min(500, $limit)) . ' OFFSET ' . max(0, $offset),
+            $params
+        );
+    }
+
+    /**
+     * Tasks scheduled within [$from, $to) — the organization's local wall
+     * clock, compared as stored (C3, never converted): those starting before
+     * $to and due (or starting, without a due date) on or after $from, so a
+     * task spanning the period shows too. Same conditions as the list (view,
+     * filters, hidden relations); tasks without any date are not included.
+     */
+    public function calendarList(array $criteria, string $from, string $to, int $limit): array
+    {
+        [$where, $params] = $this->listConditions($criteria);
+
+        return $this->tenantFindMany(
+            'SELECT * FROM tasks WHERE ' . $where . ' AND (start_at IS NOT NULL OR due_at IS NOT NULL)
+                AND COALESCE(start_at, due_at) < :range_to AND COALESCE(due_at, start_at) >= :range_from
+             ORDER BY COALESCE(start_at, due_at), id LIMIT ' . max(1, $limit),
+            $params + ['range_to' => $to, 'range_from' => $from]
+        );
+    }
+
+    /**
+     * The list's project/contract-related tasks (id + relation), so the
+     * service can exclude those whose record the viewer may not see.
+     */
+    public function listRelations(array $criteria): array
+    {
+        [$where, $params] = $this->listConditions(['exclude' => []] + $criteria);
+
+        return $this->tenantFindMany(
+            "SELECT id, related_type, related_id FROM tasks WHERE {$where} AND related_type IN ('project', 'contract')",
+            $params
+        );
+    }
+
+    /** @return array{0: string, 1: array} */
+    private function listConditions(array $criteria): array
+    {
+        $view = $criteria['view'] ?? 'mine';
+        $userId = (int) ($criteria['user_id'] ?? 0);
+        $where = 'deleted_at IS NULL AND archived_at IS ' . ($view === 'archived' ? 'NOT NULL' : 'NULL');
+        $params = [];
+
+        if ($view === 'mine' || $view === 'archived') {
+            $where .= ' AND (assigned_to_user_id = :user_id1 OR id IN (SELECT task_id FROM task_assignees WHERE user_id = :user_id2))';
+            $params += ['user_id1' => $userId, 'user_id2' => $userId];
+        } elseif ($view === 'created') {
+            $where .= ' AND created_by_user_id = :created_by';
+            $params['created_by'] = $userId;
+        }
+
+        if (!empty($criteria['status'])) {
+            $where .= ' AND status = :status';
+            $params['status'] = $criteria['status'];
+        }
+
+        // One of the organization's labels (T9 calendar filter); another's id matches nothing.
+        if (!empty($criteria['label_id'])) {
+            $where .= ' AND id IN (SELECT l.task_id FROM task_label_links l JOIN task_labels tl ON tl.id = l.label_id
+                WHERE l.label_id = :label_id AND tl.organization_id = :label_org)';
+            $params['label_id'] = (int) $criteria['label_id'];
+            $params['label_org'] = OrganizationContext::id();
+        }
+
+        // A custom status (T8): chosen on the task, or — for an original
+        // status — tasks untouched since that still carry its legacy value.
+        if (!empty($criteria['status_filter'])) {
+            $filter = $criteria['status_filter'];
+            $where .= ' AND (status_id = :status_id' . ($filter['system_key'] !== null ? ' OR (status_id IS NULL AND status = :status_system)' : '') . ')';
+            $params['status_id'] = (int) $filter['id'];
+            if ($filter['system_key'] !== null) {
+                $params['status_system'] = $filter['system_key'];
+            }
+        }
+
+        if (($criteria['search'] ?? '') !== '') {
+            // Distinct placeholders: real prepared statements reject a reused name.
+            $where .= ' AND (title LIKE :search1 OR description LIKE :search2
+                OR id IN (SELECT l.task_id FROM task_label_links l JOIN task_labels t ON t.id = l.label_id
+                          WHERE l.organization_id = :search_org AND t.name LIKE :search3))';
+            $like = '%' . addcslashes((string) $criteria['search'], '%_\\') . '%';
+            $params += ['search1' => $like, 'search2' => $like, 'search3' => $like, 'search_org' => OrganizationContext::id()];
+        }
+
+        $exclude = array_values(array_filter(array_map('intval', $criteria['exclude'] ?? []), fn (int $id) => $id > 0));
+        if ($exclude !== []) {
+            $where .= ' AND id NOT IN (' . implode(',', $exclude) . ')';
+        }
+
+        return [$where, $params];
     }
 
     /**

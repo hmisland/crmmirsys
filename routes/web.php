@@ -306,6 +306,39 @@ $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     $router->post('/custom-fields/{id}/delete', fn (Request $r) => $customFieldAdminController->delete($r), [new CsrfMiddleware()]);
 });
 
+// --- Integrations, public links (docs/integrations-architecture.md) ------
+// Organization settings → Integrations: organization.edit; each provider's
+// module entitlement is re-checked in IntegrationService on every action.
+$orgIntegrationsController = new \App\Application\Controllers\OrgIntegrationsController(
+    $container->make(TemplateEngine::class),
+    $container->make(\App\Infrastructure\Integrations\IntegrationService::class),
+    $container->make(\App\Infrastructure\Integrations\IntegrationWebhookReceiver::class)
+);
+$router->group('/org/integrations', [new AuthMiddleware(), new RbacMiddleware('organization.edit')], function (Router $router) use ($orgIntegrationsController) {
+    $router->get('', fn (Request $r) => $orgIntegrationsController->index($r));
+    $router->post('/new/{provider}', fn (Request $r) => $orgIntegrationsController->create($r), [new CsrfMiddleware()]);
+    $router->get('/{id}/webhook', fn (Request $r) => $orgIntegrationsController->webhookDetails($r));
+    $router->post('/{id}', fn (Request $r) => $orgIntegrationsController->update($r), [new CsrfMiddleware()]);
+    $router->post('/{id}/enabled', fn (Request $r) => $orgIntegrationsController->setEnabled($r), [new CsrfMiddleware()]);
+    $router->post('/{id}/test', fn (Request $r) => $orgIntegrationsController->test($r), [new CsrfMiddleware()]);
+    $router->post('/{id}/sync', fn (Request $r) => $orgIntegrationsController->sync($r), [new CsrfMiddleware()]);
+    $router->post('/{id}/delete', fn (Request $r) => $orgIntegrationsController->delete($r), [new CsrfMiddleware()]);
+});
+// Webhooks from external systems: no login, no CSRF — the random key finds the
+// connection, the provider's signature check authenticates; work is only queued.
+$router->post('/webhooks/integrations/{key}', fn (Request $r) => $orgIntegrationsController->receiveWebhook($r));
+
+// Public customer pages (no login): /p/{token}, handled by the module that owns the link's purpose.
+$publicLinkController = new \App\Application\Controllers\PublicLinkController(
+    $container->make(TemplateEngine::class),
+    $container->make(\App\Infrastructure\PublicLinks\PublicLinkService::class),
+    $container->make(\App\Infrastructure\PublicLinks\PublicLinkRegistry::class),
+    $container->make(\App\Infrastructure\Modules\OrganizationEntitlements::class),
+    dirname(__DIR__) . '/lang'
+);
+$router->get('/p/{token}', fn (Request $r) => $publicLinkController->show($r));
+$router->post('/p/{token}', fn (Request $r) => $publicLinkController->submit($r), [new CsrfMiddleware()]);
+
 // --- Super Admin (Phase 3/4) --------------------------------------------
 
 $router->get('/admin/organizations', fn (Request $r) => $superAdminController->index($r), [new AuthMiddleware()]);

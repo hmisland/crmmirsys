@@ -181,6 +181,44 @@ final class Application
         // Extra cards on /org/messaging, filled by modules that bring a provider (e.g. MarketingBale).
         $this->container->singleton(\App\Infrastructure\Messaging\MessagingSettingsCards::class, fn () => new \App\Infrastructure\Messaging\MessagingSettingsCards());
 
+        // Integrations, public links and the shared cron scheduler (docs/integrations-architecture.md).
+        // Modules register providers / link handlers / tasks here from their register().
+        $this->container->singleton(\App\Infrastructure\Modules\OrganizationEntitlements::class, fn () => new \App\Infrastructure\Modules\OrganizationEntitlements());
+        $this->container->singleton(\App\Infrastructure\Integrations\IntegrationRegistry::class, fn () => new \App\Infrastructure\Integrations\IntegrationRegistry());
+        $this->container->singleton(\App\Infrastructure\Integrations\IntegrationConnectionRepository::class, fn () => new \App\Infrastructure\Integrations\IntegrationConnectionRepository());
+        $this->container->singleton(\App\Infrastructure\Integrations\IntegrationJobRepository::class, fn () => new \App\Infrastructure\Integrations\IntegrationJobRepository());
+        $this->container->singleton(\App\Infrastructure\Integrations\IntegrationService::class, fn (Container $c) => new \App\Infrastructure\Integrations\IntegrationService(
+            $c->make(\App\Infrastructure\Integrations\IntegrationRegistry::class),
+            $c->make(\App\Infrastructure\Integrations\IntegrationConnectionRepository::class),
+            $c->make(\App\Infrastructure\Integrations\IntegrationJobRepository::class),
+            $c->make(ModuleGate::class)
+        ));
+        $this->container->singleton(\App\Infrastructure\Integrations\IntegrationWorker::class, fn (Container $c) => new \App\Infrastructure\Integrations\IntegrationWorker(
+            $c->make(\App\Infrastructure\Integrations\IntegrationRegistry::class),
+            $c->make(\App\Infrastructure\Integrations\IntegrationConnectionRepository::class),
+            $c->make(\App\Infrastructure\Integrations\IntegrationJobRepository::class),
+            $c->make(\App\Infrastructure\Modules\OrganizationEntitlements::class),
+            $c->make(LoggerInterface::class)
+        ));
+        $this->container->singleton(\App\Infrastructure\Integrations\IntegrationWebhookReceiver::class, fn (Container $c) => new \App\Infrastructure\Integrations\IntegrationWebhookReceiver(
+            $c->make(\App\Infrastructure\Integrations\IntegrationRegistry::class),
+            $c->make(\App\Infrastructure\Integrations\IntegrationConnectionRepository::class),
+            $c->make(\App\Infrastructure\Integrations\IntegrationJobRepository::class),
+            $c->make(\App\Infrastructure\Modules\OrganizationEntitlements::class)
+        ));
+        $this->container->singleton(\App\Infrastructure\PublicLinks\PublicLinkRegistry::class, fn () => new \App\Infrastructure\PublicLinks\PublicLinkRegistry());
+        $this->container->singleton(\App\Infrastructure\PublicLinks\PublicLinkService::class, fn () => new \App\Infrastructure\PublicLinks\PublicLinkService((string) Config::get('app.url', '')));
+        $this->container->singleton(\App\Infrastructure\Scheduling\ScheduledTasks::class, function (Container $c) {
+            $tasks = new \App\Infrastructure\Scheduling\ScheduledTasks($c->make(LoggerInterface::class));
+            $tasks->register('integrations', function (int $budget) use ($c): string {
+                $stats = $c->make(\App\Infrastructure\Integrations\IntegrationWorker::class)->run($budget);
+
+                return sprintf('scheduled=%d processed=%d failed=%d', $stats['scheduled'], $stats['processed'], $stats['failed']);
+            });
+
+            return $tasks;
+        });
+
         $this->container->singleton(ModuleServiceRegistrar::class, fn (Container $c) => new ModuleServiceRegistrar($c->make(LoggerInterface::class)));
 
         $this->container->singleton(MailerInterface::class, fn () => match (Config::get('mail.driver', 'log')) {

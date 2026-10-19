@@ -122,6 +122,10 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
             showPath: '/projects/{id}',
             icon: 'kanban',
             finder: fn (int $id): ?array => $projects->findById($id),
+            // Projects' own rule for other modules' lookups: permission scope
+            // or membership — the same as the project page (ProjectService::canView).
+            viewer: fn (array $user, array $row): bool => $this->projectService->canView($user, $row),
+            lister: fn (array $user, int $limit): array => $this->projectService->list($user, [], $limit),
         ));
     }
 

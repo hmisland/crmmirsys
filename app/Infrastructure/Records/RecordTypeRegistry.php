@@ -108,6 +108,73 @@ final class RecordTypeRegistry
         return $this->gate->allows($user, $type->module, $type->viewPermission, $row) ? $row : null;
     }
 
+    /**
+     * Like find(), but a row is visible by the owning module's own rule when
+     * it registered one (RecordType::$viewer — e.g. Projects: permission scope
+     * OR membership, as on the project page) instead of the generic record
+     * scope. Opt-in: find() keeps its behavior for every existing caller.
+     */
+    public function findVisible(string $key, int $id, ?array $user): ?array
+    {
+        $type = $this->get($key);
+
+        if ($type === null || $type->viewer === null) {
+            return $this->find($key, $id, $user);
+        }
+
+        if ($type->finder === null || $id <= 0 || $user === null || !$this->canView($key, $user)) {
+            return null;
+        }
+
+        $row = ($type->finder)($id);
+
+        if (!is_array($row)) {
+            return null;
+        }
+
+        if (empty($user['is_super_admin']) && isset($row['organization_id']) && (int) $row['organization_id'] !== (int) ($user['organization_id'] ?? 0)) {
+            return null;
+        }
+
+        return ($type->viewer)($user, $row) ? $row : null;
+    }
+
+    /**
+     * Does the record exist in the user's organization — independent of
+     * whether the user may see it? null when the type is not available to
+     * the user (or has no finder): then nothing about its rows is answered.
+     * Lets a caller show "deleted" instead of "restricted" without ever
+     * reading a row the user may not see.
+     */
+    public function exists(string $key, int $id, ?array $user): ?bool
+    {
+        $type = $this->get($key);
+
+        if ($type === null || $type->finder === null || !$this->canView($key, $user)) {
+            return null;
+        }
+
+        $row = $id > 0 ? ($type->finder)($id) : null;
+
+        return is_array($row)
+            && (!empty($user['is_super_admin']) || !isset($row['organization_id']) || (int) $row['organization_id'] === (int) ($user['organization_id'] ?? 0));
+    }
+
+    /**
+     * Rows of a type this user may pick (the owner's lister), [] when the
+     * type is not available to the user or has no lister.
+     */
+    public function listFor(string $key, ?array $user, int $limit = 200): array
+    {
+        $type = $this->get($key);
+
+        if ($type === null || $type->lister === null || $user === null || !$this->canView($key, $user)) {
+            return [];
+        }
+
+        return ($type->lister)($user, max(1, $limit));
+    }
+
     /** @return RecordType[] the types this user may view */
     public function viewableBy(?array $user): array
     {

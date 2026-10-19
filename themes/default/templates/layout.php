@@ -106,6 +106,12 @@ $marketingEnabled = $authUser !== null && (new ModuleAccessResolver(
     new UserModuleOverrideRepository()
 ))->resolvedForUser('marketing', $authUser);
 
+$cxEnabled = $authUser !== null && (new ModuleAccessResolver(
+    new ModuleRepository(),
+    new OrganizationModuleRepository(),
+    new UserModuleOverrideRepository()
+))->resolvedForUser('customer_satisfaction', $authUser);
+
 // ---------------------------------------------------------------------
 // Navigation model (presentation only). Each group is one module area;
 // each item lists the URL prefixes that count as "inside" it, so the
@@ -187,6 +193,9 @@ if ($hasOrg) {
     }
     if ($marketingEnabled) {
         $commItems[] = ['href' => '/marketing', 'icon' => 'megaphone', 'label' => t('marketing.title'), 'match' => ['/marketing']];
+    }
+    if ($cxEnabled) {
+        $commItems[] = ['href' => '/cx', 'icon' => 'smile', 'label' => t('cx.title'), 'match' => ['/cx']];
     }
     if ($commItems !== []) {
         $navGroups[] = ['label' => t('nav.group_communication'), 'items' => $commItems];

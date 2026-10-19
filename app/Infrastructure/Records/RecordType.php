@@ -24,6 +24,13 @@ final class RecordType
      *        routes (/records/{type}/{id}/...) accept this type; a module that
      *        registers a type only to be linkable (e.g. Sales' `deal`, which has
      *        its own notes) passes false so those routes keep 404ing for it
+     * @param \Closure(array $user, array $row): bool|null $viewer the owning
+     *        module's own rule for "may this user see this row" (e.g. Projects:
+     *        permission scope OR membership); used by RecordTypeRegistry::find()
+     *        instead of the generic record-scope check. Optional.
+     * @param \Closure(array $user, int $limit): array|null $lister the rows this
+     *        user may pick (most relevant first), for other modules' selectors
+     *        (RecordTypeRegistry::listFor()). Optional.
      */
     public function __construct(
         public readonly string $key,
@@ -34,6 +41,8 @@ final class RecordType
         public readonly ?string $icon = null,
         public readonly ?\Closure $finder = null,
         public readonly bool $recordSupport = true,
+        public readonly ?\Closure $viewer = null,
+        public readonly ?\Closure $lister = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9_]{0,49}$/', $key) !== 1) {
             throw new \InvalidArgumentException("Invalid record type key [{$key}].");

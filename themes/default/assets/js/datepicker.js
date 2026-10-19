@@ -514,7 +514,13 @@
             var cur = currentPartsOrToday();
             viewYear = cur.y; viewMonth = cur.m; viewMode = 'days';
             renderCalendar();
-            document.body.appendChild(popup);
+            // Inside a modal <dialog> (showModal) the page under it is inert and
+            // drawn below the top layer, so a popup in <body> would be hidden and
+            // unclickable: put it in the dialog itself (still position: fixed, so
+            // it is placed exactly the same). Elsewhere: <body>, as before.
+            var host = input.closest ? input.closest('dialog') : null;
+            (host || document.body).appendChild(popup);
+            if (host) host.addEventListener('close', closePopup, { once: true });
             positionPopup();
             document.addEventListener('click', onOutsideClick, true);
             window.addEventListener('scroll', positionPopup, true);

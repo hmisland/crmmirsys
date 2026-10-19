@@ -83,6 +83,13 @@ $currentTimezone = (string) ($old['default_timezone'] ?? $organization['default_
             <a href="/org/messaging"><?= icon('settings') ?><?= e(t('messaging.settings_link')) ?></a>
         </div>
     </section>
+
+    <section class="card settings-tile">
+        <h2><span class="kpi__icon kpi__icon--info"><?= icon('plug') ?></span><?= e(t('integrations.title')) ?></h2>
+        <div class="settings-tile__links">
+            <a href="/org/integrations"><?= icon('settings') ?><?= e(t('integrations.settings_link')) ?></a>
+        </div>
+    </section>
     <?php endif; ?>
 
     <?php if ($enabledModules['notifications']): ?>

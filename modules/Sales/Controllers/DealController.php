@@ -123,6 +123,11 @@ final class DealController extends BaseController
             'tasks' => $tasks,
             'taskCan' => $this->tasks->capabilities($user),
             'taskActions' => $this->tasks->actionsFor($user, $tasks),
+            'taskStatuses' => $this->tasks->statusMap(),
+            'taskProgress' => $this->tasks->checklistProgressFor($tasks),
+            'taskLabels' => $this->tasks->labelsFor($tasks),
+            'taskRelated' => $this->tasks->relatedFor($user, $tasks),
+            'fmt' => TaskController::formatter(),
             'users' => $this->tasks->assignableUsers((int) $user['organization_id']),
         ]);
     }

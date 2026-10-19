@@ -111,6 +111,73 @@
         d.showModal();
     });
 
+    // ---- Open a dialog from a link: <a href="…" data-open-dialog="<id>"> ----
+    // The href is the no-JS path (a page that renders the dialog open).
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest ? e.target.closest('[data-open-dialog]') : null;
+        if (!trigger) return;
+        var d = document.getElementById(trigger.getAttribute('data-open-dialog'));
+        if (!d || typeof d.showModal !== 'function' || d.open) return;
+        e.preventDefault();
+        d.showModal();
+    });
+
+    // ---- Task checklist: add / tick an item without reloading the page ----
+    // The forms are ordinary posts (they work without JS); here they are
+    // sent with fetch() and the server answers with the item's HTML and the
+    // new progress. Any failure without a message falls back to a reload.
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        var box = form.closest ? form.closest('[data-checklist]') : null;
+        if (!box || !window.fetch || !window.FormData) return;
+        var adding = form.hasAttribute('data-checklist-add');
+        if (!adding && !form.hasAttribute('data-checklist-toggle')) return;
+        e.preventDefault();
+        var error = box.querySelector('[data-checklist-error]');
+
+        fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.json().then(function (json) { return { ok: r.ok, json: json }; }); })
+            .then(function (res) {
+                if (!res.ok || !res.json.data) {
+                    var message = res.json && res.json.errors && res.json.errors[0] ? res.json.errors[0].title : '';
+                    if (error && message) {
+                        error.textContent = message;
+                        error.hidden = false;
+                    } else {
+                        window.location.reload();
+                    }
+                    return;
+                }
+                if (error) error.hidden = true;
+                var data = res.json.data;
+                var holder = document.createElement('div');
+                holder.innerHTML = data.html.trim();
+                if (adding) {
+                    box.querySelector('[data-checklist-list]').appendChild(holder.firstElementChild);
+                    form.reset();
+                    form.querySelector('input[name="title"]').focus();
+                } else {
+                    form.closest('[data-checklist-item]').replaceWith(holder.firstElementChild);
+                }
+                var total = data.progress.total, done = data.progress.done;
+                var bar = box.querySelector('[data-checklist-progress]');
+                var count = box.querySelector('[data-checklist-count]');
+                var empty = box.querySelector('[data-checklist-empty]');
+                if (bar) {
+                    bar.max = Math.max(1, total);
+                    bar.value = done;
+                    bar.hidden = total === 0;
+                    bar.classList.toggle('progress--done', total > 0 && done === total);
+                }
+                if (count) {
+                    count.textContent = data.progress_label;
+                    count.hidden = total === 0;
+                }
+                if (empty) empty.hidden = total > 0;
+            })
+            .catch(function () { form.submit(); });
+    });
+
     // ---- Number / money inputs ------------------------------------------
     // Amount-like <input type="number"> (decimal step, or an amount-ish
     // name) show thousand separators, accept max 3 decimals and
