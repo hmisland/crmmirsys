@@ -96,6 +96,12 @@ final class ResponseService
             if (!$this->links->consume($link)) {
                 return false;
             }
+            if (!empty($invitation['is_test'])) {
+                // Phase E: a test answer shows the real thank-you page but is not stored as a response.
+                $this->repository->updateInvitation((int) $invitation['id'], (int) $invitation['organization_id'], ['status' => 'responded']);
+
+                return true;
+            }
             $responseId = $this->repository->createResponse([
                 'survey_id' => (int) $survey['id'],
                 'invitation_id' => (int) $invitation['id'],

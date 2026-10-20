@@ -74,7 +74,12 @@ final class CustomerSatisfactionModule implements ModuleInterface, ProvidesServi
         $this->surveys = new SurveyService($repository, $container->make(AuthorizationEngine::class));
         $this->responses = new ResponseService($repository, $links);
         $this->invitations = new InvitationService($repository, $links, $container->make(OrganizationEntitlements::class), $container, $langPath);
-        $this->controller = new CxController($templates, $this->surveys, $repository, fn (): bool => $container->has(TransactionalDeliveryInterface::class));
+        $this->controller = new CxController(
+            $templates, $this->surveys, $repository,
+            fn (): bool => $container->has(TransactionalDeliveryInterface::class),
+            $this->invitations,
+            fn (): ?TransactionalDeliveryInterface => $container->has(TransactionalDeliveryInterface::class) ? $container->make(TransactionalDeliveryInterface::class) : null,
+        );
 
         $container->make(EventBus::class)->listen(ExternalOrderStatusChanged::class, new OrderStatusListener($this->invitations));
         $container->make(PublicLinkRegistry::class)->register(new SurveyLinkHandler($templates, $this->responses, $links));
@@ -110,6 +115,7 @@ final class CustomerSatisfactionModule implements ModuleInterface, ProvidesServi
             $router->get('/surveys/{id}/edit', fn (Request $r) => $controller->form($r), [$manage]);
             $router->post('/surveys/{id}', fn (Request $r) => $controller->save($r), [$manage, $csrf]);
             $router->post('/responses/{id}/follow-up', fn (Request $r) => $controller->closeFollowUp($r), [$manage, $csrf]);
+            $router->post('/test', fn (Request $r) => $controller->sendTest($r), [$manage, $csrf]);
         });
     }
 

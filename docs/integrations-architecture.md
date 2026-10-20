@@ -114,3 +114,13 @@ Per shop: Organization settings → Integrations → shop → **Contact sync**
   `0002_add_contact_sync` (customer address + sync state columns, settings table). The sync never sends a
   message or starts a campaign.
 
+## Phase E — test survey invitation (done)
+
+Customer Satisfaction → "Send a test invitation" (`POST /cx/test`, `cx.manage`, 10 per user per hour): a real
+invitation for any survey of the organization (also one not switched on yet) goes to the user's own profile
+mobile or email through the normal flow — fresh single-use public link, Marketing `TransactionalDeliveryInterface`
+(purpose `cx_survey_test`), only on a channel that is ready. The invitation is marked `is_test` (Customer
+Satisfaction migration `0003`) and the message starts with "[Test]": no order, no contact, never retried (a
+failure is shown at once and the row is closed), shown as "Test" in the invitations list, and answering it shows
+the real thank-you page and uses up the link but stores no survey response — statistics and follow-ups stay clean.
+

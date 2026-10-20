@@ -89,6 +89,12 @@ final class CxRepository extends BaseRepository
         return $this->query($sql, $fields)->rowCount() === 1;
     }
 
+    /** Phase E: a test invitation row; returns its id. */
+    public function createTestInvitation(array $fields): int
+    {
+        return $this->insertGetId('cx_invitations', ['organization_id' => OrganizationContext::id(), 'is_test' => 1] + $fields);
+    }
+
     public function invitation(int $id): ?array
     {
         return $this->findOne('SELECT * FROM cx_invitations WHERE id = :id AND organization_id = :org', ['id' => $id, 'org' => OrganizationContext::id()]);
@@ -150,7 +156,7 @@ final class CxRepository extends BaseRepository
     public function recentInvitations(int $limit = 20): array
     {
         return $this->findMany(
-            'SELECT i.id, i.status, i.channel, i.context_label, i.recipient_name, i.send_after, i.sent_at, i.last_error, s.name AS survey_name
+            'SELECT i.id, i.is_test, i.status, i.channel, i.context_label, i.recipient_name, i.send_after, i.sent_at, i.last_error, s.name AS survey_name
                FROM cx_invitations i JOIN cx_surveys s ON s.id = i.survey_id
               WHERE i.organization_id = :org ORDER BY i.id DESC LIMIT ' . max(1, $limit),
             ['org' => OrganizationContext::id()]

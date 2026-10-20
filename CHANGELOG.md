@@ -4,6 +4,13 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Phase E — Test survey invitation
+- **Customer Satisfaction → Send a test invitation** (users with `cx.manage`): choose a survey (also one not switched on yet) and a ready channel; a real invitation with a single-use link goes to your own profile mobile or email through the normal invitation flow and Marketing delivery.
+- Clearly a test: "[Test]" at the start of the message, "Test" in the invitations list, purpose "survey (test)" in Marketing → Transactional.
+- No pollution: no order, no contact, never retried; answering it uses up the link and shows the thank-you page but stores no survey response (results and follow-ups unchanged).
+- Clear errors when the profile has no mobile / email or no channel is ready; at most 10 tests per user per hour; another organization's survey is refused.
+- Migration: Customer Satisfaction `0003_add_is_test_to_cx_invitations` (additive). 18 new translation keys × 5 languages. New suite `CxTestInvitationTest` (10); 6 mutation checks.
+
 ### Phase D — Scheduled Marketing campaigns
 - **Send later:** the approval form takes an optional send date (date picker) and time in the organization's time zone; stored as UTC (`marketing_campaigns.scheduled_at`), at least one minute and at most one year ahead.
 - The campaign is approved and queued as before (recipients fixed at approval; large audiences prepared in the background ahead of time); the worker — cron or the open campaign page — starts sending only once the time has come. Repeated runs cannot send twice (existing claims).

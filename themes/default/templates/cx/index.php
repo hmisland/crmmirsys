@@ -9,6 +9,7 @@
  * @var array[] $followUps
  * @var bool $canManage
  * @var bool $deliveryAvailable a delivery channel (Marketing) is installed
+ * @var array{channels: string[], email: ?string, phone: ?string}|null $test test invitation options (cx.manage only)
  */
 
 use App\Infrastructure\Security\Csrf;
@@ -80,6 +81,36 @@ $sentimentTone = fn (?string $s): string => match ($s) {
         </table>
     </div>
 </section>
+
+<?php if ($test !== null && $surveys !== []): ?>
+<section class="card" id="test-invitation">
+    <h2><?= icon('send') ?><?= e(t('cx.test.title')) ?></h2>
+    <p class="field-hint"><?= e(t('cx.test.intro')) ?></p>
+    <?php if ($test['channels'] === []): ?>
+        <div class="alert alert--warning"><?= e(t('cx.test.error.channel_unavailable')) ?></div>
+    <?php else: ?>
+        <form method="post" action="/cx/test" class="card--form">
+            <?= Csrf::field() ?>
+            <label for="cx-test-survey"><?= e(t('cx.test.survey')) ?></label>
+            <select id="cx-test-survey" name="survey_id" required>
+                <?php foreach ($surveys as $s): ?>
+                    <option value="<?= e($s['id']) ?>"><?= e($s['name']) ?> (<?= e(t('cx.status.' . $s['status'])) ?>)</option>
+                <?php endforeach; ?>
+            </select>
+            <label for="cx-test-channel"><?= e(t('cx.test.channel')) ?></label>
+            <select id="cx-test-channel" name="channel" required>
+                <?php foreach ($test['channels'] as $ch): ?>
+                    <option value="<?= e($ch) ?>"><?= e(t('cx.channel.' . $ch)) ?> — <?= e((string) (($ch === 'email' ? $test['email'] : $test['phone']) ?? t('cx.test.no_address'))) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <div class="field-hint"><?= e(t('cx.test.recipient_hint')) ?> <a href="/profile"><?= e(t('cx.test.profile_link')) ?></a></div>
+            <div class="actions">
+                <button type="submit" class="btn btn--primary"><?= icon('send') ?><?= e(t('cx.test.send')) ?></button>
+            </div>
+        </form>
+    <?php endif; ?>
+</section>
+<?php endif; ?>
 
 <section class="card" id="follow-ups">
     <h2><?= icon('alert-triangle') ?><?= e(t('cx.follow_ups')) ?></h2>
@@ -174,7 +205,7 @@ $sentimentTone = fn (?string $s): string => match ($s) {
             <tbody>
             <?php foreach ($invitations as $i): ?>
                 <tr>
-                    <td><?= e($i['survey_name']) ?><?php if (!empty($i['context_label'])): ?><div class="muted"><?= e(t('cx.order_label', ['order' => (string) $i['context_label']])) ?></div><?php endif; ?></td>
+                    <td><?= e($i['survey_name']) ?><?php if (!empty($i['is_test'])): ?> <?= badge(t('cx.test.badge'), 'scheduled') ?><?php elseif (!empty($i['context_label'])): ?><div class="muted"><?= e(t('cx.order_label', ['order' => (string) $i['context_label']])) ?></div><?php endif; ?></td>
                     <td><?= e($i['recipient_name'] ?? '—') ?></td>
                     <td>
                         <?= badge(t('cx.invitation_status.' . $i['status']), $i['status']) ?>

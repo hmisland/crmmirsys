@@ -113,19 +113,70 @@ final class InvitationService
         return $stats;
     }
 
+    /**
+     * Phase E: a test invitation to the CURRENT user's own mobile / email,
+     * through the same flow (fresh single-use link, Marketing delivery) —
+     * no order, no contact, no retries; also for a survey that is not
+     * active yet. The caller (CxController) checks cx.manage and the rate limit.
+     *
+     * @return array{status: string, error: ?string} status: sent | failed
+     */
+    public function sendTest(int $surveyId, string $channel, string $recipientName, ?string $email, ?string $phone, string $locale): array
+    {
+        $survey = $this->repository->survey($surveyId);
+        if ($survey === null) {
+            return ['status' => 'failed', 'error' => 'cx.test.error.survey'];
+        }
+        $delivery = $this->container->has(TransactionalDeliveryInterface::class) ? $this->container->make(TransactionalDeliveryInterface::class) : null;
+        $organizationId = OrganizationContext::id();
+        if ($delivery === null || !in_array($channel, SurveyService::CHANNELS, true) || !in_array($channel, $delivery->availableChannels($organizationId), true)) {
+            return ['status' => 'failed', 'error' => 'cx.test.error.channel_unavailable'];
+        }
+        if (($channel === 'email' ? $email : $phone) === null) {
+            return ['status' => 'failed', 'error' => $channel === 'email' ? 'cx.test.error.no_email' : 'cx.test.error.no_mobile'];
+        }
+
+        $id = $this->repository->createTestInvitation([
+            'survey_id' => $surveyId,
+            'source' => 'test',
+            'context_type' => 'test',
+            'context_ref' => 'test:' . bin2hex(random_bytes(8)),
+            'context_label' => 'TEST',
+            'recipient_name' => mb_substr($recipientName, 0, 200),
+            'recipient_email' => $channel === 'email' ? $email : null,
+            'recipient_phone' => $channel === 'email' ? null : $phone,
+            'locale' => in_array($locale, Translator::SUPPORTED_LOCALES, true) ? $locale : null,
+            'status' => 'scheduled',
+            'send_after' => date('Y-m-d H:i:s'),
+        ]);
+        $invitation = $this->repository->invitation($id);
+        $result = $invitation !== null ? $this->dispatchOne($invitation, $delivery, $channel) : 'failed';
+        $invitation = $this->repository->invitation($id);
+        if ($result !== 'sent') {
+            // A test is never retried later in the background.
+            $this->repository->updateInvitation($id, $organizationId, ['status' => 'failed']);
+
+            return ['status' => 'failed', 'error' => (string) ($invitation['last_error'] ?? 'cx.error.delivery_exception')];
+        }
+
+        return ['status' => 'sent', 'error' => null];
+    }
+
     /** @return string sent | waiting | failed */
-    private function dispatchOne(array $invitation, ?TransactionalDeliveryInterface $delivery): string
+    private function dispatchOne(array $invitation, ?TransactionalDeliveryInterface $delivery, ?string $forcedChannel = null): string
     {
         $id = (int) $invitation['id'];
         $organizationId = (int) $invitation['organization_id'];
+        $isTest = !empty($invitation['is_test']);
         $survey = $this->repository->survey((int) $invitation['survey_id']);
-        if ($survey === null || $survey['status'] !== 'active') {
+        // A test may try a survey before it is switched on; a real invitation never is.
+        if ($survey === null || ($survey['status'] !== 'active' && !$isTest)) {
             $this->repository->updateInvitation($id, $organizationId, ['status' => 'cancelled', 'last_error' => 'cx.error.survey_inactive']);
 
             return 'failed';
         }
 
-        $channel = $this->chooseChannel($invitation, $survey, $delivery?->availableChannels($organizationId) ?? []);
+        $channel = $forcedChannel ?? $this->chooseChannel($invitation, $survey, $delivery?->availableChannels($organizationId) ?? []);
         if ($delivery === null || $channel === null) {
             $this->repository->updateInvitation($id, $organizationId, [
                 'status' => 'waiting_channel',
@@ -158,6 +209,9 @@ final class InvitationService
         if (!str_contains($text, $link['url'])) {
             $text .= "\n" . $link['url'];
         }
+        if ($isTest) {
+            $text = $translator->get('cx.test.message_prefix') . ' ' . $text;
+        }
 
         try {
             $receipt = $delivery->deliver(new TransactionalMessage(
@@ -167,7 +221,7 @@ final class InvitationService
                 $name,
                 $translator->get('cx.invitation.subject'),
                 $text,
-                self::LINK_PURPOSE,
+                $isTest ? self::LINK_PURPOSE . '_test' : self::LINK_PURPOSE,
                 'cx_invitation:' . $id,
                 $invitation['contact_id'] !== null ? (int) $invitation['contact_id'] : null,
                 $locale,
