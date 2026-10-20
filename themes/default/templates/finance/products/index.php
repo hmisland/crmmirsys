@@ -11,10 +11,23 @@ use function App\Infrastructure\Theme\icon;
 
     <div class="actions">
         <a href="/finance/products/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('products.new')) ?></a>
+        <?php if (!empty($taxCatalogAvailable)): ?>
+            <a href="/finance/products/tax-catalog" class="btn"><?= icon('receipt') ?><?= e(t('products.tax_catalog.button')) ?></a>
+        <?php else: ?>
+            <span title="<?= e(t('products.tax_catalog.unavailable')) ?>"><button type="button" class="btn" disabled aria-describedby="tax-catalog-off"><?= icon('receipt') ?><?= e(t('products.tax_catalog.button')) ?></button></span>
+        <?php endif; ?>
     </div>
+    <?php if (empty($taxCatalogAvailable)): ?>
+        <p class="field-hint" id="tax-catalog-off"><?= icon('info') ?> <?= e(t('products.tax_catalog.unavailable')) ?> <a href="/org/tickets/create"><?= e(t('platform_tickets.new')) ?></a></p>
+    <?php endif; ?>
 
     <form method="get" action="/finance/products" class="inline-form-row filter-bar">
         <input type="text" name="q" value="<?= e($q) ?>" placeholder="<?= e(t('products.search_placeholder')) ?>" aria-label="<?= e(t('common.search')) ?>">
+        <select name="tax_source" aria-label="<?= e(t('products.tax_source_filter')) ?>" data-autosubmit>
+            <option value=""><?= e(t('products.tax_source_all')) ?></option>
+            <option value="catalog"<?= ($taxSource ?? '') === 'catalog' ? ' selected' : '' ?>><?= e(t('products.tax_source_catalog')) ?></option>
+            <option value="manual"<?= ($taxSource ?? '') === 'manual' ? ' selected' : '' ?>><?= e(t('products.tax_source_manual')) ?></option>
+        </select>
         <button type="submit" class="btn"><?= icon('search') ?><?= e(t('common.search')) ?></button>
         <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('filters.apply')) ?></button>
         <?php if ($pagination->filterQuery() !== []): ?><a href="/finance/products" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a><?php endif; ?>
@@ -33,7 +46,7 @@ use function App\Infrastructure\Theme\icon;
             <tr>
                 <td class="cell-check"><input type="checkbox" name="ids[]" value="<?= e($p['id']) ?>" form="bulk-form" data-bulk-item aria-label="<?= e(t('bulk.select_row')) ?>" <?= $actions['delete'] ? '' : 'disabled' ?>></td>
                 <td class="muted"><?= e($p['sku'] ?? '—') ?></td>
-                <td><a href="/finance/products/<?= e($p['id']) ?>/edit"><?= e($p['name']) ?></a></td>
+                <td><a href="/finance/products/<?= e($p['id']) ?>/edit"><?= e($p['name']) ?></a><?php if (!empty($p['tax_product_code'])): ?> <span class="muted ltr"><?= e($p['tax_product_code']) ?></span><?php endif; ?></td>
                 <td><?= e(\App\Infrastructure\Theme\money($p['price'], $p['currency_code'])) ?> <?= e($p['currency_code']) ?></td>
                 <td><?= $p['is_active'] ? e(t('products.active')) : e(t('products.inactive')) ?></td>
                 <td class="actions-cell"><?php $editUrl = '/finance/products/' . $p['id'] . '/edit'; $deleteUrl = '/finance/products/' . $p['id'] . '/delete'; include __DIR__ . '/../../partials/row-actions.php'; ?></td>

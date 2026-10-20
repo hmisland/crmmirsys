@@ -16,6 +16,7 @@ final class ProductService
     public function __construct(
         private readonly ProductRepository $products,
         private readonly AuthorizationEngine $authorization,
+        private readonly ?KalaCatalog $kala = null,
     ) {
     }
 
@@ -42,7 +43,7 @@ final class ProductService
     {
         $this->authorize($actingUser, Permission::PRODUCTS_CREATE);
 
-        $fields = $this->validatedFields($input);
+        $fields = $this->validatedFields($input, null);
         $fields['organization_id'] = $actingUser['organization_id'];
         $id = $this->products->create($fields);
 
@@ -53,7 +54,11 @@ final class ProductService
     {
         $this->authorize($actingUser, Permission::PRODUCTS_EDIT);
 
-        $this->products->updateProduct($id, $this->validatedFields($input));
+        $existing = $this->products->findById($id);
+        if ($existing === null) {
+            throw new NotFoundException('Product not found.');
+        }
+        $this->products->updateProduct($id, $this->validatedFields($input, $existing));
 
         return $this->products->findById($id);
     }
@@ -65,7 +70,7 @@ final class ProductService
         $this->products->deleteProduct($id);
     }
 
-    private function validatedFields(array $input): array
+    private function validatedFields(array $input, ?array $existing): array
     {
         if (trim((string) ($input['name'] ?? '')) === '') {
             throw new ValidationException(['name' => ['Name is required.']]);
@@ -90,6 +95,51 @@ final class ProductService
             'tax_category_id' => isset($input['tax_category_id']) && $input['tax_category_id'] !== '' ? (int) $input['tax_category_id'] : null,
             'tax_profile_id' => isset($input['tax_profile_id']) && $input['tax_profile_id'] !== '' ? (int) $input['tax_profile_id'] : null,
             'is_active' => isset($input['is_active']) ? 1 : 0,
+        ] + $this->taxFields($input, $existing);
+    }
+
+    /**
+     * Tax product ID, exempt / taxable and VAT percent (all optional).
+     * An ID taken from the national list (source "catalog") is locked: it
+     * is kept as it is, whatever the form sends. "From the list" is only
+     * believed when kala.db really has that ID — never from a form value
+     * alone; otherwise a typed ID is "manual" and stays editable.
+     */
+    private function taxFields(array $input, ?array $existing): array
+    {
+        // A request without the tax section (another caller) leaves the saved values alone.
+        if ($existing !== null && !array_key_exists('tax_product_code', $input) && !array_key_exists('vat_rate', $input)) {
+            return array_intersect_key($existing, array_flip(['tax_product_code', 'tax_product_source', 'vat_exempt', 'vat_rate']));
+        }
+        $errors = [];
+        if (($existing['tax_product_source'] ?? null) === 'catalog') {
+            $code = (string) $existing['tax_product_code'];
+            $source = 'catalog';
+        } else {
+            $raw = trim((string) ($input['tax_product_code'] ?? ''));
+            $code = $raw === '' ? null : KalaCatalog::code($raw);
+            if ($raw !== '' && $code === null) {
+                $errors['tax_product_code'] = ['products.error.tax_code'];
+            }
+            $fromCatalog = $existing === null && ($input['tax_from_catalog'] ?? '') === '1'
+                && $code !== null && $this->kala !== null && $this->kala->find($code) !== null;
+            $source = $code === null ? null : ($fromCatalog ? 'catalog' : 'manual');
+        }
+
+        $exempt = (string) ($input['vat_exempt'] ?? '');
+        $rate = trim(strtr((string) ($input['vat_rate'] ?? ''), ['٫' => '.', '/' => '.']));
+        if ($rate !== '' && (!is_numeric($rate) || (float) $rate < 0 || (float) $rate > 100)) {
+            $errors['vat_rate'] = ['products.error.vat_rate'];
+        }
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
+        return [
+            'tax_product_code' => $code,
+            'tax_product_source' => $source,
+            'vat_exempt' => in_array($exempt, ['0', '1'], true) ? (int) $exempt : null,
+            'vat_rate' => $rate !== '' ? number_format((float) $rate, 2, '.', '') : null,
         ];
     }
 

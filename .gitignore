@@ -41,3 +41,5 @@ kala.db-shm
 kala.db-wal
 .backup/
 backups/
+storage/kala/*
+!storage/kala/.gitkeep

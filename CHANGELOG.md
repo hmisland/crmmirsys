@@ -4,6 +4,13 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Products ← tax product ID (national list)
+- Products get an optional **tax product ID** (13 digits), VAT status (taxable / exempt) and VAT %, in a new "Tax information" section of the product form. An ID taken from the national list is locked; one typed by hand stays editable. The old way of defining a product is unchanged.
+- New button "New product from tax product ID" next to "New product": a page with *My products*, *Frequently used* (per organization; green star removes, "+" opens the product form prefilled — name, ID, taxable/exempt, VAT %, all editable — and the item leaves the list once saved) and a live search (prefix, Persian/Arabic letters and digits normalized, or the 13-digit ID; star adds to *Frequently used*).
+- Reads the national list from `kala.db` (the tax project's SQLite file, read-only), path `KALA_DB_PATH`, default `storage/kala/kala.db`. Without it (or while `kala.db.building` exists) the button is shown disabled with "send a ticket to the administrator" and a link to a new ticket.
+- Products list: filter "entered from tax product ID / entered manually".
+- Migrations: module `finance` `0025_add_tax_product_fields_to_products`, `0026_create_product_tax_favorites_table`. 33 new translation keys × 5 languages. New suite `TaxCatalogTest`.
+
 ### Customer Portal V1 (read-only)
 - New module **Customer Portal** (`customer_portal`): a CRM contact signs in at `/customer/login/{organization}` with a one-time code — to the registered email, else the mobile (SMS verify template), or via national ID → masked destination chosen by the customer — and sees, read-only, their profile, their surveys (and can answer them), invoices and proformas. No editing, no payments, no orders.
 - Separate from staff sign-in: own session keys and middleware, no `users` row, no staff permissions. Every customer query is limited to the signed-in organization AND contact; other records are 404. Codes hashed, single-use, 5-minute validity, 5 tries, 60-second resend cooldown, hourly cap, rate limits per IP / identifier / organization; unknown and ambiguous identifiers get the same answer and never sign in.

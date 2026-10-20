@@ -25,6 +25,8 @@ final class ProductController extends BaseController
         private readonly ProductService $products,
         private readonly CurrencyRepository $currencies,
         private readonly TaxProfileRepository $taxProfiles,
+        private readonly ?\Modules\Finance\Services\KalaCatalog $kala = null,
+        private readonly ?\Modules\Finance\ProductTaxFavoriteRepository $taxFavorites = null,
     ) {
         parent::__construct($templates);
     }
@@ -39,8 +41,10 @@ final class ProductController extends BaseController
 
     public function index(Request $request): Response
     {
+        $taxSource = in_array($request->query('tax_source'), ['catalog', 'manual'], true) ? (string) $request->query('tax_source') : '';
         [$products, $pagination] = Pagination::slice($this->products->list(CurrentUser::user(), [
             'search' => trim((string) $request->query('q', '')),
+            'tax_source' => $taxSource,
         ]), $request);
 
         return $this->viewWithLayout('finance/products/index', 'layout', [
@@ -48,17 +52,35 @@ final class ProductController extends BaseController
             'rowActions' => $this->products->rowPermissions(CurrentUser::user(), $products),
             'pagination' => $pagination,
             'q' => (string) $request->query('q', ''),
+            'taxSource' => $taxSource,
+            // "New product from the tax product ID": enabled only while kala.db can be read.
+            'taxCatalogAvailable' => $this->kala?->available() ?? false,
         ]);
     }
 
     public function showCreate(Request $request): Response
     {
+        // ?tax_code=… (from the tax catalog's "+"): the form prefilled from the national list.
+        $old = [];
+        $item = $request->query('tax_code') !== null && $this->kala !== null ? $this->kala->find((string) $request->query('tax_code')) : null;
+        if ($item !== null) {
+            $exempt = \Modules\Finance\Services\KalaCatalog::exemptFlag($item['taxable']);
+            $old = [
+                'name' => $item['title'],
+                'tax_product_code' => $item['id'],
+                'tax_from_catalog' => '1',
+                'vat_exempt' => $exempt !== null ? (string) $exempt : '',
+                'vat_rate' => $item['vat'] !== null ? (string) $item['vat'] : '',
+                'is_active' => '1',
+            ];
+        }
+
         return $this->viewWithLayout('finance/products/form', 'layout', [
             'product' => null,
             'currencies' => $this->currencies->all(),
             'taxProfiles' => $this->taxProfiles->availableFor((int) CurrentUser::user()['organization_id']),
             'errors' => [],
-            'old' => [],
+            'old' => $old,
         ]);
     }
 
@@ -74,6 +96,11 @@ final class ProductController extends BaseController
                 'errors' => $e->errors,
                 'old' => $request->all(),
             ], 422);
+        }
+
+        // Created from the national list: it now is one of "my products", no longer "frequently used".
+        if (($product['tax_product_source'] ?? null) === 'catalog') {
+            $this->taxFavorites?->remove((string) $product['tax_product_code']);
         }
 
         Session::setFlash('success', 'Product added.');

@@ -71,6 +71,8 @@ final class FinanceModule implements ModuleInterface
 {
     private ?FinanceSettingsController $settingsController = null;
     private ?ProductController $productController = null;
+    private ?\Modules\Finance\Services\KalaCatalog $kala = null;
+    private ?\Modules\Finance\Controllers\TaxCatalogController $taxCatalogController = null;
     private ?ProformaController $proformaController = null;
     private ?InvoiceController $invoiceController = null;
     private ?PaymentController $paymentController = null;
@@ -141,15 +143,22 @@ final class FinanceModule implements ModuleInterface
             $taxProfiles
         );
 
-        $productService = new ProductService(new ProductRepository(), $authorization);
+        $kalaPath = (string) \App\Infrastructure\Config\Config::get('tax_products.kala_db_path', 'storage/kala/kala.db');
+        $this->kala = new \Modules\Finance\Services\KalaCatalog(str_starts_with($kalaPath, '/') ? $kalaPath : dirname(__DIR__, 2) . '/' . $kalaPath);
+        $container->instance(\Modules\Finance\Services\KalaCatalog::class, $this->kala);
+        $productService = new ProductService(new ProductRepository(), $authorization, $this->kala);
         $this->productServiceInstance = $productService;
 
+        $taxFavorites = new \Modules\Finance\ProductTaxFavoriteRepository();
         $this->productController = new ProductController(
             $templates,
             $productService,
             $currencies,
-            $taxProfiles
+            $taxProfiles,
+            $this->kala,
+            $taxFavorites,
         );
+        $this->taxCatalogController = new \Modules\Finance\Controllers\TaxCatalogController($templates, $this->kala, $taxFavorites, new ProductRepository());
 
         // Contract ↔ Finance links (docs/contract-finance-design.md).
         $documentLinks = new FinanceDocumentLinkRepository();
@@ -357,6 +366,12 @@ final class FinanceModule implements ModuleInterface
 
             $router->get('/products', fn (Request $r) => $productController->index($r), [new RbacMiddleware('products.view')]);
             $router->get('/products/create', fn (Request $r) => $productController->showCreate($r), [new RbacMiddleware('products.create')]);
+            // New product from the tax product ID (national list, kala.db). Fixed paths before /products/{id}.
+            $taxCatalog = $this->taxCatalogController;
+            $router->get('/products/tax-catalog', fn (Request $r) => $taxCatalog->index($r), [new RbacMiddleware('products.create')]);
+            $router->get('/products/tax-catalog/search', fn (Request $r) => $taxCatalog->search($r), [new RbacMiddleware('products.create')]);
+            $router->post('/products/tax-catalog/favorites', fn (Request $r) => $taxCatalog->addFavorite($r), [new RbacMiddleware('products.create'), new CsrfMiddleware()]);
+            $router->post('/products/tax-catalog/favorites/remove', fn (Request $r) => $taxCatalog->removeFavorite($r), [new RbacMiddleware('products.create'), new CsrfMiddleware()]);
             // Product picker for proforma/invoice rows (permission checked in ProductService::lookup).
             $router->get('/products/lookup', fn (Request $r) => $productController->lookup($r));
             $router->post('/products', fn (Request $r) => $productController->create($r), [new RbacMiddleware('products.create'), new CsrfMiddleware()]);

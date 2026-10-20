@@ -55,6 +55,35 @@ $isActive = $old !== [] ? isset($old['is_active']) : ($product['is_active'] ?? t
         </select>
         <div class="field-hint"><?= e(t('products.tax_profile_hint')) ?></div>
 
+        <?php
+        // Tax product ID: locked when it came from the national list; typed in → editable.
+        $taxLocked = ($product['tax_product_source'] ?? null) === 'catalog';
+        $taxErr = fn (string $f) => isset($errors[$f]) ? t((string) $errors[$f][0]) : null;
+        $exempt = (string) ($old['vat_exempt'] ?? (isset($product['vat_exempt']) ? (string) $product['vat_exempt'] : ''));
+        ?>
+        <h3 class="form-section-title"><?= icon('receipt') ?><?= e(t('products.tax_section')) ?></h3>
+        <label for="tax_product_code"><?= e(t('products.tax_product_code')) ?></label>
+        <?php if ($taxLocked): ?>
+            <input type="text" id="tax_product_code" class="ltr field-md" value="<?= e((string) $product['tax_product_code']) ?>" readonly>
+            <div class="field-hint"><?= e(t('products.tax_code_locked')) ?></div>
+        <?php else: ?>
+            <input type="text" id="tax_product_code" name="tax_product_code" class="ltr field-md" inputmode="numeric" maxlength="20" value="<?= $val('tax_product_code') ?>">
+            <?php if (($old['tax_from_catalog'] ?? '') === '1'): ?><input type="hidden" name="tax_from_catalog" value="1"><?php endif; ?>
+            <?php if ($taxErr('tax_product_code')): ?><div class="field-error"><?= e($taxErr('tax_product_code')) ?></div><?php endif; ?>
+            <div class="field-hint"><?= e(t('products.tax_code_hint')) ?></div>
+        <?php endif; ?>
+
+        <label for="vat_exempt"><?= e(t('products.vat_exempt')) ?></label>
+        <select id="vat_exempt" name="vat_exempt">
+            <option value=""><?= e(t('products.vat_exempt_unset')) ?></option>
+            <option value="0"<?= $exempt === '0' ? ' selected' : '' ?>><?= e(t('products.vat_taxable')) ?></option>
+            <option value="1"<?= $exempt === '1' ? ' selected' : '' ?>><?= e(t('products.vat_exempt_yes')) ?></option>
+        </select>
+
+        <label for="vat_rate"><?= e(t('products.vat_rate')) ?></label>
+        <input type="text" id="vat_rate" name="vat_rate" class="ltr field-sm" inputmode="decimal" value="<?= $val('vat_rate') ?>">
+        <?php if ($taxErr('vat_rate')): ?><div class="field-error"><?= e($taxErr('vat_rate')) ?></div><?php endif; ?>
+
         <label class="check check--spaced">
             <input type="checkbox" name="is_active" value="1" <?= $isActive ? 'checked' : '' ?>> <?= e(t('products.is_active')) ?>
         </label>

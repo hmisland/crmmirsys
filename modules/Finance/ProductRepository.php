@@ -42,6 +42,13 @@ final class ProductRepository extends TenantScopedRepository
             $params['search2'] = $like;
         }
 
+        // Where the tax product ID came from: the national list, or typed in / none.
+        if (($filters['tax_source'] ?? '') === 'catalog') {
+            $sql .= " AND p.tax_product_source = 'catalog'";
+        } elseif (($filters['tax_source'] ?? '') === 'manual') {
+            $sql .= " AND (p.tax_product_source IS NULL OR p.tax_product_source <> 'catalog')";
+        }
+
         if (array_key_exists('is_active', $filters) && $filters['is_active'] !== null) {
             $sql .= ' AND p.is_active = :is_active';
             $params['is_active'] = $filters['is_active'] ? 1 : 0;
