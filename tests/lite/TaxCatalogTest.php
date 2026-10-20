@@ -199,6 +199,30 @@ return [
         LiteAssert::contains('Lite plain', $manual);
     },
 
+    'row code on invoices / proformas: tax product ID first, then the own code, else empty' => function () use ($setup, $h, $base) {
+        $setup();
+        $h->a->pdo->exec("UPDATE products SET sku = 'LITE-SKU-1' WHERE id = {$h->catalogId}");
+        $h->a->pdo->exec("UPDATE products SET sku = 'LITE-SKU-2', tax_product_code = NULL WHERE id = {$h->manualId}");
+        $codes = [];
+        foreach (json_decode($h->a->request('GET', '/finance/products/lookup', ['q' => 'Lite'])['body'], true)['data'] as $p) {
+            $codes[$p['name']] = $p['sku'];
+        }
+        LiteAssert::same('2330000000011', $codes['Lite phone'], 'tax product ID wins over the own code');
+        LiteAssert::same('LITE-SKU-2', $codes['Lite manual'], 'own code when there is no tax product ID');
+        LiteAssert::same('', $codes['Lite plain'], 'empty when neither');
+        $byTax = array_column(json_decode($h->a->request('GET', '/finance/products/lookup', ['q' => '2330000000011'])['body'], true)['data'], 'name');
+        LiteAssert::same(['Lite phone'], $byTax, 'the picker finds a product by its tax product ID');
+
+        // Same rule for the code shown on saved rows whose own code is empty (invoice_items / proforma_items).
+        $rowCode = fn (int $id) => $h->a->pdo->query("SELECT COALESCE(NULLIF(tax_product_code, ''), NULLIF(sku, '')) FROM products WHERE id = {$id}")->fetchColumn();
+        LiteAssert::same('2330000000011', $rowCode($h->catalogId));
+        LiteAssert::same('LITE-SKU-2', $rowCode($h->manualId));
+        foreach (['modules/Finance/InvoiceItemRepository.php', 'modules/Finance/ProformaItemRepository.php'] as $f) {
+            LiteAssert::contains("COALESCE(NULLIF(tax_product_code, \\'\\'), NULLIF(sku, \\'\\'))", (string) file_get_contents(dirname(__DIR__, 2) . '/' . $f), $f);
+        }
+        LiteAssert::notContains("'—'", (string) file_get_contents(dirname(__DIR__, 2) . '/themes/default/templates/finance/print/document.php'), 'an empty code prints empty');
+    },
+
     'every new key exists in all five languages' => function () {
         $root = dirname(__DIR__, 2) . '/lang/';
         $en = require $root . 'en.php';

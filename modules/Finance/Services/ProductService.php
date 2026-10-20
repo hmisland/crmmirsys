@@ -143,19 +143,21 @@ final class ProductService
         ];
     }
 
-    /**
-     * Product picker for proforma/invoice rows: active products whose
-     * code (sku) or name contains $query, at most $limit. Allowed for
-     * anyone who can view products or write proformas/invoices.
-     *
-     * @return array<int, array{id: int, sku: string, name: string, description: string, price: string, unit: string}>
-     */
     /** Unit of an earlier product of the organization with this tax product ID, for prefilling a new one. */
     public function unitForTaxCode(string $code): ?string
     {
         return $this->products->unitForTaxCode($code);
     }
 
+    /**
+     * Product picker for proforma/invoice rows: active products whose
+     * code (sku), tax product ID or name contains $query, at most $limit;
+     * "sku" in the result is the row code (the tax product ID when set,
+     * else the product's own code). Allowed for anyone who can view
+     * products or write proformas/invoices.
+     *
+     * @return array<int, array{id: int, sku: string, name: string, description: string, price: string, unit: string}>
+     */
     public function lookup(array $actingUser, string $query, int $limit = 15): array
     {
         $allowed = $this->authorization->can($actingUser, Permission::PRODUCTS_VIEW)
@@ -172,14 +174,17 @@ final class ProductService
 
         $rows = $this->products->search(['search' => $query, 'is_active' => true]);
 
+        // The code a row gets: the tax product ID first, then the product's own code (may be empty).
+        $code = fn (array $p): string => (string) (($p['tax_product_code'] ?? '') !== '' ? $p['tax_product_code'] : ($p['sku'] ?? ''));
+
         // Exact code match first, then names starting with the query, then the rest.
-        $rank = fn (array $p) => strcasecmp((string) $p['sku'], $query) === 0 ? 0
-            : (mb_stripos((string) $p['name'], $query) === 0 || mb_stripos((string) $p['sku'], $query) === 0 ? 1 : 2);
+        $rank = fn (array $p) => strcasecmp($code($p), $query) === 0 || strcasecmp((string) $p['sku'], $query) === 0 ? 0
+            : (mb_stripos((string) $p['name'], $query) === 0 || mb_stripos($code($p), $query) === 0 || mb_stripos((string) $p['sku'], $query) === 0 ? 1 : 2);
         usort($rows, fn ($a, $b) => [$rank($a), $a['name']] <=> [$rank($b), $b['name']]);
 
         return array_map(fn (array $p) => [
             'id' => (int) $p['id'],
-            'sku' => (string) ($p['sku'] ?? ''),
+            'sku' => $code($p),
             'name' => (string) $p['name'],
             'description' => (string) ($p['description'] ?? ''),
             'price' => (string) $p['price'],

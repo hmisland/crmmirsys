@@ -159,7 +159,7 @@ $dir = in_array($fmt->locale(), ['fa', 'ar'], true) ? 'rtl' : 'ltr';
             <?php foreach ($doc['items'] as $i => $item): ?>
                 <tr>
                     <td><?= e($fmt->digits((string) ($i + 1))) ?></td>
-                    <td class="code"><?= e($item['code'] !== '' ? $item['code'] : '—') ?></td>
+                    <td class="code"><?= e($item['code']) ?></td>
                     <td class="desc"><?= e($item['name']) ?><?php if ($item['note'] !== ''): ?><div class="desc-note"><?= e($item['note']) ?></div><?php endif; ?></td>
                     <td class="num"><?= e($fmt->digits($item['quantity'])) ?></td>
                     <td class="num"><?= e($money($item['unit_price'])) ?></td>

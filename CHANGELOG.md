@@ -10,6 +10,7 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 - Reads the national list from `kala.db` (the tax project's SQLite file, read-only), path `KALA_DB_PATH`, default `storage/kala/kala.db`. Without it (or while `kala.db.building` exists) the button is shown disabled with "send a ticket to the administrator" and a link to a new ticket.
 - Products list: filter "entered from tax product ID / entered manually".
 - Product unit: chosen from the tax system's official units (`config/tax_units.php`, same list as the tax project); a unit typed before stays selectable. A product from the national list gets the unit of the organization's earlier product with the same ID, otherwise "عدد" (1627).
+- Row code on invoices and proformas: the product's tax product ID first, else its own code, else empty (the printed document no longer shows "—"). The product picker also finds products by tax product ID.
 - Migrations: module `finance` `0025_add_tax_product_fields_to_products`, `0026_create_product_tax_favorites_table`. 33 new translation keys × 5 languages. New suite `TaxCatalogTest`.
 
 ### Customer Portal V1 (read-only)

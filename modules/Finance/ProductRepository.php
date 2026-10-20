@@ -36,10 +36,11 @@ final class ProductRepository extends TenantScopedRepository
         $params = $orgScoped ? ['org_id' => OrganizationContext::id()] : [];
 
         if (!empty($filters['search'])) {
-            $sql .= ' AND (p.name LIKE :search OR p.sku LIKE :search2)';
+            $sql .= ' AND (p.name LIKE :search OR p.sku LIKE :search2 OR p.tax_product_code LIKE :search3)';
             $like = '%' . $filters['search'] . '%';
             $params['search'] = $like;
             $params['search2'] = $like;
+            $params['search3'] = $like;
         }
 
         // Where the tax product ID came from: the national list, or typed in / none.

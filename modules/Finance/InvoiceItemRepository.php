@@ -17,7 +17,7 @@ final class InvoiceItemRepository extends BaseRepository
     {
         return $this->findMany(
             'SELECT ii.*, (SELECT name FROM products WHERE products.id = ii.product_id) AS product_name,
-                    (SELECT sku FROM products WHERE products.id = ii.product_id) AS product_sku
+                    (SELECT COALESCE(NULLIF(tax_product_code, \'\'), NULLIF(sku, \'\')) FROM products WHERE products.id = ii.product_id) AS product_sku
              FROM invoice_items ii WHERE ii.invoice_id = :invoice_id ORDER BY ii.position',
             ['invoice_id' => $invoiceId]
         );
