@@ -17,43 +17,57 @@ use App\Infrastructure\Repositories\OrganizationContext;
  */
 final class WooDataRepository extends BaseRepository
 {
-    /** @return int local woo_customers.id */
+    /** Customer columns an import writes (billing data of the latest order). */
+    public const CUSTOMER_FIELDS = ['email', 'first_name', 'last_name', 'phone', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country'];
+
+    /**
+     * Inserts or updates one customer. A changed customer becomes pending
+     * for the contact sync again (contact_sync_status NULL); an existing
+     * contact link is never replaced, only a missing one filled.
+     *
+     * @return int local woo_customers.id
+     */
     public function upsertCustomer(int $connectionId, string $externalKey, ?int $externalId, array $fields, ?string $modifiedAt): int
     {
         $existing = $this->findOne(
-            'SELECT id, external_modified_at FROM woo_customers WHERE organization_id = :org AND connection_id = :conn AND external_key = :k',
+            'SELECT * FROM woo_customers WHERE organization_id = :org AND connection_id = :conn AND external_key = :k',
             ['org' => OrganizationContext::id(), 'conn' => $connectionId, 'k' => $externalKey]
         );
-        $columns = [
-            'email' => $fields['email'] ?? null,
-            'first_name' => $fields['first_name'] ?? null,
-            'last_name' => $fields['last_name'] ?? null,
-            'phone' => $fields['phone'] ?? null,
-            'contact_id' => $fields['contact_id'] ?? null,
-            'external_modified_at' => $modifiedAt,
-        ];
+        $columns = [];
+        foreach (self::CUSTOMER_FIELDS as $field) {
+            $columns[$field] = $fields[$field] ?? null;
+        }
+        $contactId = $fields['contact_id'] ?? null;
         if ($existing === null) {
+            $insert = ['organization_id' => OrganizationContext::id(), 'connection_id' => $connectionId, 'external_key' => $externalKey, 'external_id' => $externalId]
+                + $columns + ['contact_id' => $contactId, 'external_modified_at' => $modifiedAt];
+            $names = array_keys($insert);
             $this->query(
-                'INSERT INTO woo_customers (organization_id, connection_id, external_key, external_id, email, first_name, last_name, phone, contact_id, external_modified_at)
-                 VALUES (:org, :conn, :k, :ext, :email, :first_name, :last_name, :phone, :contact_id, :external_modified_at)
+                'INSERT INTO woo_customers (' . implode(', ', $names) . ') VALUES (:' . implode(', :', $names) . ')
                  ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)',
-                ['org' => OrganizationContext::id(), 'conn' => $connectionId, 'k' => $externalKey, 'ext' => $externalId] + $columns
+                $insert
             );
 
             return (int) $this->pdo()->lastInsertId();
         }
 
+        $link = $existing['contact_id'] === null && $contactId !== null ? ['contact_id' => $contactId] : [];
         // Never let an older payload overwrite newer data; still fill a missing contact link.
         if ($modifiedAt !== null && $existing['external_modified_at'] !== null && $modifiedAt < $existing['external_modified_at']) {
-            if ($columns['contact_id'] !== null) {
-                $this->query('UPDATE woo_customers SET contact_id = COALESCE(contact_id, :c) WHERE id = :id', ['c' => $columns['contact_id'], 'id' => $existing['id']]);
+            if ($link !== []) {
+                $this->update('woo_customers', $link, 'id = :id AND organization_id = :org', ['id' => $existing['id'], 'org' => OrganizationContext::id()]);
             }
 
             return (int) $existing['id'];
         }
         $columns = array_filter($columns, fn ($v) => $v !== null && $v !== '');
-        if ($columns !== []) {
-            $this->update('woo_customers', $columns, 'id = :id AND organization_id = :org', ['id' => $existing['id'], 'org' => OrganizationContext::id()]);
+        $changed = array_filter($columns, fn ($v, $k) => (string) ($existing[$k] ?? '') !== (string) $v, ARRAY_FILTER_USE_BOTH) !== [];
+        $update = $columns + $link + ($modifiedAt !== null ? ['external_modified_at' => $modifiedAt] : []);
+        if ($changed) {
+            $update += ['contact_sync_status' => null, 'contact_sync_note' => null];
+        }
+        if ($update !== []) {
+            $this->update('woo_customers', $update, 'id = :id AND organization_id = :org', ['id' => $existing['id'], 'org' => OrganizationContext::id()]);
         }
 
         return (int) $existing['id'];

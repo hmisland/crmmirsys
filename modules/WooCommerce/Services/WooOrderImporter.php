@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\WooCommerce\Services;
 
+use App\Application\Services\SmsService;
 use App\Core\Events\EventBus;
 use App\Infrastructure\Integrations\Events\ExternalOrderStatusChanged;
 use App\Infrastructure\Repositories\ContactRepository;
 use App\Infrastructure\Repositories\OrganizationContext;
+use Modules\WooCommerce\ContactSync\CustomerContactSync;
 use Modules\WooCommerce\WooDataRepository;
 
 /**
@@ -23,17 +25,27 @@ use Modules\WooCommerce\WooDataRepository;
  * knows about surveys.
  *
  * Contacts: a customer is linked to an existing CRM contact with the
- * same email (read-only lookup); contacts are not created here.
+ * same email (read-only lookup). When the shop's contact sync is on
+ * (CustomerContactSync), the customer is synced right after it is
+ * written — matched, completed or created — before the order event, so
+ * the event carries the contact.
  */
 final class WooOrderImporter
 {
     public const SOURCE = 'woocommerce';
+
+    private ?CustomerContactSync $contactSync = null;
 
     public function __construct(
         private readonly WooDataRepository $data,
         private readonly ContactRepository $contacts,
         private readonly ?EventBus $events = null,
     ) {
+    }
+
+    public function setContactSync(?CustomerContactSync $contactSync): void
+    {
+        $this->contactSync = $contactSync;
     }
 
     /** @return bool false when the payload is not a usable order */
@@ -54,14 +66,17 @@ final class WooOrderImporter
 
         $customerId = null;
         $wooCustomerId = (int) ($order['customer_id'] ?? 0);
-        if ($wooCustomerId > 0 || $email !== null) {
+        // Guests are keyed by email, or — for shops where email is optional — by phone.
+        $guestPhone = $email === null && $phone !== null ? (SmsService::normalizeNumber($phone) ?? (string) preg_replace('/\D+/', '', $phone)) : '';
+        if ($wooCustomerId > 0 || $email !== null || strlen($guestPhone) >= 7) {
             $customerId = $this->data->upsertCustomer(
                 $connectionId,
-                $wooCustomerId > 0 ? 'id:' . $wooCustomerId : 'guest:' . sha1($email),
+                $wooCustomerId > 0 ? 'id:' . $wooCustomerId : ($email !== null ? 'guest:' . sha1($email) : 'guest-phone:' . sha1($guestPhone)),
                 $wooCustomerId > 0 ? $wooCustomerId : null,
-                ['email' => $email, 'first_name' => $firstName, 'last_name' => $lastName, 'phone' => $phone, 'contact_id' => $contactId],
+                ['email' => $email, 'first_name' => $firstName, 'last_name' => $lastName, 'phone' => $phone, 'contact_id' => $contactId] + self::address($billing),
                 $modified,
             );
+            $contactId = $this->contactSync?->syncCustomerNow($connectionId, $customerId) ?? $contactId;
         }
 
         $completedAt = self::gmt($order['date_completed_gmt'] ?? null);
@@ -130,7 +145,7 @@ final class WooOrderImporter
         }
         $billing = is_array($customer['billing'] ?? null) ? $customer['billing'] : [];
         $email = self::email($customer['email'] ?? null) ?? self::email($billing['email'] ?? null);
-        $this->data->upsertCustomer(
+        $customerId = $this->data->upsertCustomer(
             $connectionId,
             'id:' . $externalId,
             $externalId,
@@ -140,9 +155,10 @@ final class WooOrderImporter
                 'last_name' => self::str($customer['last_name'] ?? null, 100) ?? self::str($billing['last_name'] ?? null, 100),
                 'phone' => self::str($billing['phone'] ?? null, 40),
                 'contact_id' => $email !== null ? $this->contactIdFor($email) : null,
-            ],
+            ] + self::address($billing),
             self::gmt($customer['date_modified_gmt'] ?? null),
         );
+        $this->contactSync?->syncCustomerNow($connectionId, $customerId);
 
         return true;
     }
@@ -170,6 +186,19 @@ final class WooOrderImporter
         }
 
         return $items;
+    }
+
+    /** Billing address fields of an order / customer payload. */
+    private static function address(array $billing): array
+    {
+        return [
+            'address_1' => self::str($billing['address_1'] ?? null, 255),
+            'address_2' => self::str($billing['address_2'] ?? null, 255),
+            'city' => self::str($billing['city'] ?? null, 100),
+            'state' => self::str($billing['state'] ?? null, 100),
+            'postcode' => self::str($billing['postcode'] ?? null, 20),
+            'country' => self::str($billing['country'] ?? null, 10),
+        ];
     }
 
     private function contactIdFor(string $email): ?int

@@ -10,6 +10,7 @@ use App\Infrastructure\Integrations\IntegrationJob;
 use App\Infrastructure\Integrations\IntegrationProviderInterface;
 use App\Infrastructure\Integrations\IntegrationResult;
 use App\Infrastructure\Integrations\JobOutcome;
+use App\Infrastructure\Integrations\ProvidesConnectionLinks;
 use App\Infrastructure\Integrations\WebhookReceipt;
 use Modules\WooCommerce\Api\StoreUrl;
 use Modules\WooCommerce\Api\WooApiException;
@@ -37,7 +38,7 @@ use Modules\WooCommerce\Services\WooOrderImporter;
  * secret), then only queued. The verified payload is processed by the
  * worker without another API call.
  */
-final class WooCommerceProvider implements IntegrationProviderInterface
+final class WooCommerceProvider implements IntegrationProviderInterface, ProvidesConnectionLinks
 {
     public const KEY = 'woocommerce';
 
@@ -74,6 +75,12 @@ final class WooCommerceProvider implements IntegrationProviderInterface
     public function icon(): string
     {
         return 'package';
+    }
+
+    /** The shop's customer → contact sync settings (modules/WooCommerce/Controllers/ContactSyncController). */
+    public function connectionLinks(array $connection): array
+    {
+        return [['href' => '/org/integrations/' . (int) $connection['id'] . '/contact-sync', 'icon' => 'users', 'label' => 'woocommerce.contacts.title']];
     }
 
     public function fields(): array

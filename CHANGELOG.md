@@ -4,6 +4,16 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Phase A — WooCommerce customers become CRM contacts
+- **Per-shop contact sync** (Organization settings → Integrations → shop → Contact sync): on/off, contact group (required first; can be created there, existing names reused), tags, source for new contacts (default: the shop's domain), field mapping, "Sync contacts now", last run summary, counts per status and a list of skipped / conflicting customers.
+- **Safe matching:** by normalized email and Iranian mobile (main and additional numbers, common stored forms). Matched contacts get only their empty fields filled — nothing is overwritten or erased, their source is kept, the group is set only when empty, tags are added once. Email and mobile on different contacts, or several contacts per identifier → reported as a conflict, nothing changed. New contacts only with a first name and a valid email or Iranian mobile.
+- **Generic WooCommerce phone** is never copied into both mobile and landline: automatic (by number kind), mobile only, landline, or not imported.
+- **Province / country:** WooCommerce's Iranian state codes map to the CRM's province list; the country code becomes a name in the organization's language (PHP intl), otherwise the code.
+- Sync runs right after each import (before the order event), in the cron task `woocommerce.contacts`, and on demand; idempotent. Phone-only guest checkouts are now stored as shop customers.
+- **"Shop orders" panel** on the contact page, from the existing order rows.
+- Core: optional `ProvidesConnectionLinks` (a provider can add buttons to its connection card); `ContactPhoneRepository::add()` / `ContactEmailRepository::add()`.
+- Migrations: core `0087_add_contact_lookup_indexes` (indexes only); WooCommerce `0002_add_contact_sync`. 94 new translation keys in all five languages. New suite `WooContactSyncTest` (23); 7 mutation checks.
+
 ### Phase 2 — Marketing delivers transactional messages for other modules
 - **Marketing implements Core's `TransactionalDeliveryInterface`** (`modules/Marketing/Services/TransactionalDelivery.php`, bound through `MarketingModule::services()`). Customer Satisfaction invitations, which waited as "waiting for a channel" in Phase 1, are now sent through Marketing's existing SMS, Email (Sender/Brevo) and Bale channels. No module calls a provider directly.
 - **Channels offered** only while the organization holds `marketing` and the channel's module and the provider is ready; email uses the first connected provider with a sender identity.

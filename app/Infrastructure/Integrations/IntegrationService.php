@@ -40,8 +40,11 @@ final class IntegrationService
     {
         $byProvider = [];
         foreach ($this->connections->forOrganization() as $connection) {
-            $byProvider[$connection->provider()][] = $connection->toView() + [
+            $view = $connection->toView();
+            $provider = $this->registry->get($connection->provider());
+            $byProvider[$connection->provider()][] = $view + [
                 'jobs' => $this->jobs->countsForConnection($connection->id(), $connection->organizationId()),
+                'links' => $provider instanceof ProvidesConnectionLinks ? $provider->connectionLinks($view) : [],
             ];
         }
 

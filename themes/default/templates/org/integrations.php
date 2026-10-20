@@ -129,6 +129,9 @@ $renderFields = function (string $prefix, array $fields, array $values, ?array $
                         <button type="submit" class="btn"<?= $disabled ? ' disabled' : '' ?>><?= icon('activity') ?><?= e(t('integrations.test')) ?></button>
                     </form>
                     <a href="/org/integrations/<?= e($c['id']) ?>/webhook" class="btn"><?= icon('zap') ?><?= e(t('integrations.webhook_settings')) ?></a>
+                    <?php foreach ($c['links'] ?? [] as $link): ?>
+                        <a href="<?= e($link['href']) ?>" class="btn"><?= icon($link['icon']) ?><?= e(t($link['label'])) ?></a>
+                    <?php endforeach; ?>
                     <a href="/org/integrations?edit=<?= e($c['id']) ?>#connection-<?= e($c['id']) ?>" class="btn"><?= icon('pencil') ?><?= e(t('integrations.edit')) ?></a>
                     <form method="post" action="/org/integrations/<?= e($c['id']) ?>/enabled">
                         <?= Csrf::field() ?>

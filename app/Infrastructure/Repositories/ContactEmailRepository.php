@@ -36,4 +36,10 @@ final class ContactEmailRepository extends TenantScopedRepository
             }
         });
     }
+
+    /** Adds one email without touching the contact's other emails (e.g. a sync filling a gap). */
+    public function add(int $contactId, string $email, bool $isPrimary): void
+    {
+        $this->tenantInsertGetId(['contact_id' => $contactId, 'email' => $email, 'is_primary' => $isPrimary ? 1 : 0]);
+    }
 }

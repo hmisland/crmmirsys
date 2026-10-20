@@ -81,3 +81,36 @@ old jobs purged after 14 days.
   ready provider; otherwise invitations wait as "waiting for a channel", as before.
 * Super Admin: run module sync so `woocommerce` and `customer_satisfaction` appear, then entitle
   organizations.
+
+## Phase A — WooCommerce customers → CRM contacts (done)
+
+Per shop: Organization settings → Integrations → shop → **Contact sync**
+(`/org/integrations/{id}/contact-sync`, `organization.edit` + module `woocommerce`). Code:
+`modules/WooCommerce/ContactSync/`.
+
+* **Settings** (`woo_contact_sync_settings`, one row per connection): on/off, the contact group
+  (`contact_categories` — a contact has exactly one; required before switching on; a missing group can be
+  created there with `contacts.manage_categories`, an existing name is reused), optional tags (many per
+  contact), the source for new contacts (default: the shop's domain), the field mapping, and the last run.
+  Switching on needs `contacts.create` + `contacts.edit`; new contacts belong to the user who switched it on.
+* **Mapping** (`ContactFieldMapper`): billing first/last name, address (lines 1+2 or line 1), city, province
+  (WooCommerce's Iranian state codes or a Persian province name → the CRM's province list; anything else is not
+  imported), postcode, country (ISO code → name in the organization's language when PHP intl is available,
+  else the code), email, and the generic WooCommerce phone: *auto* (Iranian mobile → Mobile, Iranian landline
+  → Landline, unclear numbers skipped), *mobile only*, *landline*, or not imported — never both.
+* **Matching** (`CustomerContactSync`): a link made by an earlier sync run is kept; otherwise contacts are looked
+  up by normalized email (main + additional emails) and Iranian mobile (main + additional numbers, common stored
+  forms). Several contacts for one identifier, or email and mobile on different contacts → *conflict*: nothing
+  merged or changed. One contact → only its empty fields are filled (never overwritten, never erased), its
+  source kept, the shop's group set only if it has none, tags added once. No contact → created only with a first
+  name and a valid email or Iranian mobile; otherwise *skipped* with a reason.
+* **When:** right after an order/customer import (before the order event, so Customer Satisfaction gets the
+  contact), by the cron task `woocommerce.contacts` (pending customers of enabled shops), and by "Sync contacts
+  now" (one bounded batch). A customer is pending only when its data changed; claims make runs idempotent.
+  Phone-only guest checkouts are now stored as customers (`guest-phone:` key).
+* **Orders on the contact page:** "Shop orders" panel (`contacts.view`) reads the existing `woo_orders` through
+  `woo_customers.contact_id` — no copy of the orders.
+* Migrations: core `0087_add_contact_lookup_indexes` (indexes only), WooCommerce
+  `0002_add_contact_sync` (customer address + sync state columns, settings table). The sync never sends a
+  message or starts a campaign.
+

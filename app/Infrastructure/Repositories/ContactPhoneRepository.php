@@ -43,4 +43,10 @@ final class ContactPhoneRepository extends TenantScopedRepository
             }
         });
     }
+
+    /** Adds one number without touching the contact's other numbers (e.g. a sync filling a gap). */
+    public function add(int $contactId, string $type, string $number, bool $isPrimary): void
+    {
+        $this->tenantInsertGetId(['contact_id' => $contactId, 'type' => $type, 'number' => $number, 'extension' => null, 'is_primary' => $isPrimary ? 1 : 0]);
+    }
 }
