@@ -36,7 +36,8 @@ use Modules\Marketing\TransactionalMessageRepository;
  *  - rate limits / outages (retryable) go back to the queue with a
  *    delay, at most MAX_ATTEMPTS times; a 429 stops the batch;
  *  - every campaign is processed inside its own OrganizationContext,
- *    and only while the organization still holds the channel's module.
+ *    and only while the organization still holds the channel's module;
+ *  - a scheduled campaign (scheduled_at, UTC) is not started before its time.
  */
 final class QueueWorker
 {
@@ -133,6 +134,11 @@ final class QueueWorker
             if ($campaign['status'] !== 'queued') {
                 return ['processed' => 0, 'remaining' => $this->messages->pendingCount($campaignId), 'status' => (string) $campaign['status'], 'error' => null];
             }
+        }
+
+        // Phase D: a scheduled campaign waits (recipients may already be prepared) until its time has come.
+        if ($campaign['status'] === 'queued' && !empty($campaign['scheduled_at']) && (string) $campaign['scheduled_at'] > $this->now()) {
+            return ['processed' => 0, 'remaining' => $this->messages->pendingCount($campaignId), 'status' => 'queued', 'error' => null];
         }
 
         if ($campaign['status'] === 'queued' && $this->campaigns->transition($campaignId, ['queued'], 'sending', ['started_at' => $this->now()])) {

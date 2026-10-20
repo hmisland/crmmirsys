@@ -11,6 +11,7 @@ use App\Core\Exceptions\AuthorizationException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Infrastructure\Authorization\AuthorizationEngine;
+use App\Infrastructure\Time\OrganizationTimezone;
 use App\Infrastructure\Authorization\Permission;
 use App\Infrastructure\Security\ActionRateLimiter;
 use Modules\Marketing\Segments\SegmentAudience;
@@ -219,15 +220,21 @@ final class CampaignService
      * configuration and audience; the recipient count the user confirmed
      * must still be right, and "all contacts" needs explicit confirmation.
      *
+     * Phase D: with $sendDate/$sendTime (the organization's local date and
+     * time) the campaign is approved and queued the same way — recipients
+     * frozen now — but the worker starts sending only at that moment.
+     * Opt-outs, entitlement and the provider are checked again at send time.
+     *
      * @return int recipients queued
      */
-    public function approveAndQueue(array $user, int $id, int $confirmedCount, bool $confirmedAll, bool $confirmedConsent = false): int
+    public function approveAndQueue(array $user, int $id, int $confirmedCount, bool $confirmedAll, bool $confirmedConsent = false, ?string $sendDate = null, ?string $sendTime = null): int
     {
         $this->authorize($user, MarketingPermission::SEND);
         $campaign = $this->find($user, $id);
         if ($campaign['status'] !== 'draft') {
             throw new ValidationException(['campaign' => ['marketing.error.not_draft']]);
         }
+        $scheduledAt = $this->scheduledAt($sendDate, $sendTime);
 
         $channelError = $this->channelError($user, $campaign);
         if ($channelError !== null) {
@@ -272,10 +279,10 @@ final class CampaignService
             if ($confirmedCount !== $matching) {
                 throw new ValidationException(['audience' => ['marketing.error.count_changed']]);
             }
-            if (!$this->campaigns->transition($id, ['draft'], 'preparing', ['queued_by_user_id' => (int) $user['id'], 'prepare_cursor' => 0, 'queued_at' => date('Y-m-d H:i:s'), 'audience_snapshot' => $snapshotJson])) {
+            if (!$this->campaigns->transition($id, ['draft'], 'preparing', ['queued_by_user_id' => (int) $user['id'], 'prepare_cursor' => 0, 'queued_at' => date('Y-m-d H:i:s'), 'audience_snapshot' => $snapshotJson, 'scheduled_at' => $scheduledAt])) {
                 throw new ValidationException(['campaign' => ['marketing.error.not_draft']]);
             }
-            $this->timeline->record('marketing_campaign', $id, 'marketing.campaign_queued', sprintf('Campaign approved; %d contacts are being prepared in the background', $matching), (int) $user['id']);
+            $this->timeline->record('marketing_campaign', $id, 'marketing.campaign_queued', sprintf('Campaign approved; %d contacts are being prepared in the background', $matching) . ($scheduledAt !== null ? '; scheduled for ' . $scheduledAt . ' UTC' : ''), (int) $user['id']);
 
             return $matching;
         }
@@ -289,7 +296,7 @@ final class CampaignService
         }
 
         // Claim the draft first: a second click / second approver loses here.
-        if (!$this->campaigns->transition($id, ['draft'], 'preparing', ['queued_by_user_id' => (int) $user['id'], 'audience_snapshot' => $snapshotJson])) {
+        if (!$this->campaigns->transition($id, ['draft'], 'preparing', ['queued_by_user_id' => (int) $user['id'], 'audience_snapshot' => $snapshotJson, 'scheduled_at' => $scheduledAt])) {
             throw new ValidationException(['campaign' => ['marketing.error.not_draft']]);
         }
 
@@ -312,13 +319,48 @@ final class CampaignService
             });
         } catch (\Throwable $e) {
             $this->messages->deleteForCampaign($id);
-            $this->campaigns->transition($id, ['preparing'], 'draft', ['audience_snapshot' => null]);
+            $this->campaigns->transition($id, ['preparing'], 'draft', ['audience_snapshot' => null, 'scheduled_at' => null]);
             throw $e;
         }
 
-        $this->timeline->record('marketing_campaign', $id, 'marketing.campaign_queued', sprintf('Campaign approved and queued for %d recipients', $queued), (int) $user['id']);
+        $this->timeline->record('marketing_campaign', $id, 'marketing.campaign_queued', sprintf('Campaign approved and queued for %d recipients', $queued) . ($scheduledAt !== null ? '; scheduled for ' . $scheduledAt . ' UTC' : ''), (int) $user['id']);
 
         return $queued;
+    }
+
+    /** Whether a queued campaign is still waiting for its scheduled time. */
+    public static function isScheduled(array $campaign): bool
+    {
+        return in_array($campaign['status'] ?? '', ['preparing', 'queued'], true)
+            && !empty($campaign['scheduled_at']) && (string) $campaign['scheduled_at'] > date('Y-m-d H:i:s');
+    }
+
+    /**
+     * The send time as stored UTC, from the organization's local date + time;
+     * null = send now. At least a minute ahead, at most a year.
+     */
+    private function scheduledAt(?string $date, ?string $time): ?string
+    {
+        $date = trim((string) $date);
+        $time = trim((string) $time);
+        if ($date === '' && $time === '') {
+            return null;
+        }
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $m) !== 1 || !checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+            throw new ValidationException(['send_date' => ['marketing.error.schedule_date']]);
+        }
+        if (preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time) !== 1) {
+            throw new ValidationException(['send_time' => ['marketing.error.schedule_time']]);
+        }
+        $utc = OrganizationTimezone::shared()->toStorage($date . ' ' . $time . ':00');
+        if ($utc <= date('Y-m-d H:i:s', time() + 60)) {
+            throw new ValidationException(['send_date' => ['marketing.error.schedule_past']]);
+        }
+        if ($utc > date('Y-m-d H:i:s', time() + 366 * 86400)) {
+            throw new ValidationException(['send_date' => ['marketing.error.schedule_far']]);
+        }
+
+        return $utc;
     }
 
     public function cancel(array $user, int $id): int

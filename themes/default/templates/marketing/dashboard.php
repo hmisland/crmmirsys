@@ -110,7 +110,7 @@ $kpis = [
             <tr>
                 <td><a href="/marketing/campaigns/<?= e($c['id']) ?>"><?= e($c['name']) ?></a></td>
                 <td><?= e(t('marketing.channel.' . $c['channel'])) ?></td>
-                <td><?= badge(t('marketing.status.' . $c['status']), $c['status']) ?></td>
+                <td><?= \Modules\Marketing\Services\CampaignService::isScheduled($c) ? badge(t('marketing.status.scheduled'), 'scheduled') : badge(t('marketing.status.' . $c['status']), $c['status']) ?></td>
                 <td class="num"><?= e(number_format((int) $c['total_recipients'])) ?></td>
             </tr>
         <?php endforeach; ?>

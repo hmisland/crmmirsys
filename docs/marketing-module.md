@@ -89,6 +89,7 @@ needs someone with `marketing.send` to approve it.
 | Marketing `0006` | default permission grants |
 | Marketing `0013` | `marketing_transactional_messages` (UNIQUE org+reference) — Phase 2 transactional delivery, see §5a |
 | Marketing `0014` | delivery report columns on `marketing_transactional_messages` (Phase B) |
+| Marketing `0015` | `marketing_campaigns.scheduled_at` (Phase D) |
 
 All additive: no existing table or column changes. Rollback: each
 migration's `down()` drops only its own table (`0006` removes only
@@ -201,8 +202,16 @@ sending marketing content this way.
 
 ## 7. Limitations / manual steps
 
-- **Scheduled sending is not included**: there was no job scheduler in the
-  project; only immediate sending is offered.
+- **Scheduled sending (Phase D):** on approval, an optional send date +
+  time (organization's time zone, stored UTC in
+  `marketing_campaigns.scheduled_at`, 1 minute to 1 year ahead). The
+  campaign is approved and queued as usual — recipients are fixed at
+  approval (large audiences are prepared in the background ahead of time)
+  — and the worker (cron or the open campaign page) does not start it
+  before that time. Opt-outs, module access and the provider are checked
+  again when sending starts; existing claims prevent duplicates; "Cancel"
+  stops a scheduled campaign. Lists and the campaign page show
+  "Scheduled" with the local time.
 - A cron job is needed for sending without an open campaign page and for
   SMS delivery reports. Without it, a dashboard warning appears after 10
   minutes.

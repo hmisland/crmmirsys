@@ -4,6 +4,13 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Phase D — Scheduled Marketing campaigns
+- **Send later:** the approval form takes an optional send date (date picker) and time in the organization's time zone; stored as UTC (`marketing_campaigns.scheduled_at`), at least one minute and at most one year ahead.
+- The campaign is approved and queued as before (recipients fixed at approval; large audiences prepared in the background ahead of time); the worker — cron or the open campaign page — starts sending only once the time has come. Repeated runs cannot send twice (existing claims).
+- Opt-outs added after approval, module access and the provider are checked again when sending starts; retryable failures go back to the queue as before; "Cancel" stops a scheduled campaign.
+- "Scheduled" status with the local time on the campaign page, the campaign list and the dashboard.
+- Migration: Marketing `0015_add_scheduled_at_to_marketing_campaigns` (additive). 11 new translation keys × 5 languages. New suite `ScheduledCampaignsTest` (12); 5 mutation checks.
+
 ### Phase C — WooCommerce purchase segments
 - **New dynamic segment conditions** ("Shop purchases"): has purchased, number of purchases, total purchase amount, purchased product, has an order with status, last purchase, first purchase (last N days / more than N days ago / before / after).
 - **Shop scope:** each condition (except product, which already belongs to one shop) can be limited to one shop or use all shops; contacts buying in several shops are evaluated per selected shop.

@@ -192,13 +192,18 @@ final class CampaignController extends BaseController
                 $id,
                 (int) $request->input('confirmed_count', -1),
                 (string) $request->input('confirm_all', '') === '1',
-                (string) $request->input('confirm_consent', '') === '1'
+                (string) $request->input('confirm_consent', '') === '1',
+                (string) $request->input('send_date', ''),
+                (string) $request->input('send_time', ''),
             );
         } catch (ValidationException $e) {
             return $this->show($request, $e->errors, 422);
         }
 
-        Session::setFlash('success', t('marketing.flash.queued', ['count' => (string) $queued]));
+        $sendDate = trim((string) $request->input('send_date', ''));
+        Session::setFlash('success', $sendDate !== ''
+            ? t('marketing.flash.scheduled', ['count' => (string) $queued, 'time' => $sendDate . ' ' . trim((string) $request->input('send_time', ''))])
+            : t('marketing.flash.queued', ['count' => (string) $queued]));
 
         return $this->redirect('/marketing/campaigns/' . $id);
     }

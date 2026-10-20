@@ -20,6 +20,7 @@ use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\help_link;
+use function App\Infrastructure\Theme\local_time;
 
 $id = (int) $campaign['id'];
 $isDraft = $campaign['status'] === 'draft';
@@ -43,7 +44,8 @@ $running = in_array($campaign['status'], ['queued', 'sending'], true) || $prepar
     <div>
         <h1><?= e($campaign['name']) ?><?= help_link('marketing-campaign-results') ?></h1>
         <p>
-            <?= badge(t('marketing.status.' . $campaign['status']), $campaign['status']) ?>
+            <?php $scheduled = \Modules\Marketing\Services\CampaignService::isScheduled($campaign); ?>
+            <?= $scheduled ? badge(t('marketing.status.scheduled'), 'scheduled') : badge(t('marketing.status.' . $campaign['status']), $campaign['status']) ?>
             <?= e(t('marketing.channel.' . $campaign['channel'])) ?><?= $campaign['provider'] ? ' · ' . e(ucfirst((string) $campaign['provider'])) : '' ?>
             · <?= e(t('marketing.class.' . $campaign['message_class'])) ?>
         </p>
@@ -75,6 +77,9 @@ $running = in_array($campaign['status'], ['queued', 'sending'], true) || $prepar
 
 <?php if ($firstError !== null): ?>
     <div class="alert alert--error"><?= e(t($firstError)) ?></div>
+<?php endif; ?>
+<?php if ($scheduled): ?>
+    <div class="alert alert--info"><?= icon('clock') ?> <?= e(t('marketing.scheduled_for')) ?> <span class="ltr"><?= e((string) local_time($campaign['scheduled_at'])) ?></span></div>
 <?php endif; ?>
 <?php if (!empty($campaign['last_error'])): ?>
     <div class="alert alert--warning"><?= e(t((string) $campaign['last_error'])) ?></div>
@@ -152,6 +157,14 @@ $running = in_array($campaign['status'], ['queued', 'sending'], true) || $prepar
                 <label class="check"><input type="checkbox" name="confirm_consent" value="1" required> <?= e(t('marketing.confirm_consent', ['channel' => t('marketing.channel.' . $campaign['channel'])])) ?></label>
                 <?php if (isset($errors['confirm_consent'])): ?><div class="field-error"><?= e(t($errors['confirm_consent'][0])) ?></div><?php endif; ?>
             <?php endif; ?>
+            <h3 class="form-section-title"><?= icon('clock') ?><?= e(t('marketing.schedule.title')) ?></h3>
+            <label for="send-date"><?= e(t('marketing.schedule.date')) ?></label>
+            <input type="text" class="crm-datepicker" id="send-date" name="send_date">
+            <?php if (isset($errors['send_date'])): ?><div class="field-error"><?= e(t($errors['send_date'][0])) ?></div><?php endif; ?>
+            <label for="send-time"><?= e(t('marketing.schedule.time')) ?></label>
+            <input type="time" class="field-sm" id="send-time" name="send_time">
+            <?php if (isset($errors['send_time'])): ?><div class="field-error"><?= e(t($errors['send_time'][0])) ?></div><?php endif; ?>
+            <div class="field-hint"><?= e(t('marketing.schedule.hint', ['zone' => \App\Infrastructure\Time\OrganizationTimezone::shared()->current()->getName()])) ?></div>
             <button type="submit" class="btn btn--primary" data-confirm="<?= e(t('marketing.send_confirm', ['count' => number_format($review['confirm_count'])])) ?>"<?= $review['confirm_count'] === 0 || $review['channel_error'] !== null ? ' disabled' : '' ?>><?= icon('send') ?><?= e(t('marketing.approve_and_send')) ?></button>
         </form>
     </section>
