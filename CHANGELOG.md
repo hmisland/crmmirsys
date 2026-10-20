@@ -4,6 +4,12 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Tickets to the platform team (organization admin → Super Admin)
+- **Help › Send a ticket** (`/org/tickets`, `organization.edit`): organization admins send a ticket (subject, category, priority, message) and follow the conversation; they can reply and close. Only their own organization's tickets. A **New ticket** button on the Help page; the menu item sits right under Help and shows how many tickets the platform team has answered.
+- **Super Admin → Tickets** (`/admin/tickets`): every organization's tickets, waiting ones first (urgent on top); search by subject, organization or number; filter by status; reply (optionally closing), close / reopen, change priority. The menu shows how many tickets are waiting.
+- Statuses: waiting for the platform team → answered → closed; a reply from the organization makes it wait again, a reply to a closed ticket reopens it. Messages are never edited or deleted. The sender is notified of a reply or close under Platform messages (in their language); events are recorded on the organization's timeline. At most 10 new tickets per user per hour.
+- Separate from the Support module's customer tickets. Migration: core `0090_create_platform_tickets_tables` (new tables only). 67 new translation keys × 5 languages. New suite `PlatformTicketTest` (12); 15 mutation checks.
+
 ### Help guides — WooCommerce, Customer satisfaction, campaigns and modules
 - 13 new help-center guides, each in en, fa, ar, tr, fr: connecting a WooCommerce shop; how orders are synchronized (webhooks, 15-minute sync, Sync now, queue, cron); turning shop customers into contacts; importing older orders; shop orders on the contact page; segments by shop purchases; scheduling a campaign; the transactional messages report; getting started with Customer satisfaction; sending a test survey invitation; survey results and follow-ups; the Modules & Features page; requesting a module activation.
 - "?" help buttons on the matching pages (Integrations, webhook settings, Contact sync, contact Shop orders panel, segment builder when shop conditions exist, campaign scheduling, Transactional, Customer satisfaction, Modules & Features, Modules, Super Admin Module requests).

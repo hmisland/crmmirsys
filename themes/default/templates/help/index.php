@@ -2,6 +2,7 @@
 /** @var array $articles */
 /** @var string $search */
 /** @var bool $canManage */
+/** @var bool $canSendTicket */
 
 use App\Infrastructure\Security\Csrf;
 
@@ -16,9 +17,14 @@ use function App\Infrastructure\Theme\badge;
             <h1><?= e(t('help.title')) ?></h1>
             <p><?= e(t('help.subtitle')) ?></p>
         </div>
-        <?php if ($canManage): ?>
-            <a href="/admin/help/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('help.new')) ?></a>
-        <?php endif; ?>
+        <div class="actions">
+            <?php if (!empty($canSendTicket)): ?>
+                <a href="/org/tickets/create" class="btn btn--primary"><?= icon('send') ?><?= e(t('platform_tickets.new')) ?></a>
+            <?php endif; ?>
+            <?php if ($canManage): ?>
+                <a href="/admin/help/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('help.new')) ?></a>
+            <?php endif; ?>
+        </div>
     </div>
 
     <form method="get" action="/help" class="inline-form-row filter-bar" role="search">

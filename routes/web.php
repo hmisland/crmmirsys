@@ -134,6 +134,19 @@ $container->instance(\App\Application\Services\ModuleActivationRequestService::c
 $moduleCatalogController = new \App\Application\Controllers\ModuleCatalogController($container->make(TemplateEngine::class), $moduleActivationRequests);
 $moduleRequestAdminController = new \App\Application\Controllers\ModuleRequestAdminController($container->make(TemplateEngine::class), $moduleActivationRequests);
 
+// Platform tickets: organization admins → the platform team (Super Admin).
+$platformTickets = new \App\Application\Services\PlatformTicketService(
+    new \App\Infrastructure\Repositories\PlatformTicketRepository(),
+    $container->make(\App\Infrastructure\Authorization\AuthorizationEngine::class),
+    $container->make(TimelineService::class),
+    new \App\Infrastructure\Repositories\AdminAnnouncementRepository(),
+    new \App\Infrastructure\Repositories\UserRepository(),
+    dirname(__DIR__) . '/lang',
+);
+$container->instance(\App\Application\Services\PlatformTicketService::class, $platformTickets);
+$platformTicketController = new \App\Application\Controllers\PlatformTicketController($container->make(TemplateEngine::class), $platformTickets);
+$platformTicketAdminController = new \App\Application\Controllers\PlatformTicketAdminController($container->make(TemplateEngine::class), $platformTickets);
+
 $organizationModuleAdminController = new OrganizationModuleAdminController(
     $container->make(TemplateEngine::class),
     $container->make(ModuleService::class),
@@ -275,6 +288,7 @@ $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     $orgStructureController,
     $orgModulesController,
     $moduleCatalogController,
+    $platformTicketController,
     $customFieldAdminController,
     $orgSmsController,
     $orgMessagingController
@@ -318,6 +332,13 @@ $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     // Modules & Features catalog (organization.edit; the service re-checks it). Fixed paths before /modules/{id}.
     $router->get('/modules/catalog', fn (Request $r) => $moduleCatalogController->index($r), [new RbacMiddleware('organization.edit')]);
     $router->post('/modules/catalog/{key}/request', fn (Request $r) => $moduleCatalogController->request($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    // Platform tickets (organization.edit; the service re-checks it). Fixed path before /tickets/{id}.
+    $router->get('/tickets', fn (Request $r) => $platformTicketController->index($r), [new RbacMiddleware('organization.edit')]);
+    $router->get('/tickets/create', fn (Request $r) => $platformTicketController->create($r), [new RbacMiddleware('organization.edit')]);
+    $router->post('/tickets', fn (Request $r) => $platformTicketController->store($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->get('/tickets/{id}', fn (Request $r) => $platformTicketController->show($r), [new RbacMiddleware('organization.edit')]);
+    $router->post('/tickets/{id}/reply', fn (Request $r) => $platformTicketController->reply($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->post('/tickets/{id}/close', fn (Request $r) => $platformTicketController->close($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
     $router->get('/modules/{id}/access', fn (Request $r) => $orgModulesController->manageAccess($r));
     $router->post('/modules/{id}/access/{userId}/restrict', fn (Request $r) => $orgModulesController->restrictUser($r), [new CsrfMiddleware()]);
     $router->post('/modules/{id}/access/{userId}/allow', fn (Request $r) => $orgModulesController->allowUser($r), [new CsrfMiddleware()]);
@@ -371,6 +392,11 @@ $router->post('/admin/modules/{id}/disable', fn (Request $r) => $moduleAdminCont
 
 $router->get('/admin/organizations/{id}/modules', fn (Request $r) => $organizationModuleAdminController->index($r), [new AuthMiddleware()]);
 // Module activation requests (Super Admin only — checked in the controller and the service).
+$router->get('/admin/tickets', fn (Request $r) => $platformTicketAdminController->index($r), [new AuthMiddleware()]);
+$router->get('/admin/tickets/{id}', fn (Request $r) => $platformTicketAdminController->show($r), [new AuthMiddleware()]);
+$router->post('/admin/tickets/{id}/reply', fn (Request $r) => $platformTicketAdminController->reply($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->post('/admin/tickets/{id}/status', fn (Request $r) => $platformTicketAdminController->status($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->post('/admin/tickets/{id}/priority', fn (Request $r) => $platformTicketAdminController->priority($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 $router->get('/admin/module-requests', fn (Request $r) => $moduleRequestAdminController->index($r), [new AuthMiddleware()]);
 $router->post('/admin/module-requests/{id}/approve', fn (Request $r) => $moduleRequestAdminController->approve($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 $router->post('/admin/module-requests/{id}/reject', fn (Request $r) => $moduleRequestAdminController->reject($r), [new AuthMiddleware(), new CsrfMiddleware()]);
@@ -415,7 +441,8 @@ $router->post('/announcements/{id}/delete', fn (Request $r) => $announcementCont
 // from /help/{slug} so a slug can never shadow a management route.
 $helpController = new \App\Application\Controllers\HelpController(
     $container->make(TemplateEngine::class),
-    new \App\Infrastructure\Repositories\HelpArticleRepository()
+    new \App\Infrastructure\Repositories\HelpArticleRepository(),
+    $platformTickets
 );
 $router->get('/help', fn (Request $r) => $helpController->index($r), [new AuthMiddleware()]);
 $router->get('/help/{slug}', fn (Request $r) => $helpController->show($r), [new AuthMiddleware()]);

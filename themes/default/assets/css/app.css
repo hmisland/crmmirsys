@@ -373,6 +373,9 @@ img, svg { vertical-align: middle; }
 }
 .nav-item[aria-current="page"] .icon { color: var(--brand-600); }
 .nav-item__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Menu count (e.g. tickets waiting): a small pill at the end of the item. */
+.nav-item__count { margin-inline-start: auto; min-width: 1.25rem; padding-inline: var(--space-1); border-radius: 999px; background: var(--brand-600); color: var(--gray-0); font-size: var(--text-xs); line-height: 1.25rem; text-align: center; }
+.sidebar-collapsed .app-shell .nav-item__count { display: none; }
 
 .sidebar__footer {
     flex: none;
@@ -1093,6 +1096,8 @@ legend { padding-inline: var(--space-2); font-weight: var(--weight-semibold); fo
 .table tr.is-unread > td { font-weight: var(--weight-semibold); }
 .note--internal,
 .note-list > li.note--internal { background: var(--warning-50); border: 1px solid var(--warning-200); border-radius: var(--radius-md); padding: var(--space-3); margin-block: var(--space-1); }
+/* Platform ticket thread: replies from the platform team. */
+.note-list > li.note--platform { background: var(--brand-50); border: 1px solid var(--brand-200); border-radius: var(--radius-md); padding: var(--space-3); margin-block: var(--space-1); }
 
 /* ---- Settings hub ---- */
 .settings-grid {

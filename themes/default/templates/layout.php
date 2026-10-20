@@ -121,6 +121,25 @@ $cxEnabled = $authUser !== null && (new ModuleAccessResolver(
 $isSuperAdmin = $authUser !== null && !empty($authUser['is_super_admin']);
 $hasOrg = $authUser !== null && $authUser['organization_id'] !== null;
 
+// Platform tickets: who may write to the platform team, and what waits for each side (menu counts).
+$canPlatformTickets = false;
+$platformTicketsAnswered = 0;
+$platformTicketsOpen = 0;
+if ($authUser !== null) {
+    try {
+        $platformTicketRepository = new \App\Infrastructure\Repositories\PlatformTicketRepository();
+        if ($isSuperAdmin) {
+            $platformTicketsOpen = $platformTicketRepository->openCount();
+        }
+        if ($hasOrg && (new \App\Infrastructure\Authorization\AuthorizationEngine(new \App\Infrastructure\Repositories\RolePermissionRepository(), new \App\Infrastructure\Repositories\UserPermissionGrantRepository()))->can($authUser, 'organization.edit')) {
+            $canPlatformTickets = true;
+            $platformTicketsAnswered = $platformTicketRepository->answeredCountForOrganization((int) $authUser['organization_id']);
+        }
+    } catch (\PDOException) {
+        // tables not migrated yet: never break the page
+    }
+}
+
 $navGroups = [];
 if ($isSuperAdmin) {
     $navGroups[] = ['label' => t('nav.group_platform'), 'items' => [
@@ -132,6 +151,7 @@ if ($isSuperAdmin) {
         ['href' => '/admin/notifications/settings', 'icon' => 'bell', 'label' => t('admin.notification_pricing_platform'), 'match' => ['/admin/notifications']],
         ['href' => '/admin/exchange-rates', 'icon' => 'coins', 'label' => t('exchange_rates.title'), 'match' => ['/admin/exchange-rates']],
         ['href' => '/admin/sms', 'icon' => 'message', 'label' => t('sms.title'), 'match' => ['/admin/sms']],
+        ['href' => '/admin/tickets', 'icon' => 'life-buoy', 'label' => t('platform_tickets.admin.title'), 'match' => ['/admin/tickets'], 'count' => $platformTicketsOpen],
         ['href' => '/admin/announcements', 'icon' => 'megaphone', 'label' => t('announcements.title'), 'match' => ['/admin/announcements']],
     ]];
 }
@@ -214,11 +234,17 @@ if ($hasOrg) {
     ]];
 }
 // Help center: readable by every signed-in user; management (/admin/help)
-// is Super Admin only and is checked in HelpController.
+// is Super Admin only and is checked in HelpController. Below it, "Send a
+// ticket" for organization admins (organization.edit, as the /org/tickets
+// routes) with the number of tickets the platform team has answered.
 if ($authUser !== null) {
-    $navGroups[] = ['label' => t('nav.group_help'), 'items' => [
+    $helpItems = [
         ['href' => '/help', 'icon' => 'help-circle', 'label' => t('help.title'), 'match' => ['/help', '/admin/help']],
-    ]];
+    ];
+    if ($canPlatformTickets) {
+        $helpItems[] = ['href' => '/org/tickets', 'icon' => 'life-buoy', 'label' => t('platform_tickets.nav'), 'match' => ['/org/tickets'], 'count' => $platformTicketsAnswered];
+    }
+    $navGroups[] = ['label' => t('nav.group_help'), 'items' => $helpItems];
 }
 
 // Active item = the longest matching prefix across every visible item.
@@ -357,6 +383,7 @@ $languageSwitcher = function () use ($lang, $languageNames): string {
                         <a href="<?= e($item['href']) ?>" class="nav-item" title="<?= e($item['label']) ?>"<?= $item['href'] === $activeHref ? ' aria-current="page"' : '' ?>>
                             <?= icon($item['icon']) ?>
                             <span class="nav-item__label"><?= e($item['label']) ?></span>
+                            <?php if (!empty($item['count'])): ?><span class="nav-item__count"><?= e((string) $item['count']) ?></span><?php endif; ?>
                         </a>
                     <?php endforeach; ?>
                 </div>

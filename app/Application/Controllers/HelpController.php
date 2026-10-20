@@ -28,8 +28,11 @@ final class HelpController extends BaseController
 {
     private const SLUG_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
 
-    public function __construct(TemplateEngine $templates, private readonly HelpArticleRepository $articles)
-    {
+    public function __construct(
+        TemplateEngine $templates,
+        private readonly HelpArticleRepository $articles,
+        private readonly ?\App\Application\Services\PlatformTicketService $tickets = null,
+    ) {
         parent::__construct($templates);
     }
 
@@ -45,6 +48,8 @@ final class HelpController extends BaseController
             'articles' => $this->articles->listForLocale($this->locale(), $isSuperAdmin, mb_substr($search, 0, 100)),
             'search' => $search,
             'canManage' => $isSuperAdmin,
+            // "Send a ticket" to the platform team (organization admins).
+            'canSendTicket' => $this->tickets?->canUse($user) ?? false,
         ]);
     }
 
