@@ -58,6 +58,18 @@ final class ProductController extends BaseController
         ]);
     }
 
+    private static function defaultUnitName(): string
+    {
+        $code = (string) \App\Infrastructure\Config\Config::get('tax_units.default', '1627');
+        foreach ((array) \App\Infrastructure\Config\Config::get('tax_units.units', []) as $unit) {
+            if ($unit['code'] === $code) {
+                return $unit['name'];
+            }
+        }
+
+        return '';
+    }
+
     public function showCreate(Request $request): Response
     {
         // ?tax_code=… (from the tax catalog's "+"): the form prefilled from the national list.
@@ -71,6 +83,8 @@ final class ProductController extends BaseController
                 'tax_from_catalog' => '1',
                 'vat_exempt' => $exempt !== null ? (string) $exempt : '',
                 'vat_rate' => $item['vat'] !== null ? (string) $item['vat'] : '',
+                // Same unit as an earlier product with this ID, otherwise the tax system's default ("عدد").
+                'unit' => $this->products->unitForTaxCode($item['id']) ?? self::defaultUnitName(),
                 'is_active' => '1',
             ];
         }

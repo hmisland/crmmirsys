@@ -3701,4 +3701,6 @@ return [
     'products.tax_catalog.no_results' => 'موردی پیدا نشد.',
     'products.tax_catalog.min_chars' => 'حداقل ۲ حرف وارد کنید.',
     'products.tax_catalog.error' => 'خطایی رخ داد. دوباره تلاش کنید.',
+    'products.unit_none' => '— بدون واحد —',
+    'products.unit_hint' => 'واحدهای رسمی سامانه مودیان؛ برای ارسال صورتحساب به سامانه یکی از همین‌ها لازم است.',
 ];

@@ -64,6 +64,17 @@ final class ProductRepository extends TenantScopedRepository
         return $this->tenantFindOne('SELECT * FROM products WHERE id = :id', ['id' => $id]);
     }
 
+    /** Unit of the organization's newest product with this tax product ID (null when none has one). */
+    public function unitForTaxCode(string $code): ?string
+    {
+        $row = $this->tenantFindOne(
+            "SELECT unit FROM products WHERE tax_product_code = :code AND unit IS NOT NULL AND unit <> '' ORDER BY id DESC LIMIT 1",
+            ['code' => $code]
+        );
+
+        return $row['unit'] ?? null;
+    }
+
     public function create(array $fields): int
     {
         return $this->tenantInsertGetId($fields);

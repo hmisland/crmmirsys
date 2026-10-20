@@ -133,9 +133,10 @@ return [
         $form = $h->a->request('GET', '/finance/products/create', ['tax_code' => '2330000000011'])['body'];
         LiteAssert::contains('value="2330000000011"', $form);
         LiteAssert::contains('name="tax_from_catalog"', $form);
+        LiteAssert::contains('<option value="عدد" selected>', $form, 'unit defaults to the tax system\'s "عدد"');
         LiteAssert::contains(e_lite(KalaCatalog::normalize('گوشی تلفن همراه سامسونگ')), $form);
 
-        $r = $h->a->request('POST', '/finance/products', [], $base(['name' => 'Lite phone', 'currency_id' => (string) $h->currency, 'tax_product_code' => '2330000000011', 'tax_from_catalog' => '1', 'vat_exempt' => '0', 'vat_rate' => '9']));
+        $r = $h->a->request('POST', '/finance/products', [], $base(['name' => 'Lite phone', 'currency_id' => (string) $h->currency, 'tax_product_code' => '2330000000011', 'tax_from_catalog' => '1', 'vat_exempt' => '0', 'vat_rate' => '9', 'unit' => 'دستگاه']));
         LiteAssert::true($r['status'] < 400, 'saved');
         $p = $h->a->pdo->query("SELECT * FROM products WHERE name = 'Lite phone' AND organization_id = {$h->a->orgId}")->fetch(\PDO::FETCH_ASSOC);
         LiteAssert::same(['2330000000011', 'catalog', 0, '9.00'], [$p['tax_product_code'], $p['tax_product_source'], (int) $p['vat_exempt'], (string) $p['vat_rate']], 'VAT % is the user\'s value');
@@ -145,9 +146,24 @@ return [
         $edit = $h->a->request('GET', '/finance/products/' . $h->catalogId . '/edit')['body'];
         LiteAssert::contains('readonly', $edit);
         LiteAssert::contains('it cannot be changed', $edit);
-        $h->a->request('POST', '/finance/products/' . $h->catalogId, [], $base(['name' => 'Lite phone', 'currency_id' => (string) $h->currency, 'tax_product_code' => '2330000000028', 'vat_rate' => '10']));
+        $h->a->request('POST', '/finance/products/' . $h->catalogId, [], $base(['name' => 'Lite phone', 'currency_id' => (string) $h->currency, 'tax_product_code' => '2330000000028', 'vat_rate' => '10', 'unit' => 'دستگاه']));
         $p = $h->a->pdo->query("SELECT tax_product_code, tax_product_source, vat_rate FROM products WHERE id = {$h->catalogId}")->fetch(\PDO::FETCH_ASSOC);
         LiteAssert::same(['2330000000011', 'catalog', '10.00'], array_values(array_map('strval', $p)), 'ID locked, VAT % editable');
+    },
+
+    'unit: official list in the form; the unit of an earlier product with the same ID is suggested; an old free-text unit stays' => function () use ($setup, $h) {
+        $setup();
+        ($h->point)($h->db);
+        LiteAssert::same(99, count((array) \App\Infrastructure\Config\Config::get('tax_units.units')));
+        $form = $h->a->request('GET', '/finance/products/create', ['tax_code' => '2330000000011'])['body'];
+        LiteAssert::contains('<option value="دستگاه" selected>', $form);
+        LiteAssert::notContains('<option value="عدد" selected>', $form);
+        $plain = $h->a->request('GET', '/finance/products/create')['body'];
+        LiteAssert::contains('<select id="unit" name="unit">', $plain);
+        LiteAssert::notContains('" selected>عدد', $plain, 'no unit preselected on the normal form');
+        $h->a->pdo->exec("UPDATE products SET unit = 'Lite box' WHERE id = {$h->catalogId}");
+        $edit = $h->a->request('GET', '/finance/products/' . $h->catalogId . '/edit')['body'];
+        LiteAssert::contains('<option value="Lite box" selected>Lite box</option>', $edit);
     },
 
     'manual ID: editable, validated; a forged tax_from_catalog without the list stays manual' => function () use ($setup, $h, $base) {

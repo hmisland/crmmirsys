@@ -3701,4 +3701,6 @@ return [
     'products.tax_catalog.no_results' => 'Sonuç bulunamadı.',
     'products.tax_catalog.min_chars' => 'En az 2 karakter yazın.',
     'products.tax_catalog.error' => 'Bir hata oluştu. Lütfen tekrar deneyin.',
+    'products.unit_none' => '— Birim yok —',
+    'products.unit_hint' => 'Vergi sisteminin resmi birimleri; sisteme gönderilen faturalar bunlardan birini gerektirir.',
 ];

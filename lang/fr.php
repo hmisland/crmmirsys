@@ -3596,4 +3596,6 @@ Il est valable :minutes minutes. Si vous ne l\'avez pas demandé, ignorez ce mes
     'products.tax_catalog.no_results' => 'Aucun résultat.',
     'products.tax_catalog.min_chars' => 'Saisissez au moins 2 caractères.',
     'products.tax_catalog.error' => 'Une erreur est survenue. Veuillez réessayer.',
+    'products.unit_none' => '— Aucune unité —',
+    'products.unit_hint' => 'Unités officielles du système fiscal ; les factures qui lui sont envoyées en exigent une.',
 ];

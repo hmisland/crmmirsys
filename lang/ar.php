@@ -3701,4 +3701,6 @@ return [
     'products.tax_catalog.no_results' => 'لم يتم العثور على شيء.',
     'products.tax_catalog.min_chars' => 'اكتب حرفين على الأقل.',
     'products.tax_catalog.error' => 'حدث خطأ. حاول مرة أخرى.',
+    'products.unit_none' => '— بدون وحدة —',
+    'products.unit_hint' => 'الوحدات الرسمية لنظام الضرائب؛ الفواتير المرسلة إليه تحتاج إلى إحداها.',
 ];

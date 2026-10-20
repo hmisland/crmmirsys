@@ -3710,4 +3710,6 @@ It is valid for :minutes minutes. If you did not request it, ignore this message
     'products.tax_catalog.no_results' => 'No item found.',
     'products.tax_catalog.min_chars' => 'Type at least 2 characters.',
     'products.tax_catalog.error' => 'Something went wrong. Please try again.',
+    'products.unit_none' => '— No unit —',
+    'products.unit_hint' => 'Official units of the tax system; invoices sent to it need one of these.',
 ];

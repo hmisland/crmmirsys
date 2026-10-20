@@ -8,6 +8,7 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
 use function App\Infrastructure\Theme\icon;
+use App\Infrastructure\Config\Config;
 use App\Infrastructure\Security\Csrf;
 
 $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] : null;
@@ -32,7 +33,27 @@ $isActive = $old !== [] ? isset($old['is_active']) : ($product['is_active'] ?? t
         <textarea id="description" name="description" rows="3"><?= $val('description') ?></textarea>
 
         <label for="unit"><?= e(t('products.unit')) ?></label>
-        <input type="text" id="unit" name="unit" value="<?= $val('unit') ?>" placeholder="<?= e(t('products.unit_placeholder')) ?>">
+        <?php
+        // Official units of the tax system, by group; a unit typed before this list existed stays selectable.
+        $unitValue = (string) ($old['unit'] ?? $product['unit'] ?? '');
+        $unitGroups = [];
+        foreach ((array) Config::get('tax_units.units', []) as $u) {
+            $unitGroups[$u['group']][] = $u['name'];
+        }
+        $unitKnown = $unitValue === '' || in_array($unitValue, array_merge([], ...array_values($unitGroups)), true);
+        ?>
+        <select id="unit" name="unit">
+            <option value=""><?= e(t('products.unit_none')) ?></option>
+            <?php if (!$unitKnown): ?><option value="<?= e($unitValue) ?>" selected><?= e($unitValue) ?></option><?php endif; ?>
+            <?php foreach ($unitGroups as $group => $names): ?>
+                <optgroup label="<?= e($group) ?>">
+                    <?php foreach ($names as $name): ?>
+                        <option value="<?= e($name) ?>" <?= $name === $unitValue ? 'selected' : '' ?>><?= e($name) ?></option>
+                    <?php endforeach; ?>
+                </optgroup>
+            <?php endforeach; ?>
+        </select>
+        <p class="field-hint"><?= e(t('products.unit_hint')) ?></p>
 
         <label for="price"><?= e(t('products.price')) ?></label>
         <input type="number" id="price" name="price" step="0.01" min="0" value="<?= $val('price', '0') ?>" required>

@@ -150,6 +150,12 @@ final class ProductService
      *
      * @return array<int, array{id: int, sku: string, name: string, description: string, price: string, unit: string}>
      */
+    /** Unit of an earlier product of the organization with this tax product ID, for prefilling a new one. */
+    public function unitForTaxCode(string $code): ?string
+    {
+        return $this->products->unitForTaxCode($code);
+    }
+
     public function lookup(array $actingUser, string $query, int $limit = 15): array
     {
         $allowed = $this->authorization->can($actingUser, Permission::PRODUCTS_VIEW)
