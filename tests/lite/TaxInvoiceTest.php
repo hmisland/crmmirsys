@@ -141,4 +141,55 @@ return [
         LiteAssert::same(null, \Modules\Finance\Services\TaxInvoiceExport::unitCode('Lite box'));
         LiteAssert::same(null, \Modules\Finance\Services\TaxInvoiceExport::unitCode(''));
     },
+
+    'per-row VAT from the product: exempt 0, VAT % after the row discount; invoice discount spread pro rata; old way without product rates' => function () use ($setup, $h, $latest) {
+        $setup();
+        $pdo = $h->a->pdo;
+        $eq = fn (string $expected, $actual, string $msg) => LiteAssert::same(0, bccomp($expected, (string) $actual, 6), $msg . ': expected ' . $expected . ', got ' . $actual);
+        $inv = $pdo->query("SELECT * FROM invoices WHERE id = {$h->type1}")->fetch(\PDO::FETCH_ASSOC);
+        $eq('1950000', $inv['subtotal'], 'subtotal');
+        $eq('180000', $inv['tax_total'], 'VAT: 10% of 1,800,000 + exempt bread');
+        $eq('2130000', $inv['grand_total'], 'grand total');
+        $rows = $pdo->query("SELECT tax_rate, tax_amount FROM invoice_items WHERE invoice_id = {$h->type1} ORDER BY position")->fetchAll(\PDO::FETCH_ASSOC);
+        $eq('10', $rows[0]['tax_rate'], 'row 1 rate');
+        $eq('180000', $rows[0]['tax_amount'], 'row 1 VAT');
+        $eq('0', $rows[1]['tax_rate'], 'row 2 exempt even with a 9% rate set');
+
+        $h->a->request('POST', '/finance/invoices', [], ($h->input)(['invoice_discount' => '195000']));
+        $inv = $latest($h);
+        $eq('162000', $inv['tax_total'], 'invoice discount 10% spread before VAT');
+        $eq('1917000', $inv['grand_total'], '1,950,000 - 195,000 + 162,000');
+
+        $h->a->request('POST', '/finance/invoices', [], ($h->input)(['pricing_mode' => 'tax_inclusive', 'items' => [
+            ['product_id' => (string) $h->phone, 'item_name' => 'Lite phone', 'description' => 'Lite phone', 'quantity' => '1', 'unit_price' => '1100000', 'discount_type' => 'none', 'discount_value' => '0'],
+        ]]));
+        $inv = $latest($h);
+        $eq('100000', $inv['tax_total'], 'tax-inclusive: VAT backed out of 1,100,000');
+        $eq('1100000', $inv['grand_total'], 'tax-inclusive grand total');
+
+        $h->a->request('POST', '/finance/invoices', [], ($h->input)(['items' => [
+            ['product_id' => (string) $h->loose, 'item_name' => 'Lite loose', 'description' => 'Lite loose', 'quantity' => '1', 'unit_price' => '1000', 'discount_type' => 'none', 'discount_value' => '0'],
+        ]]));
+        $old = $latest($h);
+        LiteAssert::same(null, $pdo->query("SELECT tax_rate FROM invoice_items WHERE invoice_id = {$old['id']}")->fetchColumn() ?: null, 'no product rate: the document is taxed as before');
+
+        $h->a->request('POST', '/finance/proformas', [], ($h->input)());
+        $pf = $pdo->query("SELECT * FROM proformas WHERE organization_id = {$h->a->orgId} ORDER BY id DESC LIMIT 1")->fetch(\PDO::FETCH_ASSOC);
+        $eq('180000', $pf['tax_total'], 'proforma: same per-row VAT');
+        $eq('10', $pdo->query("SELECT tax_rate FROM proforma_items WHERE proforma_id = {$pf['id']} ORDER BY position LIMIT 1")->fetchColumn(), 'proforma row rate');
+        $h->proforma = (int) $pf['id'];
+    },
+
+    'screens and print: row number, code, row discount, VAT % and VAT per row' => function () use ($setup, $h) {
+        $setup();
+        foreach (['/finance/invoices/' . $h->type1, '/finance/proformas/' . $h->proforma] as $path) {
+            $page = $h->a->request('GET', $path)['body'];
+            foreach (['<th>#</th>', '>Discount<', '>VAT %<', '2330000000035', '10٪', '200,000'] as $text) {
+                LiteAssert::contains($text, $page, $path . ': ' . $text);
+            }
+        }
+        $print = $h->a->request('GET', '/finance/invoices/' . $h->type1 . '/print')['body'];
+        LiteAssert::contains('VAT %', $print);
+        LiteAssert::contains('180,000', $print);
+    },
 ];

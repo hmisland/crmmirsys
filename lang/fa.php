@@ -3733,4 +3733,7 @@ return [
     'tax_export.problem.unit' => 'ردیف :row (:item): واحد «:unit» در فهرست رسمی نیست.',
     'tax_export.problem.rate' => 'ردیف :row (:item): نرخ ارزش افزوده کالا تعیین نشده — با ۰ خروجی شد.',
     'tax_export.problem.tax_total' => 'جمع ارزش افزوده ردیف‌ها (:rows) با فاکتور CRM (:crm) فرق دارد.',
+    'finance.row_discount' => 'تخفیف',
+    'finance.row_tax_rate' => 'نرخ ارزش افزوده',
+    'finance.row_tax' => 'ارزش افزوده',
 ];

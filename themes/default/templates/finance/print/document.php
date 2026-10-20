@@ -142,6 +142,7 @@ $dir = in_array($fmt->locale(), ['fa', 'ar'], true) ? 'rtl' : 'ltr';
         </div>
     <?php endforeach; ?>
 
+    <?php $perRowTax = array_filter($doc['items'], fn (array $l) => $l['tax_rate'] !== null) !== []; ?>
     <table class="doc-items" dir="<?= e($dir) ?>">
         <thead>
             <tr>
@@ -152,6 +153,10 @@ $dir = in_array($fmt->locale(), ['fa', 'ar'], true) ? 'rtl' : 'ltr';
                 <th><?= e(t('print.unit_price')) ?></th>
                 <th><?= e(t('print.gross')) ?></th>
                 <th><?= e(t('print.discount')) ?></th>
+                <?php if ($perRowTax): ?>
+                    <th><?= e(t('finance.row_tax_rate')) ?></th>
+                    <th><?= e(t('finance.row_tax')) ?></th>
+                <?php endif; ?>
                 <th><?= e(t('print.net')) ?></th>
             </tr>
         </thead>
@@ -165,6 +170,10 @@ $dir = in_array($fmt->locale(), ['fa', 'ar'], true) ? 'rtl' : 'ltr';
                     <td class="num"><?= e($money($item['unit_price'])) ?></td>
                     <td class="num"><?= e($money($item['gross'])) ?></td>
                     <td class="num"><?= e($money($item['discount'])) ?><?php if ($item['discount_percent'] !== null): ?> (<?= e($fmt->digits(($fmt->locale() === 'fa' || $fmt->locale() === 'ar') ? '٪' . $item['discount_percent'] : $item['discount_percent'] . '%')) ?>)<?php endif; ?></td>
+                    <?php if ($perRowTax): ?>
+                        <td class="num"><?= $item['tax_rate'] !== null ? e($fmt->digits($item['tax_rate'])) . '٪' : '' ?></td>
+                        <td class="num"><?= $item['tax_amount'] !== null ? e($money($item['tax_amount'])) : '' ?></td>
+                    <?php endif; ?>
                     <td class="num"><?= e($money($item['net'])) ?></td>
                 </tr>
             <?php endforeach; ?>

@@ -14,9 +14,10 @@ use function App\Infrastructure\Theme\t;
  * CSV of issued invoices for the Iranian tax system (one row per item; the
  * tax project imports it — format in docs/tax-invoice-csv.md).
  *
- * Read-only: nothing in the CRM changes. Each row's VAT comes from its
- * product (exempt → 0, else the product's VAT %), on the row's own amount
- * after its own discount; amounts in Rial, rounded to whole Rials.
+ * Read-only: nothing in the CRM changes. Each row's VAT rate is the one
+ * stored on the row (documents taxed per row), else its product's (exempt
+ * → 0, else the product's VAT %), on the row's own amount after its own
+ * discount; amounts in Rial, rounded to whole Rials.
  * Everything that may not match the tax system (currency, missing 13-digit
  * ID, unit outside the official list, invoice-level discount, a VAT total
  * different from the CRM invoice, …) is reported as a warning — the file is
@@ -99,7 +100,9 @@ final class TaxInvoiceExport
                 if ($unitCode === null) {
                     $warn('unit', ['row' => (string) ($n + 1), 'item' => $label, 'unit' => $unitName]);
                 }
-                if ($product !== null && (int) ($product['vat_exempt'] ?? 0) === 1) {
+                if (isset($item['tax_rate'])) {
+                    $rate = (string) $item['tax_rate']; // fixed on the row when the document was saved
+                } elseif ($product !== null && (int) ($product['vat_exempt'] ?? 0) === 1) {
                     $rate = '0';
                 } elseif ($product !== null && $product['vat_rate'] !== null) {
                     $rate = (string) $product['vat_rate'];

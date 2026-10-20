@@ -3742,4 +3742,7 @@ It is valid for :minutes minutes. If you did not request it, ignore this message
     'tax_export.problem.unit' => 'Row :row (:item): unit ":unit" is not in the official list.',
     'tax_export.problem.rate' => 'Row :row (:item): the product has no VAT % — exported with 0.',
     'tax_export.problem.tax_total' => 'VAT of the rows (:rows) differs from the CRM invoice (:crm).',
+    'finance.row_discount' => 'Discount',
+    'finance.row_tax_rate' => 'VAT %',
+    'finance.row_tax' => 'VAT',
 ];

@@ -93,6 +93,7 @@ final class ProformaService
         $header = $this->validatedHeader($actingUser, $input);
 
         $taxResult = $this->calculateTax($lines, $header);
+        $lines = self::withLineTaxes($lines, $taxResult);
 
         $header['organization_id'] = $actingUser['organization_id'];
         $header['owner_id'] = $actingUser['id'];
@@ -120,6 +121,7 @@ final class ProformaService
         $header = $this->validatedHeader($actingUser, $input);
 
         $taxResult = $this->calculateTax($lines, $header);
+        $lines = self::withLineTaxes($lines, $taxResult);
 
         $header['subtotal'] = $taxResult['subtotal'];
         $header['tax_total'] = $taxResult['tax_total'];
@@ -292,6 +294,18 @@ final class ProformaService
         if (bccomp($discount, $exactSubtotal, Money::SCALE) > 0) {
             throw new ValidationException(['invoice_discount' => [t('finance.error.invoice_discount_exceeds')]]);
         }
+        // VAT per row from the products (when any row's product has a VAT %); otherwise as before.
+        $perLine = (new LineTaxCalculator(new \Modules\Finance\TaxRuleRepository()))->calculate(
+            $lines,
+            $header['tax_profile_id'] !== null ? (int) $header['tax_profile_id'] : null,
+            (string) $header['issue_date'],
+            (string) $header['pricing_mode'],
+            $discount,
+            $decimals
+        );
+        if ($perLine !== null) {
+            return $perLine;
+        }
         if ($header['tax_profile_id'] === null) {
             // No tax profile resolved: untaxed (the UI steers the org to /finance/settings).
             $subtotal = Money::round($exactSubtotal, $decimals);
@@ -312,6 +326,17 @@ final class ProformaService
             $discount,
             $decimals
         );
+    }
+
+    /** Each row's VAT rate / amount from a per-row calculation (NULL when the document is taxed as a whole). */
+    private static function withLineTaxes(array $lines, array $taxResult): array
+    {
+        foreach ($lines as $i => $line) {
+            $lines[$i]['tax_rate'] = $taxResult['line_taxes'][$i]['tax_rate'] ?? null;
+            $lines[$i]['tax_amount'] = $taxResult['line_taxes'][$i]['tax_amount'] ?? null;
+        }
+
+        return $lines;
     }
 
     private function saveLines(int $proformaId, array $lines): void

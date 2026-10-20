@@ -115,21 +115,7 @@ $isDraft = $invoice['status'] === 'draft';
 
 <section class="card">
     <h2><?= e(t('proformas.line_items')) ?><?= help_link('finance-amounts-discounts-tax') ?></h2>
-    <div class="table-responsive">
-    <table class="table">
-        <thead><tr><th><?= e(t('contacts.description')) ?></th><th><?= e(t('proformas.qty')) ?></th><th><?= e(t('proformas.unit_price')) ?></th><th><?= e(t('proformas.line_total')) ?></th></tr></thead>
-        <tbody>
-        <?php foreach ($items as $item): ?>
-            <tr>
-                <td><?= e($item['description']) ?></td>
-                <td><?= e(rtrim(rtrim((string) $item['quantity'], '0'), '.')) ?></td>
-                <td><?= e(money($item['unit_price'], $currencyCode)) ?></td>
-                <td><?= e(money($item['line_total'], $currencyCode)) ?></td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
-    </div>
+    <?php $rowsCurrency = $currencyCode; include __DIR__ . '/../_document-rows.php'; ?>
 
     <table class="table table--compact" style="max-width:320px;margin-inline-start:auto;margin-top:1rem">
         <tr><td><?= e(t('proformas.subtotal')) ?></td><td><?= e(money($invoice['subtotal'], $currencyCode)) ?></td></tr>

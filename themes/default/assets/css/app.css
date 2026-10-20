@@ -2599,3 +2599,7 @@ body.nav-locked { overflow: hidden; }
 .tax-star--on { color: var(--success-600); }
 .tax-star--on .icon { fill: currentColor; }
 .tax-star[disabled] { opacity: .5; cursor: progress; }
+/* Row number on invoice / proforma form rows (renumbers as rows are added or removed) */
+.line-items__rows { counter-reset: line-item; }
+.line-items__rows > .line-item { counter-increment: line-item; }
+.line-items__rows > .line-item::before { content: "#" counter(line-item); font-size: var(--text-sm); font-weight: 600; color: var(--color-text-muted); }

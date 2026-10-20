@@ -3711,4 +3711,7 @@ return [
     'invoices.tax_type_hint' => 'Tür 1, kimlik numarası veya ekonomik kodu olan bir kişi gerektirir.',
     'invoices.error.tax_type' => 'Geçerli bir fatura türü seçin.',
     'invoices.error.tax_type_buyer' => 'Tür 1, kimlik numarası veya ekonomik kodu olan bir kişi gerektirir. Kişiyi tamamlayın veya tür 2\'yi seçin.',
+    'finance.row_discount' => 'İndirim',
+    'finance.row_tax_rate' => 'KDV %',
+    'finance.row_tax' => 'KDV',
 ];

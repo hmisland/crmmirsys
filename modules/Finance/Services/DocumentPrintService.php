@@ -195,6 +195,9 @@ final class DocumentPrintService
                 'discount' => $discount,
                 'discount_percent' => $item['discount_type'] === 'percentage' ? rtrim(rtrim((string) $item['discount_value'], '0'), '.') : null,
                 'net' => (string) $item['line_total'],
+                // VAT per row (documents taxed per row from their products); null otherwise.
+                'tax_rate' => isset($item['tax_rate']) ? (rtrim(rtrim((string) $item['tax_rate'], '0'), '.') ?: '0') : null,
+                'tax_amount' => isset($item['tax_amount']) ? (string) $item['tax_amount'] : null,
             ];
         }
 

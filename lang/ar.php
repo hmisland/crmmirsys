@@ -3711,4 +3711,7 @@ return [
     'invoices.tax_type_hint' => 'النوع الأول يتطلب جهة اتصال لديها رقم وطني أو رمز اقتصادي.',
     'invoices.error.tax_type' => 'اختر نوع فاتورة صالحًا.',
     'invoices.error.tax_type_buyer' => 'النوع الأول يتطلب جهة اتصال لديها رقم وطني أو رمز اقتصادي. أكمل بيانات جهة الاتصال أو اختر النوع الثاني.',
+    'finance.row_discount' => 'الخصم',
+    'finance.row_tax_rate' => 'نسبة الضريبة',
+    'finance.row_tax' => 'الضريبة',
 ];

@@ -3606,4 +3606,7 @@ Il est valable :minutes minutes. Si vous ne l\'avez pas demandé, ignorez ce mes
     'invoices.tax_type_hint' => 'Le type 1 nécessite un contact avec un numéro national ou un code économique.',
     'invoices.error.tax_type' => 'Choisissez un type de facture valide.',
     'invoices.error.tax_type_buyer' => 'Le type 1 nécessite un contact avec un numéro national ou un code économique. Complétez le contact ou choisissez le type 2.',
+    'finance.row_discount' => 'Remise',
+    'finance.row_tax_rate' => 'TVA %',
+    'finance.row_tax' => 'TVA',
 ];
