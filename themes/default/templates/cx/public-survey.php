@@ -8,6 +8,7 @@
  * @var array $survey
  * @var array[] $questions active questions (score | rating | text)
  * @var string $token
+ * @var string|null $formAction where the form posts (default /p/{token}; the Customer Portal posts to its own page)
  * @var array<string, string> $errors
  * @var array $old
  */
@@ -24,7 +25,7 @@ use function App\Infrastructure\Theme\icon;
         <p><?= e($survey['intro_text']) ?></p>
     <?php endif; ?>
 
-    <form method="post" action="/p/<?= e($token) ?>">
+    <form method="post" action="<?= e($formAction ?? ('/p/' . $token)) ?>">
         <?= Csrf::field() ?>
         <?php foreach ($questions as $q): ?>
             <?php $name = 'q' . (int) $q['id']; ?>

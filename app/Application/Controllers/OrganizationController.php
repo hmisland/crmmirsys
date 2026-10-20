@@ -110,7 +110,7 @@ final class OrganizationController extends BaseController
         $user = CurrentUser::user();
         $resolver = new ModuleAccessResolver(new ModuleRepository(), new OrganizationModuleRepository(), new UserModuleOverrideRepository());
 
-        $keys = ['sales', 'wallet', 'support', 'internal_mail', 'notifications', 'finance', 'knowledge'];
+        $keys = ['sales', 'wallet', 'support', 'internal_mail', 'notifications', 'finance', 'knowledge', 'customer_portal'];
         $result = [];
         foreach ($keys as $key) {
             $result[$key] = $resolver->resolvedForUser($key, $user);

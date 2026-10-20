@@ -41,6 +41,15 @@ $currentTimezone = (string) ($old['default_timezone'] ?? $organization['default_
         </div>
     </section>
 
+    <?php if (!empty($enabledModules['customer_portal'])): ?>
+    <section class="card settings-tile">
+        <h2><span class="kpi__icon"><?= icon('users') ?></span><?= e(t('customer_portal.settings.title')) ?></h2>
+        <p class="field-hint"><?= e(t('customer_portal.settings.hint')) ?></p>
+        <?php $portalUrl = rtrim((string) \App\Infrastructure\Config\Config::get('app.url', ''), '/') . '/customer/login/' . rawurlencode((string) $organization['slug']); ?>
+        <p><a href="<?= e($portalUrl) ?>" class="ltr" target="_blank" rel="noopener"><?= e($portalUrl) ?></a></p>
+    </section>
+    <?php endif; ?>
+
     <?php if ($enabledModules['sales']): ?>
     <section class="card settings-tile">
         <h2><span class="kpi__icon"><?= icon('briefcase') ?></span><?= e(t('deals.title')) ?></h2>

@@ -17,7 +17,7 @@ final class ModuleCatalog
 {
     /** Category key => modules shown in it, in display order. */
     public const CATEGORIES = [
-        'sales_customers' => ['sales', 'followups', 'client_records', 'appointments'],
+        'sales_customers' => ['sales', 'followups', 'client_records', 'appointments', 'customer_portal'],
         'ecommerce' => ['woocommerce'],
         'marketing_cx' => ['marketing', 'marketing_email', 'bale_messaging', 'customer_satisfaction'],
         'projects_contracts' => ['projects', 'contracts'],

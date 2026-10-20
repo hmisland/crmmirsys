@@ -2563,6 +2563,18 @@ body.nav-locked { overflow: hidden; }
 /* Public customer pages (/p/{token}, public_layout) — survey score scale.
    Large tap targets, wraps on narrow screens, follows the page direction. */
 .public-shell .card--form h1 { display: flex; align-items: center; gap: var(--space-2); }
+/* Customer Portal (/customer, customer_layout): header menu, section cards, read-only fact lists. */
+.customer-shell__top { flex-wrap: wrap; }
+.customer-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); }
+.customer-nav a, .customer-nav .link-button { display: inline-flex; align-items: center; gap: var(--space-1); }
+.customer-shell .app-main { width: 100%; max-width: 64rem; margin-inline: auto; }
+.customer-sections { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: var(--space-4); }
+.customer-sections .card { margin: 0; }
+.customer-sections a { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--weight-semibold); }
+.customer-facts { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: var(--space-2) var(--space-4); margin: 0; }
+.customer-facts dt { color: var(--color-muted); }
+.customer-facts dd { margin: 0; unicode-bidi: plaintext; }
+.customer-choice { display: grid; gap: var(--space-2); margin-block: var(--space-3); }
 .score-scale { border: 0; padding: 0; margin: 0 0 var(--space-4); min-width: 0; }
 .score-scale legend { font-weight: var(--weight-semibold); margin-bottom: var(--space-3); padding: 0; }
 .score-scale__options { display: flex; flex-wrap: wrap; gap: var(--space-2); }

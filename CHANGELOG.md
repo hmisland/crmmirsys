@@ -4,6 +4,13 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Customer Portal V1 (read-only)
+- New module **Customer Portal** (`customer_portal`): a CRM contact signs in at `/customer/login/{organization}` with a one-time code — to the registered email, else the mobile (SMS verify template), or via national ID → masked destination chosen by the customer — and sees, read-only, their profile, their surveys (and can answer them), invoices and proformas. No editing, no payments, no orders.
+- Separate from staff sign-in: own session keys and middleware, no `users` row, no staff permissions. Every customer query is limited to the signed-in organization AND contact; other records are 404. Codes hashed, single-use, 5-minute validity, 5 tries, 60-second resend cooldown, hourly cap, rate limits per IP / identifier / organization; unknown and ambiguous identifiers get the same answer and never sign in.
+- Organization settings show the portal address when the module is granted; Modules & Features lists the module.
+- Small shared changes: `PublicLinkService::resolveById()` (same validity rules), the survey form can post to another address (the portal); anonymous survey links unchanged.
+- Migration: module `customer_portal` `0001_create_customer_portal_otps_table`. 100 new translation keys × 5 languages. New suite `CustomerPortalTest` (20); 17 mutation checks. See `docs/customer-portal.md`.
+
 ### Help categories managed by the Super Admin
 - **Help → Categories** (`/admin/help-categories`, Super Admin): create, edit and delete help categories — a name in each language (English required, the fallback), a key (used in `?category=…`), display order and "show in the filter even while it has no articles" (on for FAQ).
 - The 20 categories that were fixed in code (FAQ, General, CRM platform and one per module) became ordinary editable categories with their current names in all five languages. Article categories are unchanged.

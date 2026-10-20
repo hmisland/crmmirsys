@@ -70,7 +70,22 @@ final class PublicLinkService extends BaseRepository
         if (!self::wellFormed($token)) {
             return null;
         }
-        $row = $this->findOne('SELECT * FROM public_links WHERE token_hash = :h', ['h' => self::hash($token)]);
+        return self::valid($this->findOne('SELECT * FROM public_links WHERE token_hash = :h', ['h' => self::hash($token)]));
+    }
+
+    /**
+     * The same link by its id, for a caller that has already proven the
+     * right to it another way (e.g. the Customer Portal, after checking the
+     * survey invitation belongs to the signed-in customer). Same validity
+     * rules as resolve(); never crosses organizations.
+     */
+    public function resolveById(int $id, int $organizationId): ?PublicLink
+    {
+        return self::valid($this->findOne('SELECT * FROM public_links WHERE id = :id AND organization_id = :org', ['id' => $id, 'org' => $organizationId]));
+    }
+
+    private static function valid(?array $row): ?PublicLink
+    {
         if ($row === null || $row['status'] !== self::STATUS_ACTIVE) {
             return null;
         }
