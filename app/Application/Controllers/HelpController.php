@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Application\Controllers;
 
-use App\Application\Services\HelpCategories;
 use App\Core\Exceptions\AuthorizationException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Request;
@@ -13,6 +12,7 @@ use App\Infrastructure\Localization\Locale;
 use App\Infrastructure\Localization\Translator;
 use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Repositories\HelpArticleRepository;
+use App\Infrastructure\Repositories\HelpCategoryRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\HtmlSanitizer;
 use App\Infrastructure\Security\Session;
@@ -29,11 +29,14 @@ use function App\Infrastructure\Theme\t;
 final class HelpController extends BaseController
 {
     private const SLUG_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
+    /** Category keys: lowercase letters / digits, "-" or "_" between (module keys use "_"). */
+    private const CATEGORY_KEY_PATTERN = '/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/';
 
     public function __construct(
         TemplateEngine $templates,
         private readonly HelpArticleRepository $articles,
         private readonly ?\App\Application\Services\PlatformTicketService $tickets = null,
+        private readonly HelpCategoryRepository $categories = new HelpCategoryRepository(),
     ) {
         parent::__construct($templates);
     }
@@ -45,21 +48,23 @@ final class HelpController extends BaseController
         $user = $this->requireUser();
         $isSuperAdmin = !empty($user['is_super_admin']);
         $search = mb_substr(trim((string) $request->query('q', '')), 0, 100);
+        $locale = $this->locale();
+        $allCategories = $this->categories->all($locale);
         $category = (string) $request->query('category', '');
-        if (!HelpCategories::valid($category)) {
+        if (!in_array($category, array_column($allCategories, 'key'), true)) {
             $category = '';
         }
         // Cards (default) or a list of titles only.
         $view = $request->query('view') === 'list' ? 'list' : 'grid';
-        $locale = $this->locale();
         $pagination = Pagination::fromRequest($request, $this->articles->countForLocale($locale, $isSuperAdmin, $search, $category));
 
-        // The filter offers every category that has articles, plus the ones always listed (FAQ) and the selected one.
+        // The filter offers every category that has articles, plus the ones listed even while empty (e.g. FAQ) and the selected one.
         $counts = $this->articles->categoryCounts($locale, $isSuperAdmin);
         $categories = [];
-        foreach (HelpCategories::KEYS as $key) {
-            if (($counts[$key] ?? 0) > 0 || in_array($key, HelpCategories::ALWAYS_LISTED, true) || $key === $category) {
-                $categories[$key] = ['label' => HelpCategories::label($key), 'count' => $counts[$key] ?? 0];
+        foreach ($allCategories as $row) {
+            $key = $row['key'];
+            if (($counts[$key] ?? 0) > 0 || $row['always_listed'] === 1 || $key === $category) {
+                $categories[$key] = ['label' => $row['name'], 'count' => $counts[$key] ?? 0];
             }
         }
 
@@ -68,6 +73,7 @@ final class HelpController extends BaseController
             'search' => $search,
             'category' => $category,
             'categories' => $categories,
+            'categoryNames' => array_column($allCategories, 'name', 'key'),
             'view' => $view,
             'pagination' => $pagination,
             'canManage' => $isSuperAdmin,
@@ -138,6 +144,113 @@ final class HelpController extends BaseController
         return $this->redirect('/help');
     }
 
+    // ---- Super Admin: categories ------------------------------------------
+
+    public function categoryIndex(Request $request): Response
+    {
+        $this->requireSuperAdmin();
+
+        return $this->viewWithLayout('help/categories', 'layout', ['categories' => $this->categories->all($this->locale())]);
+    }
+
+    public function categoryCreate(Request $request): Response
+    {
+        $this->requireSuperAdmin();
+
+        return $this->categoryForm(null, ['key' => '', 'sort_order' => 0, 'always_listed' => false], [], []);
+    }
+
+    public function categoryEdit(Request $request): Response
+    {
+        $this->requireSuperAdmin();
+        $category = $this->findCategoryOrFail((int) $request->attribute('id'));
+
+        return $this->categoryForm($category, $category, $this->categories->translations((int) $category['id']), []);
+    }
+
+    public function categoryStore(Request $request): Response
+    {
+        $this->requireSuperAdmin();
+
+        return $this->saveCategory($request, null);
+    }
+
+    public function categoryUpdate(Request $request): Response
+    {
+        $this->requireSuperAdmin();
+
+        return $this->saveCategory($request, $this->findCategoryOrFail((int) $request->attribute('id')));
+    }
+
+    public function categoryDestroy(Request $request): Response
+    {
+        $this->requireSuperAdmin();
+        $category = $this->findCategoryOrFail((int) $request->attribute('id'));
+        $this->categories->deleteCategory((int) $category['id']);
+        Session::setFlash('success', t('help.categories_admin.deleted'));
+
+        return $this->redirect('/admin/help-categories');
+    }
+
+    private function saveCategory(Request $request, ?array $existing): Response
+    {
+        $id = $existing !== null ? (int) $existing['id'] : null;
+        $values = [
+            'key' => strtolower(trim((string) $request->input('key', ''))),
+            'sort_order' => (int) $request->input('sort_order', 0),
+            'always_listed' => $request->input('always_listed') === '1',
+        ];
+        $raw = (array) $request->input('names', []);
+        $names = [];
+        foreach (Translator::SUPPORTED_LOCALES as $locale) {
+            $names[$locale] = trim((string) ($raw[$locale] ?? ''));
+        }
+
+        $errors = [];
+        if ($values['key'] === '' || strlen($values['key']) > 40 || preg_match(self::CATEGORY_KEY_PATTERN, $values['key']) !== 1) {
+            $errors['key'] = t('help.categories_admin.error.key');
+        } elseif ($this->categories->keyTaken($values['key'], $id ?? 0)) {
+            $errors['key'] = t('help.categories_admin.error.key_taken');
+        }
+        foreach ($names as $locale => $name) {
+            if (mb_strlen($name) > 100) {
+                $errors['names.' . $locale] = t('help.categories_admin.error.name_length');
+            }
+        }
+        if ($names[HelpCategoryRepository::FALLBACK_LOCALE] === '') {
+            $errors['names.' . HelpCategoryRepository::FALLBACK_LOCALE] = t('help.categories_admin.error.name_required');
+        }
+        if ($errors !== []) {
+            return $this->categoryForm($existing, $values, $names, $errors, 422);
+        }
+
+        $this->categories->save($id, $values, array_filter($names, fn (string $n): bool => $n !== ''));
+        Session::setFlash('success', t('help.categories_admin.saved'));
+
+        return $this->redirect('/admin/help-categories');
+    }
+
+    private function categoryForm(?array $category, array $values, array $names, array $errors, int $status = 200): Response
+    {
+        return $this->viewWithLayout('help/category-form', 'layout', [
+            'category' => $category,
+            'values' => $values,
+            'names' => $names,
+            'errors' => $errors,
+            'locales' => Translator::SUPPORTED_LOCALES,
+        ], $status);
+    }
+
+    private function findCategoryOrFail(int $id): array
+    {
+        $category = $this->categories->find($id);
+        if ($category === null) {
+            throw new NotFoundException();
+        }
+
+        return $category;
+    }
+
     // ---- Internals -------------------------------------------------------
 
     private function save(Request $request, ?array $existing, int $userId): Response
@@ -148,7 +261,8 @@ final class HelpController extends BaseController
             'slug' => $slug,
             'sort_order' => (int) $request->input('sort_order', 0),
             'is_published' => $request->input('is_published') === '1',
-            'categories' => HelpCategories::normalize((array) $request->input('categories', [])),
+            // Only existing categories, in their display order.
+            'categories' => array_values(array_intersect($this->categories->keys(), array_map('strval', (array) $request->input('categories', [])))),
         ];
 
         $translations = [];
@@ -207,7 +321,7 @@ final class HelpController extends BaseController
             'translations' => $translations,
             'errors' => $errors,
             'locales' => Translator::SUPPORTED_LOCALES,
-            'categoryOptions' => array_combine(HelpCategories::KEYS, array_map(fn (string $k): string => HelpCategories::label($k), HelpCategories::KEYS)),
+            'categoryOptions' => $this->categories->names($this->locale()),
         ], $status);
     }
 

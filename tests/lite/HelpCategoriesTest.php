@@ -3,14 +3,13 @@
 declare(strict_types=1);
 
 /**
- * Help center categories (migration 0091), category filter, FAQ,
- * pagination and the titles-only list view. One rolled-back transaction;
+ * Help center categories (migrations 0091, 0092: managed by the Super
+ * Admin), category filter, FAQ, pagination and the titles-only list view. One rolled-back transaction;
  * skipped until 0091 is applied.
  */
 
 require_once __DIR__ . '/Support/LocalApp.php';
 
-use App\Application\Services\HelpCategories;
 use App\Infrastructure\Repositories\OrganizationContext;
 use App\Infrastructure\Repositories\UserRepository;
 use Tests\Lite\Support\LocalApp;
@@ -22,9 +21,9 @@ $boot = function () use ($h): LocalApp {
         return $h->app;
     }
     $a = LocalApp::boot();
-    if ((int) $a->pdo->query("SELECT COUNT(*) FROM migrations WHERE migration = '0091_create_help_article_categories_table'")->fetchColumn() === 0) {
+    if ((int) $a->pdo->query("SELECT COUNT(*) FROM migrations WHERE migration = '0092_create_help_categories_tables'")->fetchColumn() === 0) {
         $a->rollBack();
-        throw new LiteSkip('core migration 0091 (help categories) not applied to crm_local yet');
+        throw new LiteSkip('core migrations 0091/0092 (help categories) not applied to crm_local yet');
     }
     $a->as($a->admin);
     $a->locale('en');
@@ -53,7 +52,7 @@ return [
         LiteAssert::same(['finance'], $categoriesOf($a, 'finance-reports'));
         LiteAssert::same(['customer_satisfaction'], $categoriesOf($a, 'cx-test-invitation'));
         LiteAssert::same(['platform'], $categoriesOf($a, 'modules-catalog'));
-        LiteAssert::same([], array_diff(array_unique($a->pdo->query('SELECT category FROM help_article_categories')->fetchAll(\PDO::FETCH_COLUMN)), HelpCategories::KEYS), 'only known categories');
+        LiteAssert::same([], array_diff(array_unique($a->pdo->query('SELECT category FROM help_article_categories')->fetchAll(\PDO::FETCH_COLUMN)), $a->pdo->query('SELECT `key` FROM help_categories')->fetchAll(\PDO::FETCH_COLUMN)), 'only existing categories');
     },
 
     'HC2 filter by category: only that category\'s guides; a guide in two categories shows in both' => function () use ($boot, $slugsIn) {
@@ -148,19 +147,99 @@ return [
         OrganizationContext::set($a->orgId);
     },
 
-    'HC7 help category keys are translated in all five languages' => function () {
+    'HC7 the 20 seeded categories have a name in every language; FAQ is listed while empty' => function () use ($boot) {
+        $a = $boot();
+        $rows = $a->pdo->query("SELECT c.`key`, c.always_listed, COUNT(t.locale) AS names FROM help_categories c LEFT JOIN help_category_translations t ON t.category_id = c.id GROUP BY c.id")->fetchAll(\PDO::FETCH_ASSOC);
+        $byKey = array_column($rows, null, 'key');
+        foreach (['faq', 'general', 'platform', 'sales', 'woocommerce', 'marketing', 'customer_satisfaction', 'finance', 'knowledge'] as $key) {
+            LiteAssert::same(5, (int) ($byKey[$key]['names'] ?? 0), "{$key} has 5 names");
+        }
+        LiteAssert::same(1, (int) $byKey['faq']['always_listed']);
+        LiteAssert::same(0, (int) $byKey['finance']['always_listed']);
+        $fa = (string) $a->pdo->query("SELECT t.name FROM help_category_translations t JOIN help_categories c ON c.id = t.category_id WHERE c.`key` = 'faq' AND t.locale = 'fa'")->fetchColumn();
+        LiteAssert::same('سوالات متداول', $fa);
         $root = dirname(__DIR__, 2) . '/lang/';
         $en = require $root . 'en.php';
-        $keys = ['help.categories', 'help.categories_hint', 'help.category.faq', 'help.category.general', 'help.category.platform', 'help.category_filter', 'help.all_categories', 'help.category_empty', 'help.view_mode', 'help.view_grid', 'help.view_list'];
-        foreach (HelpCategories::KEYS as $key) {
-            if (!in_array($key, ['faq', 'general', 'platform'], true)) {
-                $keys[] = 'catalog.module.' . $key . '.name';
-            }
-        }
-        foreach (['en', 'fa', 'ar', 'tr', 'fr'] as $lang) {
+        $keys = array_values(array_filter(array_keys($en), fn ($k) => str_starts_with($k, 'help.categories_admin.')));
+        LiteAssert::true(count($keys) >= 20);
+        foreach (['fa', 'ar', 'tr', 'fr'] as $lang) {
             $lines = require $root . $lang . '.php';
-            LiteAssert::same([], array_values(array_diff($keys, array_keys($lines))), "{$lang} has every help category label");
+            LiteAssert::same([], array_values(array_diff($keys, array_keys($lines))), "{$lang} has every category admin key");
         }
+    },
+
+    'HC8 Super Admin manages categories: create, use, filter, rename key, delete (articles stay)' => function () use ($boot, $categoriesOf) {
+        $a = $boot();
+        $superId = $a->pdo->query("SELECT id FROM users WHERE is_super_admin = 1 AND status = 'active' ORDER BY id LIMIT 1")->fetchColumn();
+        if ($superId === false) {
+            throw new LiteSkip('needs an active Super Admin');
+        }
+        $super = (new UserRepository())->findById((int) $superId);
+        $asSuper = function () use ($a, $super): void {
+            $a->as($super);
+            OrganizationContext::reset(); // a real Super Admin request has no organization
+        };
+        $asAdmin = function () use ($a): void {
+            $a->as($a->admin);
+            OrganizationContext::set($a->orgId);
+        };
+
+        // Organization users cannot manage categories.
+        $asAdmin();
+        LiteAssert::same('forbidden', $a->outcome('GET', '/admin/help-categories'));
+        LiteAssert::same('forbidden', $a->outcome('POST', '/admin/help-categories', [], ['key' => 'x', 'names' => ['en' => 'X']]));
+        LiteAssert::notContains('/admin/help-categories', $a->request('GET', '/help')['body']);
+
+        $asSuper();
+        LiteAssert::contains('href="/admin/help-categories"', $a->request('GET', '/help')['body']);
+        $list = $a->request('GET', '/admin/help-categories')['body'];
+        LiteAssert::contains('<code>faq</code>', $list);
+        // Validation: key format, duplicate key, English name required.
+        LiteAssert::contains('The key may contain', $a->request('POST', '/admin/help-categories', [], ['key' => 'Getting Started', 'names' => ['en' => 'Getting started']])['body']);
+        LiteAssert::contains('Another category already uses this key.', $a->request('POST', '/admin/help-categories', [], ['key' => 'faq', 'names' => ['en' => 'Dup']])['body']);
+        LiteAssert::contains('Enter the English name.', $a->request('POST', '/admin/help-categories', [], ['key' => 'getting-started', 'names' => ['fa' => 'شروع کار']])['body']);
+        LiteAssert::same(0, (int) $a->pdo->query("SELECT COUNT(*) FROM help_categories WHERE `key` IN ('getting-started', 'Getting Started')")->fetchColumn());
+
+        $res = $a->request('POST', '/admin/help-categories', [], ['key' => 'getting-started', 'sort_order' => '15', 'names' => ['en' => 'Getting started', 'fa' => 'شروع کار']]);
+        LiteAssert::same('/admin/help-categories', $res['location']);
+        $catId = (int) $a->pdo->query("SELECT id FROM help_categories WHERE `key` = 'getting-started'")->fetchColumn();
+        LiteAssert::true($catId > 0);
+        LiteAssert::contains('value="getting-started"', $a->request('GET', '/admin/help/create')['body'], 'offered in the article form');
+
+        // While empty it is not offered to readers; "always shown" changes that.
+        $asAdmin();
+        LiteAssert::notContains('value="getting-started"', $a->request('GET', '/help')['body']);
+        $asSuper();
+        $a->request('POST', '/admin/help-categories/' . $catId, [], ['key' => 'getting-started', 'sort_order' => '15', 'always_listed' => '1', 'names' => ['en' => 'Getting started', 'fa' => 'شروع کار']]);
+        $asAdmin();
+        LiteAssert::contains('<option value="getting-started">Getting started (0)</option>', html_entity_decode($a->request('GET', '/help')['body'], ENT_QUOTES));
+        $a->locale('fa');
+        LiteAssert::contains('شروع کار', $a->request('GET', '/help')['body'], 'Persian name');
+        $a->locale('tr');
+        LiteAssert::contains('Getting started', $a->request('GET', '/help')['body'], 'falls back to English');
+        $a->locale('en');
+
+        // An article in it (and in FAQ): filter finds it.
+        $asSuper();
+        $a->request('POST', '/admin/help', [], ['slug' => 'lite-first-steps', 'sort_order' => '1', 'is_published' => '1', 'categories' => ['getting-started', 'faq'],
+            'tr' => ['en' => ['title' => 'First steps', 'summary' => '', 'body' => '<p>Start here.</p>']]]);
+        LiteAssert::same(['faq', 'getting-started'], $categoriesOf($a, 'lite-first-steps'));
+        $asAdmin();
+        LiteAssert::contains('href="/help/lite-first-steps"', $a->request('GET', '/help', ['category' => 'getting-started'])['body']);
+
+        // Renaming the key follows through to the article; deleting keeps the article.
+        $asSuper();
+        $a->request('POST', '/admin/help-categories/' . $catId, [], ['key' => 'first-steps', 'sort_order' => '15', 'names' => ['en' => 'First steps']]);
+        LiteAssert::same(['faq', 'first-steps'], $categoriesOf($a, 'lite-first-steps'));
+        $a->request('POST', '/admin/help-categories/' . $catId . '/delete');
+        LiteAssert::same(0, (int) $a->pdo->query("SELECT COUNT(*) FROM help_categories WHERE id = {$catId}")->fetchColumn());
+        LiteAssert::same(['faq'], $categoriesOf($a, 'lite-first-steps'), 'article stays, loses only that category');
+        LiteAssert::same(1, (int) $a->pdo->query("SELECT COUNT(*) FROM help_articles WHERE slug = 'lite-first-steps'")->fetchColumn());
+        LiteAssert::same('notfound', $a->outcome('GET', '/admin/help-categories/' . $catId . '/edit'));
+        $asAdmin();
+        LiteAssert::notContains('value="first-steps"', $a->request('GET', '/help')['body']);
+        // A category key that no longer exists is ignored by the filter.
+        LiteAssert::contains('href="/help/lite-first-steps"', $a->request('GET', '/help', ['category' => 'first-steps', 'per_page' => '100'])['body']);
     },
 
     'cleanup: roll back everything' => function () use ($h) {

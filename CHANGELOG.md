@@ -4,6 +4,12 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Help categories managed by the Super Admin
+- **Help → Categories** (`/admin/help-categories`, Super Admin): create, edit and delete help categories — a name in each language (English required, the fallback), a key (used in `?category=…`), display order and "show in the filter even while it has no articles" (on for FAQ).
+- The 20 categories that were fixed in code (FAQ, General, CRM platform and one per module) became ordinary editable categories with their current names in all five languages. Article categories are unchanged.
+- Deleting a category keeps its articles (they only lose that category); changing a key follows through to the articles. The article form offers the current categories; unknown keys are dropped.
+- Migration: core `0092_create_help_categories_tables` (new tables, the 20 categories, link from article categories; safe to repeat). 22 new translation keys × 5 languages. `HelpCategoriesTest` now 9; 7 mutation checks.
+
 ### Help center: categories, FAQ, pagination and a list view
 - Help articles have **categories** — one article can be in several: Frequently asked questions, General, CRM platform, and one per module (Sales, WooCommerce, Marketing, Email marketing, Customer satisfaction, Finance…, named as in Modules & Features). The Super Admin ticks them in the article form.
 - The help page has a **category filter** (with article counts; FAQ is always offered, even while empty, the other categories once they have articles), **pagination** (25 per page by default), and a **Cards / List** switch — cards stay the default; the list shows titles only. Search, category and view are kept together.

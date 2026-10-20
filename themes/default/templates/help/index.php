@@ -5,10 +5,10 @@
 /** @var bool $canSendTicket */
 /** @var string $category selected category key ('' = all) */
 /** @var array<string, array{label: string, count: int}> $categories the filter's options */
+/** @var array<string, string> $categoryNames every category key => name */
 /** @var string $view 'grid' (cards) | 'list' (titles only) */
 /** @var \App\Infrastructure\Pagination\Pagination $pagination */
 
-use App\Application\Services\HelpCategories;
 use App\Infrastructure\Security\Csrf;
 
 use function App\Infrastructure\Theme\e;
@@ -30,6 +30,7 @@ $viewUrl = fn (string $mode): string => '/help?' . http_build_query(array_filter
                 <a href="/org/tickets/create" class="btn btn--primary"><?= icon('send') ?><?= e(t('platform_tickets.new')) ?></a>
             <?php endif; ?>
             <?php if ($canManage): ?>
+                <a href="/admin/help-categories" class="btn"><?= icon('tag') ?><?= e(t('help.categories_admin.title')) ?></a>
                 <a href="/admin/help/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('help.new')) ?></a>
             <?php endif; ?>
         </div>
@@ -85,7 +86,7 @@ $viewUrl = fn (string $mode): string => '/help?' . http_build_query(array_filter
                     <p class="help-card__summary"><?= e($a['summary']) ?></p>
                 <?php endif; ?>
                 <?php if ($a['categories'] !== []): ?>
-                    <p class="help-card__categories"><?= icon('tag') ?><?= e(implode(' · ', array_map(fn (string $k): string => HelpCategories::label($k), HelpCategories::normalize($a['categories'])))) ?></p>
+                    <p class="help-card__categories"><?= icon('tag') ?><?= e(implode(' · ', array_values(array_intersect_key($categoryNames, array_flip($a['categories']))))) ?></p>
                 <?php endif; ?>
                 <?php if ($canManage): ?>
                     <div class="help-card__admin">

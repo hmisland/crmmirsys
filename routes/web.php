@@ -454,6 +454,13 @@ $router->post('/admin/help', fn (Request $r) => $helpController->store($r), [new
 $router->get('/admin/help/{id}/edit', fn (Request $r) => $helpController->edit($r), [new AuthMiddleware()]);
 $router->post('/admin/help/{id}', fn (Request $r) => $helpController->update($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 $router->post('/admin/help/{id}/delete', fn (Request $r) => $helpController->destroy($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+// Help categories (Super Admin; checked inside the controller).
+$router->get('/admin/help-categories', fn (Request $r) => $helpController->categoryIndex($r), [new AuthMiddleware()]);
+$router->get('/admin/help-categories/create', fn (Request $r) => $helpController->categoryCreate($r), [new AuthMiddleware()]);
+$router->post('/admin/help-categories', fn (Request $r) => $helpController->categoryStore($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->get('/admin/help-categories/{id}/edit', fn (Request $r) => $helpController->categoryEdit($r), [new AuthMiddleware()]);
+$router->post('/admin/help-categories/{id}', fn (Request $r) => $helpController->categoryUpdate($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->post('/admin/help-categories/{id}/delete', fn (Request $r) => $helpController->categoryDestroy($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 
 // --- CRM Core (Phase 5) --------------------------------------------------
 // Every route requires login; the list ("view") route of each entity
