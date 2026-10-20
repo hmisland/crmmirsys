@@ -62,6 +62,9 @@ $isDraft = $invoice['status'] === 'draft';
     <div class="actions">
         <a href="/finance/invoices/<?= e($invoice['id']) ?>/print" class="btn" target="_blank" rel="noopener"><?= icon('file-text') ?><?= e(t('print.print_view')) ?></a>
         <a href="/finance/invoices/<?= e($invoice['id']) ?>/pdf" class="btn"><?= icon('download') ?><?= e(t('print.download_pdf')) ?></a>
+        <?php if ($invoice['status'] === 'issued'): ?>
+            <a href="/finance/invoices/tax-export/download?ids[]=<?= e($invoice['id']) ?>" class="btn"><?= icon('download') ?><?= e(t('tax_export.download_one')) ?></a>
+        <?php endif; ?>
         <?php if ($isDraft): ?>
             <a href="/finance/invoices/<?= e($invoice['id']) ?>/edit" class="btn"><?= icon('pencil') ?><?= e(t('common.edit')) ?></a>
             <form method="post" action="/finance/invoices/<?= e($invoice['id']) ?>/delete" class="inline-form">

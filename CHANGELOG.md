@@ -6,6 +6,8 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ### Invoices for the tax system
 - Invoice form: optional **tax system invoice type** — type 1 (with buyer information), 2 (without), 3 (store sale). Type 1 cannot be saved unless the contact has a national ID or economic code. Not set = works as before.
+- **CSV for the tax system**: Invoices → "CSV for the tax system" (choose issued invoices) and a button on each issued invoice. One row per item; VAT per row from the product (exempt → 0) after the row's own discount; amounts in whole Rials; CRM invoice number in `note2`; payment cash. Problems (non-Rial currency, missing 13-digit ID, unit outside the official list, no VAT %, type not set, invoice-level discount, VAT total different from the CRM invoice) are listed first; the file is built after "build anyway". Read-only: CRM financial calculations are unchanged. Format: `docs/tax-invoice-csv.md`.
+- These Iran-only screens are translated in Persian (English fallback).
 - Migration: module `finance` `0027_add_tax_invoice_type_to_invoices`. New suite `TaxInvoiceTest`.
 
 ### Products ← tax product ID (national list)

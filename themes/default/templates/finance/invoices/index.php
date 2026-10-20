@@ -11,6 +11,7 @@ use function App\Infrastructure\Theme\help_link;
     <h1><?= e(t('invoices.title')) ?><?= help_link('finance-proformas-invoices') ?></h1>
     <div class="actions">
         <a href="/finance/invoices/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('invoices.new')) ?></a>
+        <a href="/finance/invoices/tax-export" class="btn"><?= icon('download') ?><?= e(t('tax_export.title')) ?></a>
     </div>
 
     <form method="get" action="/finance/invoices" class="inline-form-row filter-bar">

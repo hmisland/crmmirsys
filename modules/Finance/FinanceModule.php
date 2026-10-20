@@ -73,6 +73,7 @@ final class FinanceModule implements ModuleInterface
     private ?ProductController $productController = null;
     private ?\Modules\Finance\Services\KalaCatalog $kala = null;
     private ?\Modules\Finance\Controllers\TaxCatalogController $taxCatalogController = null;
+    private ?\Modules\Finance\Controllers\TaxExportController $taxExportController = null;
     private ?ProformaController $proformaController = null;
     private ?InvoiceController $invoiceController = null;
     private ?PaymentController $paymentController = null;
@@ -303,6 +304,7 @@ final class FinanceModule implements ModuleInterface
             $financialProfiles,
             $contractBilling,
         );
+        $this->taxExportController = new \Modules\Finance\Controllers\TaxExportController($templates, $invoiceService, new \Modules\Finance\Services\TaxInvoiceExport($invoiceService));
         $this->invoiceController = new InvoiceController(
             $templates,
             $invoiceService,
@@ -395,6 +397,10 @@ final class FinanceModule implements ModuleInterface
             $router->get('/invoices', fn (Request $r) => $invoiceController->index($r), [new RbacMiddleware('invoices.view')]);
             $router->get('/invoices/create', fn (Request $r) => $invoiceController->showCreate($r), [new RbacMiddleware('invoices.create')]);
             $router->post('/invoices', fn (Request $r) => $invoiceController->create($r), [new RbacMiddleware('invoices.create'), new CsrfMiddleware()]);
+            // CSV for the tax system (fixed paths before /invoices/{id}).
+            $taxExport = $this->taxExportController;
+            $router->get('/invoices/tax-export', fn (Request $r) => $taxExport->index($r), [new RbacMiddleware('invoices.view')]);
+            $router->get('/invoices/tax-export/download', fn (Request $r) => $taxExport->download($r), [new RbacMiddleware('invoices.view')]);
             $router->get('/invoices/{id}', fn (Request $r) => $invoiceController->show($r), [new RbacMiddleware('invoices.view')]);
             $router->get('/invoices/{id}/print', fn (Request $r) => $printController->invoicePrint($r), [new RbacMiddleware('invoices.view')]);
             $router->get('/invoices/{id}/pdf', fn (Request $r) => $printController->invoicePdf($r), [new RbacMiddleware('invoices.view')]);
