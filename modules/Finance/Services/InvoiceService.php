@@ -565,7 +565,22 @@ final class InvoiceService
 
         $profile = $this->financialProfiles->find((int) $actingUser['organization_id']);
 
+        // Tax system invoice type (optional): type 1 needs a buyer with a national ID or economic code.
+        $taxType = (string) ($input['tax_invoice_type'] ?? '');
+        if (!in_array($taxType, ['', '1', '2', '3'], true)) {
+            throw new ValidationException(['tax_invoice_type' => [t('invoices.error.tax_type')]]);
+        }
+        if ($taxType === '1') {
+            $contact = isset($input['contact_id']) && $input['contact_id'] !== ''
+                ? (new \App\Infrastructure\Repositories\ContactRepository())->findById((int) $input['contact_id'])
+                : null;
+            if ($contact === null || (trim((string) ($contact['national_id'] ?? '')) === '' && trim((string) ($contact['economic_code'] ?? '')) === '')) {
+                throw new ValidationException(['tax_invoice_type' => [t('invoices.error.tax_type_buyer')]]);
+            }
+        }
+
         return [
+            'tax_invoice_type' => $taxType !== '' ? (int) $taxType : null,
             'contact_id' => isset($input['contact_id']) && $input['contact_id'] !== '' ? (int) $input['contact_id'] : null,
             'issue_date' => $issueDate,
             'due_date' => isset($input['due_date']) && $input['due_date'] !== '' ? $input['due_date'] : null,

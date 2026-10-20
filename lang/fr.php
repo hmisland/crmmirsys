@@ -3598,4 +3598,12 @@ Il est valable :minutes minutes. Si vous ne l\'avez pas demandé, ignorez ce mes
     'products.tax_catalog.error' => 'Une erreur est survenue. Veuillez réessayer.',
     'products.unit_none' => '— Aucune unité —',
     'products.unit_hint' => 'Unités officielles du système fiscal ; les factures qui lui sont envoyées en exigent une.',
+    'invoices.tax_type' => 'Type de facture (système fiscal)',
+    'invoices.tax_type_none' => '— Pas pour le système fiscal —',
+    'invoices.tax_type_1' => 'Type 1 (avec informations acheteur)',
+    'invoices.tax_type_2' => 'Type 2 (sans informations acheteur)',
+    'invoices.tax_type_3' => 'Type 3 (vente en magasin)',
+    'invoices.tax_type_hint' => 'Le type 1 nécessite un contact avec un numéro national ou un code économique.',
+    'invoices.error.tax_type' => 'Choisissez un type de facture valide.',
+    'invoices.error.tax_type_buyer' => 'Le type 1 nécessite un contact avec un numéro national ou un code économique. Complétez le contact ou choisissez le type 2.',
 ];

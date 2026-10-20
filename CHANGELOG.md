@@ -4,6 +4,10 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Invoices for the tax system
+- Invoice form: optional **tax system invoice type** — type 1 (with buyer information), 2 (without), 3 (store sale). Type 1 cannot be saved unless the contact has a national ID or economic code. Not set = works as before.
+- Migration: module `finance` `0027_add_tax_invoice_type_to_invoices`. New suite `TaxInvoiceTest`.
+
 ### Products ← tax product ID (national list)
 - Products get an optional **tax product ID** (13 digits), VAT status (taxable / exempt) and VAT %, in a new "Tax information" section of the product form. An ID taken from the national list is locked; one typed by hand stays editable. The old way of defining a product is unchanged.
 - New button "New product from tax product ID" next to "New product": a page with *My products*, *Frequently used* (per organization; green star removes, "+" opens the product form prefilled — name, ID, taxable/exempt, VAT %, all editable — and the item leaves the list once saved) and a live search (prefix, Persian/Arabic letters and digits normalized, or the 13-digit ID; star adds to *Frequently used*).

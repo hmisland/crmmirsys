@@ -3703,4 +3703,12 @@ return [
     'products.tax_catalog.error' => 'Bir hata oluştu. Lütfen tekrar deneyin.',
     'products.unit_none' => '— Birim yok —',
     'products.unit_hint' => 'Vergi sisteminin resmi birimleri; sisteme gönderilen faturalar bunlardan birini gerektirir.',
+    'invoices.tax_type' => 'Vergi sistemi fatura türü',
+    'invoices.tax_type_none' => '— Vergi sistemi için değil —',
+    'invoices.tax_type_1' => 'Tür 1 (alıcı bilgileriyle)',
+    'invoices.tax_type_2' => 'Tür 2 (alıcı bilgisi olmadan)',
+    'invoices.tax_type_3' => 'Tür 3 (mağaza satışı)',
+    'invoices.tax_type_hint' => 'Tür 1, kimlik numarası veya ekonomik kodu olan bir kişi gerektirir.',
+    'invoices.error.tax_type' => 'Geçerli bir fatura türü seçin.',
+    'invoices.error.tax_type_buyer' => 'Tür 1, kimlik numarası veya ekonomik kodu olan bir kişi gerektirir. Kişiyi tamamlayın veya tür 2\'yi seçin.',
 ];

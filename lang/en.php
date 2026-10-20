@@ -3712,4 +3712,12 @@ It is valid for :minutes minutes. If you did not request it, ignore this message
     'products.tax_catalog.error' => 'Something went wrong. Please try again.',
     'products.unit_none' => '— No unit —',
     'products.unit_hint' => 'Official units of the tax system; invoices sent to it need one of these.',
+    'invoices.tax_type' => 'Tax system invoice type',
+    'invoices.tax_type_none' => '— Not for the tax system —',
+    'invoices.tax_type_1' => 'Type 1 (with buyer information)',
+    'invoices.tax_type_2' => 'Type 2 (without buyer information)',
+    'invoices.tax_type_3' => 'Type 3 (store sale)',
+    'invoices.tax_type_hint' => 'Type 1 needs a contact with a national ID or economic code.',
+    'invoices.error.tax_type' => 'Choose a valid invoice type.',
+    'invoices.error.tax_type_buyer' => 'Type 1 needs a contact with a national ID or economic code. Complete the contact, or choose type 2.',
 ];

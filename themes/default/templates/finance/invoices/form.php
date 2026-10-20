@@ -45,6 +45,17 @@ if ($rows === []) {
         <input type="text" id="custom_number" name="custom_number" value="<?= $val('custom_number') ?>" maxlength="50" dir="ltr" class="field-md">
         <div class="field-hint"><?= e(t('finance.custom_number_hint')) ?></div>
 
+        <?php $taxType = (string) ($old['tax_invoice_type'] ?? $invoice['tax_invoice_type'] ?? ''); ?>
+        <label for="tax_invoice_type"><?= e(t('invoices.tax_type')) ?></label>
+        <select id="tax_invoice_type" name="tax_invoice_type" class="field-md">
+            <option value=""><?= e(t('invoices.tax_type_none')) ?></option>
+            <?php foreach (['1', '2', '3'] as $tt): ?>
+                <option value="<?= e($tt) ?>" <?= $taxType === $tt ? 'selected' : '' ?>><?= e(t('invoices.tax_type_' . $tt)) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <?php if ($fieldError('tax_invoice_type')): ?><div class="field-error"><?= e($fieldError('tax_invoice_type')) ?></div><?php endif; ?>
+        <div class="field-hint"><?= e(t('invoices.tax_type_hint')) ?></div>
+
         <label for="issue_date"><?= e(t('proformas.issue_date')) ?></label>
         <input type="text" class="crm-datepicker" id="issue_date" name="issue_date" value="<?= $val('issue_date', local_today()) ?>" required>
         <?php if ($fieldError('issue_date')): ?><div class="field-error"><?= e($fieldError('issue_date')) ?></div><?php endif; ?>
