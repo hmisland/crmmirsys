@@ -3360,4 +3360,6 @@ return [
     'woocommerce.contacts.history.confirm' => 'Import the shop\'s older orders and create contacts from their customers?',
     'woocommerce.contacts.history.error_date' => 'Choose a date in the past, or tick "From the beginning".',
     'woocommerce.contacts.history.started' => 'Importing older orders started.',
+    'woocommerce.contacts.history.position' => 'Import has reached orders changed on',
+    'woocommerce.contacts.orders_vs_contacts' => 'One contact per customer: a customer with several orders becomes one contact, so there are fewer contacts than orders.',
 ];

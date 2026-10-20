@@ -10,7 +10,7 @@
  * @var array[] $categories contact groups of the organization
  * @var array<string, int> $counts customer sync status => count
  * @var array[] $problems skipped / conflicting customers
- * @var array{customers: int, orders: int, products: int, oldest_order: ?string} $shopData rows imported from the shop so far
+ * @var array{customers: int, orders: int, products: int, oldest_order: ?string, import_position: ?string} $shopData rows imported from the shop so far
  * @var array{pending: int, running: int, failed: int} $jobs the shop's import queue
  * @var array<string, string> $errors
  */
@@ -69,6 +69,7 @@ $statusTone = ['created' => 'active', 'updated' => 'active', 'matched' => 'sent'
             <dd><?= e(t('integrations.queue_counts', ['pending' => (string) ($jobs['pending'] + $jobs['running']), 'failed' => (string) $jobs['failed']])) ?></dd>
         </div>
     </dl>
+    <p class="field-hint"><?= e(t('woocommerce.contacts.orders_vs_contacts')) ?></p>
     <?php if ($shopData['customers'] === 0): ?>
         <div class="alert alert--warning"><?= e(t('woocommerce.contacts.no_customers_yet')) ?></div>
     <?php endif; ?>
@@ -103,6 +104,10 @@ $statusTone = ['created' => 'active', 'updated' => 'active', 'matched' => 'sent'
         <div class="fact">
             <dt><?= e(t('woocommerce.contacts.history.oldest')) ?></dt>
             <dd><span class="ltr"><?= e(local_time($shopData['oldest_order']) ?? '—') ?></span></dd>
+        </div>
+        <div class="fact">
+            <dt><?= e(t('woocommerce.contacts.history.position')) ?></dt>
+            <dd><span class="ltr"><?= e(local_time($shopData['import_position']) ?? '—') ?></span></dd>
         </div>
     </dl>
     <form method="post" action="/org/integrations/<?= e($id) ?>/contact-sync/history">

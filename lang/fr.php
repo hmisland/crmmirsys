@@ -3246,4 +3246,6 @@ return [
     'woocommerce.contacts.history.confirm' => 'Importer les commandes plus anciennes de la boutique et créer des contacts à partir de leurs clients ?',
     'woocommerce.contacts.history.error_date' => 'Choisissez une date passée ou cochez « Depuis le début ».',
     'woocommerce.contacts.history.started' => 'Import des commandes plus anciennes lancé.',
+    'woocommerce.contacts.history.position' => 'L\'import a atteint les commandes modifiées le',
+    'woocommerce.contacts.orders_vs_contacts' => 'Un contact par client : un client avec plusieurs commandes devient un seul contact, il y a donc moins de contacts que de commandes.',
 ];

@@ -36,12 +36,15 @@ final class FakeContactSyncShopHttp implements HttpClientInterface
     /** @var string[] */
     public array $urls = [];
 
+    /** Total pages the shop reports (X-WP-TotalPages) for the next responses. */
+    public int $totalPages = 1;
+
     public function request(string $method, string $url, array $headers = [], ?string $body = null, int $timeoutSeconds = 15): HttpResponse
     {
         $this->calls++;
         $this->urls[] = $url;
 
-        return new HttpResponse(200, (string) json_encode(array_shift($this->pages) ?? []), ['x-wp-totalpages' => '1']);
+        return new HttpResponse(200, (string) json_encode(array_shift($this->pages) ?? []), ['x-wp-totalpages' => (string) $this->totalPages]);
     }
 }
 
@@ -512,6 +515,31 @@ return [
         $page = $h->a->request('GET', '/org/integrations/' . $h->connId . '/contact-sync')['body'];
         LiteAssert::contains('Importing older orders started.', $page);
         LiteAssert::contains(substr($old, 0, 4), $page, 'oldest imported order shown');
+    },
+
+    'a store that caps orders per request (fewer than asked): the import keeps going until the shop\'s last page' => function () use ($setup, $h, $order, $customer) {
+        $setup();
+        $h->a->as($h->a->admin);
+        $base = time() - 300 * 86400;
+        $batch = function (int $from) use ($order, $base): array {
+            $rows = [];
+            for ($i = 0; $i < 3; $i++) {
+                $t = gmdate('Y-m-d\TH:i:s', $base + ($from + $i) * 3600);
+                $rows[] = $order(['first_name' => 'Cap' . ($from + $i), 'email' => 'cap' . ($from + $i) . '.lite@example.test'], ['date_created_gmt' => $t, 'date_modified_gmt' => $t]);
+            }
+
+            return $rows;
+        };
+        // The store returns 3 orders per request although 50 were asked, and says there are 3 pages.
+        $h->http->pages = [$batch(0), $batch(3), $batch(6), []];
+        $h->http->totalPages = 3;
+        $h->http->urls = [];
+        $h->a->request('POST', '/org/integrations/' . $h->connId . '/contact-sync/history', [], ['all_history' => '1']);
+        $h->http->totalPages = 1;
+        foreach ([0, 4, 8] as $n) {
+            LiteAssert::true($customer('cap' . $n . '.lite@example.test') !== null, "order of page {$n} imported");
+        }
+        LiteAssert::true(count($h->http->urls) >= 3, 'kept asking the shop: ' . count($h->http->urls) . ' requests');
     },
 
     'rollback leaves no test rows behind' => function () use ($setup, $h) {

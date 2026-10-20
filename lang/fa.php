@@ -3351,4 +3351,6 @@ return [
     'woocommerce.contacts.history.confirm' => 'سفارش‌های قدیمی‌تر فروشگاه دریافت و از مشتریان آن‌ها مخاطب ساخته شود؟',
     'woocommerce.contacts.history.error_date' => 'یک تاریخ گذشته انتخاب کنید یا «از ابتدا» را تیک بزنید.',
     'woocommerce.contacts.history.started' => 'دریافت سفارش‌های قدیمی‌تر شروع شد.',
+    'woocommerce.contacts.history.position' => 'دریافت تا سفارش‌های تغییرکرده در این زمان رسیده است',
+    'woocommerce.contacts.orders_vs_contacts' => 'برای هر مشتری یک مخاطب ساخته می‌شود؛ مشتری با چند سفارش یک مخاطب است، پس تعداد مخاطبان از سفارش‌ها کمتر است.',
 ];

@@ -223,7 +223,9 @@ final class WooCommerceProvider implements IntegrationProviderInterface, Provide
                 }
             }
 
-            if (count($result['items']) < $perPage) {
+            // Caught up only when the shop says so: no orders, or a short LAST page by its own page count.
+            // A short page alone is not enough — many stores cap per_page (e.g. at 10 or 20) below what we ask.
+            if ($result['items'] === [] || (count($result['items']) < $perPage && $page >= $result['total_pages'])) {
                 // Caught up: next run starts one second before the newest change seen.
                 if ($newest !== null) {
                     $after = max($after, gmdate('Y-m-d\TH:i:s', strtotime($newest . ' UTC') - 1));
@@ -232,6 +234,7 @@ final class WooCommerceProvider implements IntegrationProviderInterface, Provide
                 return JobOutcome::done($processed, ['orders' => ['after' => $after, 'page' => 1]], false);
             }
 
+            // More orders exist: move the keyset cursor (or step to the next page when it cannot move).
             $candidate = $newest !== null ? gmdate('Y-m-d\TH:i:s', strtotime($newest . ' UTC') - 1) : $after;
             if ($candidate > $after) {
                 [$after, $page] = [$candidate, 1];

@@ -73,7 +73,11 @@ final class ContactSyncController extends BaseController
             'form' => $form,
             'categories' => $this->categories->all(),
             'counts' => $this->sync->statusCounts($connection->id()),
-            'shopData' => (new WooDataRepository())->counts($connection->id()) + ['oldest_order' => (new WooDataRepository())->oldestOrderAt($connection->id())],
+            'shopData' => (new WooDataRepository())->counts($connection->id()) + [
+                'oldest_order' => (new WooDataRepository())->oldestOrderAt($connection->id()),
+                // The order import's current position (orders changed after this moment are fetched next), UTC.
+                'import_position' => self::position($connection->syncState()['orders']['after'] ?? null),
+            ],
             'jobs' => $this->jobs?->countsForConnection($connection->id(), $connection->organizationId()) ?? ['pending' => 0, 'running' => 0, 'failed' => 0],
             'problems' => $this->sync->problems($connection->id()),
             'errors' => (array) (json_decode((string) Session::getFlash('woo_contact_sync_errors'), true) ?? []),
@@ -134,6 +138,14 @@ final class ContactSyncController extends BaseController
         $this->connections->mergeSyncState($connection, ['orders' => ['after' => $after, 'page' => 1]]);
 
         return $this->importAndSync($connection, t('woocommerce.contacts.history.started') . ' ');
+    }
+
+    /** The sync cursor (Y-m-dTH:i:s, UTC) as a stored-style time; null when not started or "from the beginning". */
+    private static function position(mixed $after): ?string
+    {
+        return is_string($after) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $after) === 1 && $after !== self::ALL_HISTORY
+            ? str_replace('T', ' ', $after)
+            : null;
     }
 
     /** WooCommerce's modified_after for "from the beginning". */

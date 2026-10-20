@@ -4,6 +4,11 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Fix — WooCommerce import stopped early on stores that cap orders per request
+- A sync batch treated any page with fewer orders than requested (50) as "caught up". Many stores / security plugins cap `per_page` lower (e.g. 10 or 20), so every batch ended after one page, no continuation was queued and the import only advanced once per scheduled sync — e.g. ~170 of 1,900 orders. Now a batch is caught up only when the shop returns no orders, or a short page that is its last page by `X-WP-TotalPages`; otherwise continuation batches follow immediately.
+- The contact sync page shows how far the import has got and explains that contacts are per customer (fewer than orders).
+- No migrations. 2 new translation keys × 5 languages; `WooContactSyncTest` 27.
+
 ### Import older WooCommerce orders (contact sync)
 - The first sync of a shop imports only orders of the last 30 days (`WOOCOMMERCE_INITIAL_DAYS`), so older customers never became contacts. New **"Import older orders"** on the shop's Contact sync page: from a chosen date or from the beginning. The first part is imported at once, cron continues in small batches; guest customers (email or phone only) are included as before.
 - Safe to repeat: orders are stored once per shop; old orders never start a satisfaction survey (only orders completed in the last 7 days do). Shows the oldest imported order.

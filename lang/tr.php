@@ -3351,4 +3351,6 @@ return [
     'woocommerce.contacts.history.confirm' => 'Mağazanın eski siparişleri içe aktarılsın ve müşterilerinden kişi oluşturulsun mu?',
     'woocommerce.contacts.history.error_date' => 'Geçmişte bir tarih seçin veya "Baştan" seçeneğini işaretleyin.',
     'woocommerce.contacts.history.started' => 'Eski siparişlerin içe aktarımı başladı.',
+    'woocommerce.contacts.history.position' => 'İçe aktarım şu tarihte değişen siparişlere ulaştı',
+    'woocommerce.contacts.orders_vs_contacts' => 'Müşteri başına bir kişi: birkaç siparişi olan müşteri tek kişi olur, bu yüzden kişi sayısı sipariş sayısından azdır.',
 ];

@@ -3351,4 +3351,6 @@ return [
     'woocommerce.contacts.history.confirm' => 'استيراد طلبات المتجر الأقدم وإنشاء جهات اتصال من عملائها؟',
     'woocommerce.contacts.history.error_date' => 'اختر تاريخًا في الماضي، أو فعّل «من البداية».',
     'woocommerce.contacts.history.started' => 'بدأ استيراد الطلبات الأقدم.',
+    'woocommerce.contacts.history.position' => 'وصل الاستيراد إلى الطلبات المعدّلة في',
+    'woocommerce.contacts.orders_vs_contacts' => 'جهة اتصال واحدة لكل عميل: العميل ذو الطلبات المتعددة يصبح جهة اتصال واحدة، لذا عدد جهات الاتصال أقل من الطلبات.',
 ];
