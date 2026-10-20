@@ -153,6 +153,7 @@ final class WooCommerceModule implements ModuleInterface, ProvidesServices
             $router->get('/{id}/contact-sync', fn (Request $r) => $controller->show($r));
             $router->post('/{id}/contact-sync', fn (Request $r) => $controller->save($r), [new CsrfMiddleware()]);
             $router->post('/{id}/contact-sync/run', fn (Request $r) => $controller->run($r), [new CsrfMiddleware()]);
+            $router->post('/{id}/contact-sync/history', fn (Request $r) => $controller->importHistory($r), [new CsrfMiddleware()]);
         });
     }
 

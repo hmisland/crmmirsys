@@ -33,10 +33,13 @@ final class FakeContactSyncShopHttp implements HttpClientInterface
     /** @var array<int, array> order lists to return, one per request */
     public array $pages = [];
     public int $calls = 0;
+    /** @var string[] */
+    public array $urls = [];
 
     public function request(string $method, string $url, array $headers = [], ?string $body = null, int $timeoutSeconds = 15): HttpResponse
     {
         $this->calls++;
+        $this->urls[] = $url;
 
         return new HttpResponse(200, (string) json_encode(array_shift($this->pages) ?? []), ['x-wp-totalpages' => '1']);
     }
@@ -484,6 +487,31 @@ return [
             'name' => 'Empty lite shop', 'store_url' => 'https://empty-lite.example.com', 'consumer_key' => 'ck_' . str_repeat('c3', 20), 'consumer_secret' => 'cs_' . str_repeat('d4', 20),
         ]);
         LiteAssert::contains('No customers have been imported', $h->a->request('GET', '/org/integrations/' . (int) $created['id'] . '/contact-sync')['body']);
+    },
+
+    '"Import older orders": the shop is asked from the chosen start; old guest customers (email or phone only) become contacts' => function () use ($setup, $h, $order, $customer) {
+        $setup();
+        $h->a->as($h->a->admin);
+        $old = gmdate('Y-m-d\TH:i:s', time() - 400 * 86400);
+        $h->http->pages = [[
+            $order(['first_name' => 'Old', 'last_name' => 'Guest', 'email' => 'old.guest.lite@example.test'], ['customer_id' => 0, 'status' => 'completed', 'date_created_gmt' => $old, 'date_modified_gmt' => $old, 'date_completed_gmt' => $old]),
+            $order(['first_name' => 'Phone', 'last_name' => 'Guest', 'phone' => '09125550456'], ['customer_id' => 0, 'status' => 'completed', 'date_created_gmt' => $old, 'date_modified_gmt' => $old, 'date_completed_gmt' => $old]),
+        ]];
+        $h->http->urls = [];
+
+        $bad = $h->a->request('POST', '/org/integrations/' . $h->connId . '/contact-sync/history', [], ['since' => gmdate('Y-m-d', time() + 86400)]);
+        LiteAssert::same(302, $bad['status']);
+        LiteAssert::same([], $h->http->urls, 'a future date is refused before calling the shop');
+
+        $res = $h->a->request('POST', '/org/integrations/' . $h->connId . '/contact-sync/history', [], ['all_history' => '1']);
+        LiteAssert::same(302, $res['status']);
+        LiteAssert::true($h->http->urls !== [] && str_contains($h->http->urls[0], 'modified_after=2000-01-01T00%3A00%3A00'), 'whole history requested: ' . ($h->http->urls[0] ?? 'no call'));
+        LiteAssert::same('created', $customer('old.guest.lite@example.test')['contact_sync_status']);
+        $phoneGuest = $h->a->pdo->query("SELECT * FROM woo_customers WHERE connection_id = {$h->connId} AND phone = '09125550456'")->fetch();
+        LiteAssert::same('created', $phoneGuest['contact_sync_status']);
+        $page = $h->a->request('GET', '/org/integrations/' . $h->connId . '/contact-sync')['body'];
+        LiteAssert::contains('Importing older orders started.', $page);
+        LiteAssert::contains(substr($old, 0, 4), $page, 'oldest imported order shown');
     },
 
     'rollback leaves no test rows behind' => function () use ($setup, $h) {

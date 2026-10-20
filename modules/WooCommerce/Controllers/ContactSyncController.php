@@ -73,7 +73,7 @@ final class ContactSyncController extends BaseController
             'form' => $form,
             'categories' => $this->categories->all(),
             'counts' => $this->sync->statusCounts($connection->id()),
-            'shopData' => (new WooDataRepository())->counts($connection->id()),
+            'shopData' => (new WooDataRepository())->counts($connection->id()) + ['oldest_order' => (new WooDataRepository())->oldestOrderAt($connection->id())],
             'jobs' => $this->jobs?->countsForConnection($connection->id(), $connection->organizationId()) ?? ['pending' => 0, 'running' => 0, 'failed' => 0],
             'problems' => $this->sync->problems($connection->id()),
             'errors' => (array) (json_decode((string) Session::getFlash('woo_contact_sync_errors'), true) ?? []),
@@ -106,7 +106,41 @@ final class ContactSyncController extends BaseController
      */
     public function run(Request $request): Response
     {
+        return $this->importAndSync($this->connection($request));
+    }
+
+    /**
+     * "Import older orders": moves the shop's order-sync starting point back
+     * to a date (or the whole history), then imports and syncs like "Sync
+     * contacts now"; cron continues with the rest. Re-reading an order is
+     * harmless (one row per order), and an order completed long ago never
+     * starts a satisfaction survey (only orders completed in the last days do).
+     */
+    public function importHistory(Request $request): Response
+    {
         $connection = $this->connection($request);
+        $back = '/org/integrations/' . $connection->id() . '/contact-sync';
+        if ((string) $request->input('all_history', '') === '1') {
+            $after = self::ALL_HISTORY;
+        } else {
+            $date = trim((string) $request->input('since', ''));
+            if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $m) !== 1 || !checkdate((int) $m[2], (int) $m[3], (int) $m[1]) || $date >= gmdate('Y-m-d')) {
+                Session::setFlash('error', t('woocommerce.contacts.history.error_date'));
+
+                return $this->redirect($back);
+            }
+            $after = $date . 'T00:00:00';
+        }
+        $this->connections->mergeSyncState($connection, ['orders' => ['after' => $after, 'page' => 1]]);
+
+        return $this->importAndSync($connection, t('woocommerce.contacts.history.started') . ' ');
+    }
+
+    /** WooCommerce's modified_after for "from the beginning". */
+    public const ALL_HISTORY = '2000-01-01T00:00:00';
+
+    private function importAndSync(IntegrationConnection $connection, string $prefix = ''): Response
+    {
         $back = '/org/integrations/' . $connection->id() . '/contact-sync';
         $user = (array) CurrentUser::user();
 
@@ -142,7 +176,7 @@ final class ContactSyncController extends BaseController
         if ($importError !== null && $importError !== '') {
             $messages[] = t('woocommerce.contacts.import_error', ['error' => t((string) $importError)]);
         }
-        Session::setFlash($importError !== null && $importError !== '' && $handled === 0 ? 'error' : 'success', implode(' ', $messages));
+        Session::setFlash($importError !== null && $importError !== '' && $handled === 0 ? 'error' : 'success', $prefix . implode(' ', $messages));
 
         return $this->redirect($back);
     }

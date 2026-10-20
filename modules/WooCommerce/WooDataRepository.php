@@ -118,6 +118,17 @@ final class WooDataRepository extends BaseRepository
         return $this->pdo()->inTransaction() ? $work() : $this->transaction($work);
     }
 
+    /** Creation time (UTC) of the oldest imported order of one connection, or null. */
+    public function oldestOrderAt(int $connectionId): ?string
+    {
+        $value = $this->findOne(
+            'SELECT MIN(external_created_at) AS m FROM woo_orders WHERE organization_id = :org AND connection_id = :conn',
+            ['org' => OrganizationContext::id(), 'conn' => $connectionId]
+        )['m'] ?? null;
+
+        return $value !== null ? (string) $value : null;
+    }
+
     /** Settings page / tests: row counts for one connection. */
     public function counts(int $connectionId): array
     {

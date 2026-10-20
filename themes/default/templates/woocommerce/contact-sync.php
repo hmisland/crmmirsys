@@ -10,7 +10,7 @@
  * @var array[] $categories contact groups of the organization
  * @var array<string, int> $counts customer sync status => count
  * @var array[] $problems skipped / conflicting customers
- * @var array{customers: int, orders: int, products: int} $shopData rows imported from the shop so far
+ * @var array{customers: int, orders: int, products: int, oldest_order: ?string} $shopData rows imported from the shop so far
  * @var array{pending: int, running: int, failed: int} $jobs the shop's import queue
  * @var array<string, string> $errors
  */
@@ -94,6 +94,27 @@ $statusTone = ['created' => 'active', 'updated' => 'active', 'matched' => 'sent'
         </form>
     </div>
     <div class="field-hint"><?= e(t($form['enabled'] ? 'woocommerce.contacts.run_hint' : 'woocommerce.contacts.run_disabled_hint')) ?></div>
+</section>
+
+<section class="card card--form" id="import-history">
+    <h2><?= icon('history') ?><?= e(t('woocommerce.contacts.history.title')) ?></h2>
+    <p class="field-hint"><?= e(t('woocommerce.contacts.history.intro')) ?></p>
+    <dl class="fact-row">
+        <div class="fact">
+            <dt><?= e(t('woocommerce.contacts.history.oldest')) ?></dt>
+            <dd><span class="ltr"><?= e(local_time($shopData['oldest_order']) ?? '—') ?></span></dd>
+        </div>
+    </dl>
+    <form method="post" action="/org/integrations/<?= e($id) ?>/contact-sync/history">
+        <?= Csrf::field() ?>
+        <label for="wcs-since"><?= e(t('woocommerce.contacts.history.since')) ?></label>
+        <input type="text" class="crm-datepicker" id="wcs-since" name="since">
+        <label class="check"><input type="checkbox" name="all_history" value="1"> <?= e(t('woocommerce.contacts.history.all')) ?></label>
+        <div class="field-hint"><?= e(t('woocommerce.contacts.history.hint')) ?></div>
+        <div class="actions">
+            <button type="submit" class="btn"<?= $form['enabled'] ? '' : ' disabled' ?> data-confirm="<?= e(t('woocommerce.contacts.history.confirm')) ?>"><?= icon('download') ?><?= e(t('woocommerce.contacts.history.run')) ?></button>
+        </div>
+    </form>
 </section>
 
 <form method="post" action="/org/integrations/<?= e($id) ?>/contact-sync" class="card card--form">

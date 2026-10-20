@@ -110,6 +110,9 @@ Per shop: Organization settings → Integrations → shop → **Contact sync**
   the request, ~15 s, same jobs and claims as cron; a job waiting to retry is made due now), then syncs one
   bounded batch of customers. A customer is pending only when its data changed; claims make runs idempotent.
   Phone-only guest checkouts are now stored as customers (`guest-phone:` key).
+* **Older orders:** a new shop starts `WOOCOMMERCE_INITIAL_DAYS` (30) back. "Import older orders" on the Contact
+  sync page moves the order-sync starting point (`sync_state.orders.after`) back to a date or to the beginning and
+  imports like "Sync contacts now"; cron continues. Re-reading is idempotent; old orders start no survey.
 * **Orders on the contact page:** "Shop orders" panel (`contacts.view`) reads the existing `woo_orders` through
   `woo_customers.contact_id` — no copy of the orders.
 * Migrations: core `0087_add_contact_lookup_indexes` (indexes only), WooCommerce

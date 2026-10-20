@@ -4,6 +4,11 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Import older WooCommerce orders (contact sync)
+- The first sync of a shop imports only orders of the last 30 days (`WOOCOMMERCE_INITIAL_DAYS`), so older customers never became contacts. New **"Import older orders"** on the shop's Contact sync page: from a chosen date or from the beginning. The first part is imported at once, cron continues in small batches; guest customers (email or phone only) are included as before.
+- Safe to repeat: orders are stored once per shop; old orders never start a satisfaction survey (only orders completed in the last 7 days do). Shows the oldest imported order.
+- No migrations. 10 new translation keys × 5 languages; `WooContactSyncTest` now 26 tests.
+
 ### Fix — "Sync contacts now" did nothing without cron
 - **Cause:** the button only synced customers already imported from the shop; orders are imported by the background task (cron), and "Sync now" on the Integrations page only queues that import. Without a running cron there were no customers, so nothing happened. A sync waiting to retry after a failed attempt also blocked a second click. The button was also disabled (without explanation) until contact sync was switched on and saved.
 - **Now:** "Sync contacts now" first fetches the shop's latest orders — it queues the usual order sync and runs this shop's queued jobs right away (time-limited, same jobs and claims as cron, a job waiting to retry is retried now) — then syncs the contacts, and reports both results and any shop error.
