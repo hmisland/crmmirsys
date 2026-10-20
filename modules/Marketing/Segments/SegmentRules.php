@@ -11,6 +11,8 @@ namespace Modules\Marketing\Segments;
  *    "groups": [{"match": "all"|"any",
  *                "conditions": [{"field": "city", "op": "eq", "value": "Tabriz"}, …]}, …]}
  *
+ * A ScopedSegmentCondition also stores "scope" (e.g. one shop or "all").
+ *
  * "all" = AND, "any" = OR, at the top level and inside each group (so
  * "(A AND B) OR (C AND D)" and "(A OR B) AND C" are both expressible).
  *
@@ -80,8 +82,17 @@ final class SegmentRules
                     $errors[] = $error;
                     continue;
                 }
+                $entry = ['field' => $field, 'op' => $op, 'value' => $value];
+                if ($definition instanceof ScopedSegmentCondition) {
+                    $scope = is_scalar($condition['scope'] ?? null) ? (string) $condition['scope'] : ScopedSegmentCondition::SCOPE_ALL;
+                    if (!array_key_exists($scope, $definition->scopes())) {
+                        $errors[] = 'marketing.segment.error.scope';
+                        continue;
+                    }
+                    $entry['scope'] = $scope;
+                }
                 $personal = $personal || $definition->isPersonalData();
-                $normalized[] = ['field' => $field, 'op' => $op, 'value' => $value];
+                $normalized[] = $entry;
             }
 
             $groups[] = ['match' => self::match($group['match'] ?? 'all'), 'conditions' => $normalized];
@@ -135,7 +146,17 @@ final class SegmentRules
                     return '1 = 0';
                 }
                 // A choice that no longer exists (deleted group/tag) still compiles safely: the id is bound and org-pinned.
-                $parts[] = '(' . $definition->toSql($op, $error === null ? $value : ($condition['value'] ?? ''), $params) . ')';
+                $compiledValue = $error === null ? $value : ($condition['value'] ?? '');
+                if ($definition instanceof ScopedSegmentCondition) {
+                    // A removed scope (e.g. a deleted shop) is still a bound, org-pinned id: it simply matches nothing.
+                    $scope = is_scalar($condition['scope'] ?? null) ? (string) $condition['scope'] : ScopedSegmentCondition::SCOPE_ALL;
+                    if ($scope !== ScopedSegmentCondition::SCOPE_ALL && !self::isId($scope)) {
+                        return '1 = 0';
+                    }
+                    $parts[] = '(' . $definition->toScopedSql($op, $compiledValue, $scope, $params) . ')';
+                    continue;
+                }
+                $parts[] = '(' . $definition->toSql($op, $compiledValue, $params) . ')';
             }
             if ($parts !== []) {
                 $groupSql[] = '(' . implode(self::match($group['match'] ?? 'all') === 'any' ? ' OR ' : ' AND ', $parts) . ')';

@@ -231,6 +231,7 @@ final class SegmentService
                 'personal' => $condition->isPersonalData(),
                 'ops' => $condition->operators(),
                 'choices' => $condition->choices(),
+                'scopes' => $condition instanceof \Modules\Marketing\Segments\ScopedSegmentCondition ? $condition->scopes() : [],
             ];
         }
 

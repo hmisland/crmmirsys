@@ -54,6 +54,7 @@ abstract class BaseCondition implements SegmentCondition
             self::TYPE_NONE => [null, null],
             self::TYPE_TEXT => $this->text($value),
             self::TYPE_NUMBER => $this->number($value),
+            self::TYPE_AMOUNT => $this->amount($value),
             self::TYPE_DATE => $this->date($value),
             self::TYPE_CHOICE => $this->choice($value),
             default => [null, 'marketing.segment.error.value'],
@@ -76,6 +77,14 @@ abstract class BaseCondition implements SegmentCondition
         return preg_match('/^\d{1,4}$/', $text) === 1 && (int) $text >= 1 && (int) $text <= 3650
             ? [(int) $text, null]
             : [null, 'marketing.segment.error.value'];
+    }
+
+    /** @return array{0: ?string, 1: ?string} a non-negative decimal string, e.g. "1250000" or "99.5" */
+    protected function amount(mixed $value): array
+    {
+        $text = is_scalar($value) ? str_replace([',', ' '], '', trim((string) $value)) : '';
+
+        return preg_match('/^\d{1,20}(\.\d{1,2})?$/', $text) === 1 ? [$text, null] : [null, 'marketing.segment.error.value'];
     }
 
     /** @return array{0: ?string, 1: ?string} Y-m-d */

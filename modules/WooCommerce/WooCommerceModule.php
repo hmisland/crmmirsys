@@ -38,6 +38,7 @@ use Modules\WooCommerce\ContactSync\ContactSyncRepository;
 use Modules\WooCommerce\ContactSync\ContactSyncSettingsService;
 use Modules\WooCommerce\ContactSync\CustomerContactSync;
 use Modules\WooCommerce\Controllers\ContactSyncController;
+use Modules\WooCommerce\Segments\WooSegmentConditions;
 use Modules\WooCommerce\Services\WooOrderImporter;
 
 /**
@@ -54,7 +55,8 @@ use Modules\WooCommerce\Services\WooOrderImporter;
  * Phase A — customer → contact sync (ContactSync/): per-shop settings at
  * /org/integrations/{id}/contact-sync (organization.edit + this module),
  * the cron task "woocommerce.contacts", and a "Shop orders" panel on
- * the contact page (contacts.view). No new permission keys.
+ * the contact page (contacts.view). Phase C — purchase conditions for
+ * Marketing segments (Segments/). No new permission keys.
  */
 final class WooCommerceModule implements ModuleInterface, ProvidesServices
 {
@@ -111,6 +113,12 @@ final class WooCommerceModule implements ModuleInterface, ProvidesServices
 
             return sprintf('created=%d matched=%d updated=%d skipped=%d conflict=%d', $s['created'], $s['matched'], $s['updated'], $s['skipped'], $s['conflict']);
         });
+
+        // Phase C: purchase conditions for Marketing's dynamic segments (only when Marketing is installed;
+        // its folder sorts first, so its registry is already in the container).
+        if ($container->has(\Modules\Marketing\Segments\SegmentConditionRegistry::class)) {
+            $container->make(\Modules\Marketing\Segments\SegmentConditionRegistry::class)->addProvider(new WooSegmentConditions());
+        }
 
         // "Shop orders" on the contact page: the existing woo_orders rows of the contact's linked shop customers.
         $container->make(RelatedPanelRegistry::class)->register(new RelatedPanel(

@@ -203,6 +203,7 @@ final class SegmentController extends BaseController
                 'category' => t($field['category']),
                 'ops' => array_map(fn ($op, $type) => ['key' => $op, 'label' => t('marketing.segment.op.' . $op), 'type' => $type], array_keys($field['ops']), $field['ops']),
                 'choices' => array_map(fn ($value, $label) => ['value' => (string) $value, 'label' => $this->label($label)], array_keys($field['choices']), $field['choices']),
+                'scopes' => array_map(fn ($value, $label) => ['value' => (string) $value, 'label' => $this->label($label)], array_keys($field['scopes']), $field['scopes']),
             ];
         }
         $decoded = json_decode($rulesJson, true);
@@ -222,6 +223,7 @@ final class SegmentController extends BaseController
                 'field' => t('marketing.segment.builder.field'),
                 'operator' => t('marketing.segment.builder.operator'),
                 'value' => t('marketing.segment.builder.value'),
+                'scope' => t('marketing.segment.builder.scope'),
             ],
         ];
     }
@@ -254,7 +256,12 @@ final class SegmentController extends BaseController
                 } elseif ($value !== null && $field['choices'] !== []) {
                     $value = isset($field['choices'][(string) $value]) ? $this->label($field['choices'][(string) $value]) : t('marketing.segment.removed_value');
                 }
-                $lines[] = trim(t($field['label']) . ' ' . t('marketing.segment.op.' . ($c['op'] ?? '')) . ' ' . ($value !== null ? '«' . $value . '»' : ''));
+                $line = trim(t($field['label']) . ' ' . t('marketing.segment.op.' . ($c['op'] ?? '')) . ' ' . ($value !== null ? '«' . $value . '»' : ''));
+                $scope = (string) ($c['scope'] ?? 'all');
+                if ($field['scopes'] !== [] && $scope !== 'all') {
+                    $line .= ' — ' . (isset($field['scopes'][$scope]) ? $this->label($field['scopes'][$scope]) : t('marketing.segment.removed_value'));
+                }
+                $lines[] = $line;
             }
             $groups[] = ['match' => ($group['match'] ?? 'all') === 'any' ? 'any' : 'all', 'conditions' => $lines];
         }

@@ -143,3 +143,35 @@ Module entitlement: every route is behind `ModuleMiddleware('marketing')` and
 - Text conditions use `LIKE` on unindexed columns (`city`, `email`, …): fine
   for tens of thousands of contacts per organization; very large datasets
   may need indexes later.
+
+## WooCommerce purchase conditions (Phase C)
+
+Registered by the WooCommerce module on `SegmentConditionRegistry` (only when Marketing is installed), listed
+under "Shop purchases" in the rule builder. Membership is resolved from the synchronized `woo_*` tables by the
+same engine (preview, approval snapshot, background expansion) — nothing is copied or pre-aggregated; each
+condition is a subquery correlated to the contact through `woo_customers.contact_id`, pinned to the
+organization.
+
+| Field | Operators | Value |
+|---|---|---|
+| Has purchased (`woo_purchased`) | yes / no | — |
+| Number of purchases (`woo_order_count`) | at least / at most / exactly | 1–3650 |
+| Total purchase amount (`woo_total_spent`) | at least / at most | amount (≥ 0, 2 decimals) |
+| Purchased product (`woo_product`) | has / has not | a product of a connected shop |
+| Has an order with status (`woo_order_status`) | has / has not | a WooCommerce status |
+| Last / first purchase (`woo_last_order`, `woo_first_order`) | in the last N days / more than N days ago / before / after | days or a date |
+
+* **A purchase** is an order with status *completed* or *processing*. Pending payment, on-hold, failed, cancelled,
+  refunded and drafts never count toward purchased / number / total / product / first / last; "order status"
+  matches any status explicitly. Totals add the stored order totals (one currency per shop).
+* **Shop scope:** every condition except product has a "Where" choice — all shops, or one shop. A contact who
+  buys in several shops is evaluated per selected shop. Stored as `"scope"` next to field/op/value
+  (`ScopedSegmentCondition`); validated against the organization's shops when saved; a removed shop matches
+  nothing; anything non-numeric compiles to "no match".
+* Dates use the organization's day (order times are stored UTC); "last N days" follows the frozen approval time
+  of a campaign snapshot.
+* **Not available:** product *category* — WooCommerce order line items carry no categories and the CRM does not
+  store the shop catalog; adding it would need a product/category sync first.
+* Engine changes (backward compatible): value type `amount`; optional `ScopedSegmentCondition`; the builder
+  shows a scope select for such fields.
+

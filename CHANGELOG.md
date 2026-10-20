@@ -4,6 +4,15 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Phase C — WooCommerce purchase segments
+- **New dynamic segment conditions** ("Shop purchases"): has purchased, number of purchases, total purchase amount, purchased product, has an order with status, last purchase, first purchase (last N days / more than N days ago / before / after).
+- **Shop scope:** each condition (except product, which already belongs to one shop) can be limited to one shop or use all shops; contacts buying in several shops are evaluated per selected shop.
+- **What counts as a purchase:** completed or processing orders; pending, on-hold, failed, cancelled, refunded and drafts never count (the order-status condition can still target them).
+- Resolved by the existing segment engine (preview, approval snapshot, chunked background expansion) from the synchronized order tables — correlated, organization-pinned subqueries, no copies.
+- **Not included:** product category (WooCommerce order data has no categories; the CRM doesn't store the shop catalog).
+- Engine (backward compatible): `amount` value type, optional `ScopedSegmentCondition` with a "Where" select in the builder, scope shown on the segment page.
+- No migrations. 16 new translation keys × 5 languages. New suite `WooSegmentsTest` (13); 6 mutation checks.
+
 ### Phase B — Delivery reports and a page for transactional messages
 - **SMS delivery reports** for transactional messages (e.g. survey invitations): the Marketing worker's existing Kavenegar status polling now covers them too (same 47-hour window; "blocked" adds an SMS opt-out). Organizations that only sent transactional SMS are included.
 - **Email delivery events:** Brevo webhook events update transactional emails the same way as campaign emails — replays ignored, final states never downgraded, bounce / complaint / unsubscribe add an opt-out; scoped to the webhook's organization.

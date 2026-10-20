@@ -21,6 +21,8 @@ interface SegmentCondition
     public const TYPE_CHOICE = 'choice';
     public const TYPE_DATE = 'date';
     public const TYPE_NUMBER = 'number';
+    /** A money amount (>= 0, up to 2 decimals), e.g. total spent. */
+    public const TYPE_AMOUNT = 'amount';
     public const TYPE_NONE = 'none';
 
     /** Stable key stored in the rules JSON, [a-z][a-z0-9_]*. */

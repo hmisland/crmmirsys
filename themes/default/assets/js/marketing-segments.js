@@ -6,7 +6,8 @@
  * [data-segment-rules] input on submit. The server validates everything
  * again against its own allowlist; this script only builds the JSON.
  *
- * Rules: {match: all|any, groups: [{match: all|any, conditions: [{field, op, value}]}]}
+ * Rules: {match: all|any, groups: [{match: all|any, conditions: [{field, op, value[, scope]}]}]}
+ * (scope: only for fields that list "scopes", e.g. "all shops" / one shop)
  * No user-visible text lives here.
  */
 (function () {
@@ -82,8 +83,9 @@
             wrap.appendChild(s);
             return wrap;
         }
-        var input = el('input', { type: type === 'number' ? 'number' : 'text', 'aria-label': t.value || '', dir: 'auto' });
+        var input = el('input', { type: type === 'number' || type === 'amount' ? 'number' : 'text', 'aria-label': t.value || '', dir: 'auto' });
         if (type === 'number') { input.min = '1'; input.max = '3650'; }
+        if (type === 'amount') { input.min = '0'; input.step = 'any'; }
         if (type === 'date') { input.className = 'crm-datepicker'; input.name = 'seg_date_' + Math.random().toString(36).slice(2); }
         input.value = value !== undefined && value !== null ? String(value) : '';
         wrap.appendChild(input);
@@ -94,12 +96,26 @@
         return wrap;
     }
 
+    /** Scope select (e.g. all shops / one shop) for fields that have scopes; an empty placeholder otherwise. */
+    function scopeControl(field, value) {
+        var wrap = el('span', { 'class': 'seg-scope' });
+        if (!field || !field.scopes || !field.scopes.length) {
+            return wrap;
+        }
+        var s = el('select', { 'aria-label': t.scope || '' });
+        field.scopes.forEach(function (c) { s.appendChild(el('option', { value: c.value, text: c.label })); });
+        if (value !== undefined && value !== null) { s.value = String(value); }
+        wrap.appendChild(s);
+        return wrap;
+    }
+
     function conditionRow(cond) {
         var row = el('div', { 'class': 'seg-condition inline-form-row' });
         var f = fieldSelect(cond.field);
         var field = byKey[f.value] || fields[0];
         var o = opSelect(field, cond.op);
         var v = valueControl(field, o.value, cond.value);
+        var sc = scopeControl(field, cond.scope);
         var remove = el('button', { type: 'button', 'class': 'btn btn--ghost btn--sm', text: t.remove || '' });
 
         f.addEventListener('change', function () {
@@ -107,6 +123,7 @@
             var no = opSelect(nf, null);
             row.replaceChild(no, row.querySelector('.seg-op'));
             row.replaceChild(valueControl(nf, no.value, null), row.querySelector('.seg-value'));
+            row.replaceChild(scopeControl(nf, null), row.querySelector('.seg-scope'));
             bindOp(no);
         });
         function bindOp(sel) {
@@ -116,7 +133,7 @@
         }
         bindOp(o);
         remove.addEventListener('click', function () { row.remove(); });
-        [f, o, v, remove].forEach(function (n) { row.appendChild(n); });
+        [f, o, v, sc, remove].forEach(function (n) { row.appendChild(n); });
         return row;
     }
 
@@ -164,7 +181,10 @@
         groupsEl.querySelectorAll('.seg-group').forEach(function (box) {
             var g = { match: box.querySelector('.seg-group-match').value, conditions: [] };
             box.querySelectorAll('.seg-condition').forEach(function (row) {
-                g.conditions.push({ field: row.querySelector('.seg-field').value, op: row.querySelector('.seg-op').value, value: readValue(row) });
+                var c = { field: row.querySelector('.seg-field').value, op: row.querySelector('.seg-op').value, value: readValue(row) };
+                var scope = row.querySelector('.seg-scope select');
+                if (scope) { c.scope = scope.value; }
+                g.conditions.push(c);
             });
             out.groups.push(g);
         });
