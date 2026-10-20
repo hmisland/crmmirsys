@@ -113,15 +113,32 @@ $moduleAdminController = new ModuleAdminController(
     $container->make(ModuleService::class)
 );
 
-$organizationModuleAdminController = new OrganizationModuleAdminController(
-    $container->make(TemplateEngine::class),
-    $container->make(ModuleService::class),
-    new \App\Infrastructure\Repositories\OrganizationRepository()
-);
 
 $orgModulesController = new OrgModulesController(
     $container->make(TemplateEngine::class),
     $container->make(ModuleService::class)
+);
+
+// Modules & Features catalog + activation requests (organization side and Super Admin review).
+$moduleActivationRequests = new \App\Application\Services\ModuleActivationRequestService(
+    $container->make(ModuleService::class),
+    new \App\Infrastructure\Repositories\ModuleRepository(),
+    new \App\Infrastructure\Repositories\ModuleActivationRequestRepository(),
+    $container->make(\App\Infrastructure\Authorization\AuthorizationEngine::class),
+    $container->make(TimelineService::class),
+    new \App\Infrastructure\Repositories\AdminAnnouncementRepository(),
+    new \App\Infrastructure\Repositories\UserRepository(),
+    dirname(__DIR__) . '/lang',
+);
+$container->instance(\App\Application\Services\ModuleActivationRequestService::class, $moduleActivationRequests);
+$moduleCatalogController = new \App\Application\Controllers\ModuleCatalogController($container->make(TemplateEngine::class), $moduleActivationRequests);
+$moduleRequestAdminController = new \App\Application\Controllers\ModuleRequestAdminController($container->make(TemplateEngine::class), $moduleActivationRequests);
+
+$organizationModuleAdminController = new OrganizationModuleAdminController(
+    $container->make(TemplateEngine::class),
+    $container->make(ModuleService::class),
+    new \App\Infrastructure\Repositories\OrganizationRepository(),
+    $moduleActivationRequests,
 );
 
 $contactController = new ContactController(
@@ -257,6 +274,7 @@ $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     $roleController,
     $orgStructureController,
     $orgModulesController,
+    $moduleCatalogController,
     $customFieldAdminController,
     $orgSmsController,
     $orgMessagingController
@@ -297,6 +315,9 @@ $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     $router->post('/structure/teams/{id}/delete', fn (Request $r) => $orgStructureController->deleteTeam($r), [new CsrfMiddleware()]);
 
     $router->get('/modules', fn (Request $r) => $orgModulesController->index($r));
+    // Modules & Features catalog (organization.edit; the service re-checks it). Fixed paths before /modules/{id}.
+    $router->get('/modules/catalog', fn (Request $r) => $moduleCatalogController->index($r), [new RbacMiddleware('organization.edit')]);
+    $router->post('/modules/catalog/{key}/request', fn (Request $r) => $moduleCatalogController->request($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
     $router->get('/modules/{id}/access', fn (Request $r) => $orgModulesController->manageAccess($r));
     $router->post('/modules/{id}/access/{userId}/restrict', fn (Request $r) => $orgModulesController->restrictUser($r), [new CsrfMiddleware()]);
     $router->post('/modules/{id}/access/{userId}/allow', fn (Request $r) => $orgModulesController->allowUser($r), [new CsrfMiddleware()]);
@@ -349,6 +370,10 @@ $router->post('/admin/modules/{id}/enable', fn (Request $r) => $moduleAdminContr
 $router->post('/admin/modules/{id}/disable', fn (Request $r) => $moduleAdminController->disable($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 
 $router->get('/admin/organizations/{id}/modules', fn (Request $r) => $organizationModuleAdminController->index($r), [new AuthMiddleware()]);
+// Module activation requests (Super Admin only — checked in the controller and the service).
+$router->get('/admin/module-requests', fn (Request $r) => $moduleRequestAdminController->index($r), [new AuthMiddleware()]);
+$router->post('/admin/module-requests/{id}/approve', fn (Request $r) => $moduleRequestAdminController->approve($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->post('/admin/module-requests/{id}/reject', fn (Request $r) => $moduleRequestAdminController->reject($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 $router->post('/admin/organizations/{id}/modules/{moduleId}/enable', fn (Request $r) => $organizationModuleAdminController->enable($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 $router->post('/admin/organizations/{id}/modules/{moduleId}/disable', fn (Request $r) => $organizationModuleAdminController->disable($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 

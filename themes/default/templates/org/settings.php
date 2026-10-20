@@ -36,6 +36,7 @@ $currentTimezone = (string) ($old['default_timezone'] ?? $organization['default_
         <h2><span class="kpi__icon"><?= icon('layers') ?></span><?= e(t('org.modules')) ?></h2>
         <div class="settings-tile__links">
             <a href="/org/modules"><?= icon('layers') ?><?= e(t('org.modules_view_restrict')) ?></a>
+            <?php if ($canEdit): ?><a href="/org/modules/catalog"><?= icon('grid') ?><?= e(t('catalog.title')) ?></a><?php endif; ?>
             <a href="/org/custom-fields"><?= icon('sliders') ?><?= e(t('org.custom_fields')) ?></a>
         </div>
     </section>

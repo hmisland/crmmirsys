@@ -36,7 +36,7 @@ final class AdminAnnouncementRepository extends BaseRepository
     /** @param array<int, array{id: int, organization_id: ?int}> $recipients */
     public function create(string $title, string $body, string $audience, int $createdBy, array $recipients): int
     {
-        return $this->transaction(function () use ($title, $body, $audience, $createdBy, $recipients) {
+        $work = function () use ($title, $body, $audience, $createdBy, $recipients) {
             $id = $this->insertGetId('admin_announcements', [
                 'title' => $title,
                 'body' => $body,
@@ -52,7 +52,10 @@ final class AdminAnnouncementRepository extends BaseRepository
             }
 
             return $id;
-        });
+        };
+
+        // Joins the caller's transaction when one is open (PDO has no nested transactions).
+        return $this->pdo()->inTransaction() ? $work() : $this->transaction($work);
     }
 
     /** Sent announcements, newest first, with recipient/seen/deleted counts. */

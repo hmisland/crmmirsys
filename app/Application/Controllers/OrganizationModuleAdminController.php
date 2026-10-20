@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Controllers;
 
+use App\Application\Services\ModuleActivationRequestService;
 use App\Application\Services\ModuleService;
 use App\Core\Exceptions\AuthorizationException;
 use App\Core\Exceptions\NotFoundException;
@@ -26,6 +27,7 @@ final class OrganizationModuleAdminController extends BaseController
         TemplateEngine $templates,
         private readonly ModuleService $modules,
         private readonly OrganizationRepository $organizations,
+        private readonly ?ModuleActivationRequestService $requests = null,
     ) {
         parent::__construct($templates);
     }
@@ -44,6 +46,8 @@ final class OrganizationModuleAdminController extends BaseController
         return $this->viewWithLayout('admin/organization-modules', 'layout', [
             'organization' => $organization,
             'modules' => $this->modules->listForOrganization($organizationId),
+            // Pending activation requests of this organization, reviewed here with the same actions as /admin/module-requests.
+            'pendingRequests' => $this->requests?->pendingForOrganization((array) CurrentUser::user(), $organizationId) ?? [],
         ]);
     }
 

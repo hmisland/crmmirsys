@@ -4,6 +4,13 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Modules & Features catalog and activation requests
+- **Organization settings → Modules → Modules & Features** (`/org/modules/catalog`, `organization.edit`): every registered, platform-active module (sample `demo` hidden) grouped by purpose, with its real status for the organization — **Active** (with an Open link), **Available**, **Request pending** or **Request rejected** (with the reason; a new request is allowed). Dependencies are shown ("Requires Wallet — Not active"); Email marketing and Bale messaging are listed under Marketing. No prices, payment links or credentials.
+- WooCommerce card lists only capabilities that exist (shops, order import, contacts, orders on the contact page, purchase segments, post-order surveys) and links to the existing integration when active. The WooCommerce integration, its routes and its module gate are unchanged.
+- **Request activation** never activates anything: the module is validated against the registry, one pending request per organization + module (database-enforced), the request is recorded on the organization's timeline.
+- **Super Admin → Module requests** (`/admin/module-requests`): pending first, filter by status; **Approve** enables the module through the existing per-organization entitlement (same dependency / platform checks) in the same transaction — if it fails the request stays pending and the reason is shown; **Reject** with an optional reason. A second review of the same request changes nothing. Pending requests can also be approved/rejected on the organization's module screen. The requester is notified through the announcement bell (in their language); decisions are recorded on the organization's timeline.
+- Migration: core `0088_create_module_activation_requests_table` (new table only). 106 new translation keys × 5 languages. New suite `ModuleCatalogTest` (18); 12 mutation checks.
+
 ### Fix — WooCommerce import stopped early on stores that cap orders per request
 - A sync batch treated any page with fewer orders than requested (50) as "caught up". Many stores / security plugins cap `per_page` lower (e.g. 10 or 20), so every batch ended after one page, no continuation was queued and the import only advanced once per scheduled sync — e.g. ~170 of 1,900 orders. Now a batch is caught up only when the shop returns no orders, or a short page that is its last page by `X-WP-TotalPages`; otherwise continuation batches follow immediately.
 - The contact sync page shows how far the import has got and explains that contacts are per customer (fewer than orders).

@@ -2,11 +2,13 @@
 /** @var array $modules */
 
 use function App\Infrastructure\Theme\e;
+use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\t;
 ?>
 <section class="card">
     <h1><?= e(t('org.modules')) ?></h1>
     <p class="muted"><?= e(t('org.modules_hint')) ?></p>
+    <p><a href="/org/modules/catalog" class="btn"><?= icon('grid') ?><?= e(t('catalog.title')) ?></a></p>
 
     <div class="table-responsive">
     <table class="table">
@@ -23,7 +25,7 @@ use function App\Infrastructure\Theme\t;
                     <?php elseif ($module['enabled_for_org']): ?>
                         <a href="/org/modules/<?= e($module['id']) ?>/access"><?= e(t('org.manage_member_access')) ?></a>
                     <?php else: ?>
-                        <span class="muted"><?= e(t('org.ask_super_admin')) ?></span>
+                        <a href="/org/modules/catalog#module-<?= e($module['key']) ?>"><?= e(t('catalog.request_link')) ?></a>
                     <?php endif; ?>
                 </td>
             </tr>

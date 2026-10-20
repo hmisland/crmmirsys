@@ -126,6 +126,7 @@ if ($isSuperAdmin) {
     $navGroups[] = ['label' => t('nav.group_platform'), 'items' => [
         ['href' => '/admin/organizations', 'icon' => 'building', 'label' => t('admin.all_organizations'), 'match' => ['/admin/organizations']],
         ['href' => '/admin/modules', 'icon' => 'layers', 'label' => t('admin.modules_platform'), 'match' => ['/admin/modules']],
+        ['href' => '/admin/module-requests', 'icon' => 'inbox', 'label' => t('catalog.admin.title'), 'match' => ['/admin/module-requests']],
         ['href' => '/admin/wallet/settings', 'icon' => 'wallet', 'label' => t('admin.wallet_settings_platform'), 'match' => ['/admin/wallet/settings', '/admin/wallet/banks']],
         ['href' => '/admin/wallet/gift-codes', 'icon' => 'zap', 'label' => t('wallet_gift.title'), 'match' => ['/admin/wallet/gift-codes']],
         ['href' => '/admin/notifications/settings', 'icon' => 'bell', 'label' => t('admin.notification_pricing_platform'), 'match' => ['/admin/notifications']],
