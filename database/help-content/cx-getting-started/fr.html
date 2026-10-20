@@ -1,0 +1,26 @@
+<p><strong>Satisfaction client</strong> envoie automatiquement un court questionnaire aux clients après un événement, comme une commande terminée dans la boutique, et recueille une note et un commentaire facultatif. Les réponses insatisfaites deviennent des suivis pour votre équipe.</p>
+<div class="help-callout help-callout--warning"><p><strong>Avant de commencer :</strong> le module Satisfaction client doit être actif, et au moins un canal d'envoi (SMS, e-mail ou Bale) doit être configuré dans <strong>Fournisseurs de messagerie</strong> ; les invitations passent par les canaux du Marketing. Pour les questionnaires automatiques après commande, il faut aussi une boutique WooCommerce connectée.</p></div>
+<h2>Créer un questionnaire</h2>
+<ol>
+<li>Ouvrez <strong>Satisfaction client</strong> dans la barre latérale et cliquez sur <strong>Nouveau questionnaire</strong>.</li>
+<li>Saisissez un <strong>Nom du questionnaire</strong> et choisissez le <strong>Type</strong> :
+<ul>
+<li><strong>CSAT</strong> — satisfaction de 1 à 5.</li>
+<li><strong>NPS</strong> — probabilité de recommandation de 0 à 10.</li>
+<li><strong>CES</strong> — facilité, de 1 à 7.</li>
+</ul></li>
+<li>Rédigez la <strong>Question principale</strong>. Cochez si besoin <strong>Demander aussi un commentaire écrit</strong>, et modifiez les textes d'introduction et de remerciement.</li>
+<li>Sous <strong>Envoyer quand</strong>, choisissez <strong>Une commande est terminée</strong> pour un envoi automatique, ou <strong>Non automatique</strong>.</li>
+<li>Réglez le <strong>Délai avant envoi</strong> (60 minutes par défaut, jusqu'à 30 jours) et la durée de validité du lien (14 jours par défaut, jusqu'à 90).</li>
+<li>Choisissez un <strong>Canal préféré</strong> ou Automatique. Si le canal préféré n'est pas disponible pour un client, le premier canal disponible est utilisé.</li>
+<li>Rédigez si besoin le <strong>Message d’invitation</strong> avec les variables <code>:name</code>, <code>:order</code> et <code>:link</code> ; vide, le texte par défaut est utilisé.</li>
+<li>Réglez le statut sur <strong>Actif</strong> et cliquez sur <strong>Enregistrer</strong>.</li>
+</ol>
+<h2>Ce qui se passe après une commande</h2>
+<ul>
+<li>Quand une commande passe à terminée, une invitation par questionnaire actif est planifiée après le délai. Une commande ne reçoit chaque questionnaire qu'une seule fois.</li>
+<li>Les commandes terminées il y a plus de 7 jours (par exemple lors d'un import de commandes plus anciennes) ne déclenchent jamais de questionnaire.</li>
+<li>Chaque invitation a son propre lien à usage unique. Une fois la réponse donnée, ou après expiration, il ne peut plus servir.</li>
+<li>Si aucun canal n'est disponible, l'invitation affiche <strong>En attente d’un canal</strong> et un nouvel essai a lieu toutes les heures ; après 7 jours sans canal, elle expire.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> avant d'activer un questionnaire, envoyez-vous une invitation de test (voir « Envoyer une invitation de test à un questionnaire ») pour voir le message et la page du questionnaire exactement comme vos clients.</p></div>

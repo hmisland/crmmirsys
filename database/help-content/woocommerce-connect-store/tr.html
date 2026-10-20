@@ -1,0 +1,31 @@
+<p>WooCommerce entegrasyonu, WooCommerce mağazalarınızın müşterilerini, siparişlerini, sipariş kalemlerini ve sipariş edilen ürünlerini CRM'e getirir. CRM mağazadan yalnızca <strong>okur</strong>; orada hiçbir şeyi değiştirmez.</p>
+<div class="help-callout help-callout--warning"><p><strong>Başlamadan önce:</strong> WooCommerce modülü kuruluşunuz için etkin olmalıdır (bkz. <strong>Kurum ayarları › Modüller › Modüller ve Özellikler</strong>) ve kurum ayarlarını düzenleme yetkiniz olmalıdır.</p></div>
+<h2>1. WordPress'te API anahtarları oluşturun</h2>
+<ol>
+<li>WordPress yönetim panelinizde <strong>WooCommerce › Ayarlar › Gelişmiş › REST API</strong> sayfasını açın ve <strong>Anahtar ekle</strong>'ye tıklayın.</li>
+<li>Bir açıklama girin (örneğin "CRM"), bir kullanıcı seçin ve <strong>İzinler</strong> alanını <strong>Okuma</strong> olarak ayarlayın.</li>
+<li><strong>API anahtarı oluştur</strong>'a tıklayın ve <strong>Tüketici anahtarı</strong> (<code>ck_</code> ile başlar) ile <strong>Tüketici gizli anahtarı</strong>'nı (<code>cs_</code> ile başlar) kopyalayın. WordPress gizli anahtarı yalnızca bir kez gösterir.</li>
+</ol>
+<h2>2. Bağlantıyı CRM'e ekleyin</h2>
+<ol>
+<li><strong>Kurum ayarları › Entegrasyonları yönet</strong> sayfasına gidin. WooCommerce kartında <strong>Bağlantı ekle</strong>'ye tıklayın.</li>
+<li>Bir <strong>Bağlantı adı</strong> (örneğin mağazanın adı), <strong>Mağaza adresi</strong> (<code>https://</code> ile başlar) ve iki anahtarı girin.</li>
+<li><strong>Bağlantıyı ekle</strong>'ye, ardından <strong>Bağlantıyı test et</strong>'e tıklayın. Test başarılı olduğunda durum <strong>Bağlı</strong> olur.</li>
+<li>İlk içe aktarmayı başlatmak için <strong>Şimdi eşitle</strong>'ye tıklayın.</li>
+</ol>
+<p>Anahtarlar şifrelenmiş olarak saklanır ve bir daha gösterilmez. Bir anahtarı sonradan değiştirmek için bağlantıyı düzenleyin ve yalnızca değiştirmek istediğiniz alanı doldurun; boş bırakılan anahtar alanı kayıtlı değeri korur. Bir kuruluş en fazla 10 mağaza bağlayabilir.</p>
+<h2>3. Webhook'lar (önerilir)</h2>
+<p>Webhook'lar sayesinde mağaza yeni veya değişen bir siparişi CRM'e anında bildirir. Webhook olmadan da değişiklikler düzenli zamanlanmış eşitlemeyle gelmeye devam eder.</p>
+<ol>
+<li>Bağlantı kartında <strong>Webhook ayarları</strong>'nı açın ve <strong>Teslim URL’si</strong> ile <strong>Gizli anahtar (Secret)</strong> değerlerini kopyalayın.</li>
+<li>WordPress'te <strong>WooCommerce › Ayarlar › Gelişmiş › Webhook’lar › Webhook ekle</strong> sayfasını açın.</li>
+<li>Durumu <strong>Etkin</strong>, API sürümünü <strong>WP REST API v3</strong> olarak ayarlayın ve Teslim URL’si ile Gizli anahtarı yapıştırın.</li>
+<li>Her konu için bir webhook oluşturun: <strong>Sipariş oluşturuldu</strong>, <strong>Sipariş güncellendi</strong> ve isteğe bağlı olarak <strong>Müşteri güncellendi</strong>.</li>
+</ol>
+<h2>Sık görülen test hataları</h2>
+<ul>
+<li><strong>WooCommerce anahtarları reddetti</strong> — anahtar veya gizli anahtar yanlış ya da anahtarın Okuma izni yok.</li>
+<li><strong>WooCommerce REST API bulunamadı</strong> — mağaza adresini ve WordPress kalıcı bağlantılarının "Düz" olarak ayarlanmadığını kontrol edin.</li>
+<li><strong>Mağazaya şu anda ulaşılamadı</strong> — site kapalı veya isteği engelliyor (güvenlik duvarı ya da güvenlik eklentisi). Otomatik olarak yeniden denenir.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> bir bağlantıyı silmek, içe aktarılmış müşterilerini ve siparişlerini yalnızca CRM'den kaldırır. Mağazada hiçbir şey değişmez. Bunun yerine mağazayı duraklatmak için <strong>Devre dışı bırak</strong>'ı kullanın.</p></div>

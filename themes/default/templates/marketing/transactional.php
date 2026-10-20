@@ -17,6 +17,7 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 
 $active = 'transactional';
 $statuses = ['sent', 'retry', 'failed', 'skipped', 'processing'];
@@ -37,7 +38,7 @@ $purposeLabel = function (string $purpose): string {
 ?>
 <div class="page-head">
     <div>
-        <h1><?= e(t('marketing.nav.transactional')) ?></h1>
+        <h1><?= e(t('marketing.nav.transactional')) ?><?= help_link('marketing-transactional-messages') ?></h1>
         <p><?= e(t('marketing.transactional.subtitle')) ?></p>
     </div>
 </div>

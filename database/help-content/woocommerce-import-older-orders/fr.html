@@ -1,0 +1,16 @@
+<p>La première synchronisation d'une boutique n'importe que les commandes des <strong>30 derniers jours</strong>. Les clients qui ont acheté avant ne sont donc pas encore dans le CRM. Utilisez <strong>Importer les commandes plus anciennes</strong> pour les faire entrer.</p>
+<h2>Étapes</h2>
+<ol>
+<li>Allez dans <strong>Paramètres de l’organisation › Gérer les intégrations</strong> et cliquez sur <strong>Synchronisation des contacts</strong> sur la carte de connexion de la boutique.</li>
+<li>Dans la section <strong>Importer les commandes plus anciennes</strong>, choisissez une date sous <strong>Importer les commandes modifiées depuis</strong>, ou cochez <strong>Depuis le début (tout l'historique de la boutique)</strong>.</li>
+<li>Cliquez sur <strong>Importer les commandes plus anciennes</strong> et confirmez.</li>
+</ol>
+<p>La première partie est importée immédiatement. La tâche d'arrière-plan (cron) poursuit avec le reste par petits lots ; une grande boutique peut donc prendre un certain temps. La section indique où en est l'import et la <strong>Plus ancienne commande importée</strong>.</p>
+<h2>Bon à savoir</h2>
+<ul>
+<li>Vous pouvez recommencer sans risque : les commandes déjà importées sont mises à jour, jamais dupliquées.</li>
+<li>Si la synchronisation des contacts est activée, des contacts sont créés à partir des clients importés (invités compris).</li>
+<li>Les anciennes commandes n'envoient <strong>pas</strong> d'enquêtes de satisfaction. Seules les commandes terminées au cours des 7 derniers jours peuvent déclencher un questionnaire.</li>
+<li>Si l'import semble arrêté, vérifiez la <strong>File d’attente</strong> sur la carte de la connexion et que la tâche cron s'exécute chaque minute (voir « Synchronisation des commandes WooCommerce »).</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> pour une boutique avec des années d'historique, commencez par une date récente (par exemple il y a un an), vérifiez le résultat, puis importez le reste plus tard.</p></div>

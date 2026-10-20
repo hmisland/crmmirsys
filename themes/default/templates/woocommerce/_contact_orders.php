@@ -11,10 +11,12 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\money;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 
 // WooCommerce's standard order statuses; a custom status from a plugin is shown as stored.
 $tone = ['completed' => 'completed', 'processing' => 'in_progress', 'on-hold' => 'pending', 'pending' => 'pending', 'cancelled' => 'cancelled', 'refunded' => 'cancelled', 'failed' => 'failed', 'checkout-draft' => null];
 ?>
+<div class="actions"><?= help_link('woocommerce-contact-orders') ?></div>
 <div class="table-responsive">
     <table class="table">
         <thead>

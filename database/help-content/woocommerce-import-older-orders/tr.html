@@ -1,0 +1,16 @@
+<p>Bir mağazanın ilk eşitlemesi yalnızca <strong>son 30 günün</strong> siparişlerini içe aktarır. Bu nedenle daha önce alışveriş yapmış müşteriler henüz CRM'de değildir. Onları getirmek için <strong>Eski siparişleri içe aktar</strong>'ı kullanın.</p>
+<h2>Adımlar</h2>
+<ol>
+<li><strong>Kurum ayarları › Entegrasyonları yönet</strong> sayfasına gidin ve mağazanın bağlantı kartında <strong>Kişi eşitleme</strong>'ye tıklayın.</li>
+<li><strong>Eski siparişleri içe aktar</strong> bölümünde ya <strong>Şu tarihten beri değişen siparişleri al</strong> altında bir tarih seçin ya da <strong>Baştan (tüm mağaza geçmişi)</strong> seçeneğini işaretleyin.</li>
+<li><strong>Eski siparişleri içe aktar</strong>'a tıklayın ve onaylayın.</li>
+</ol>
+<p>İlk bölüm hemen içe aktarılır. Arka plan görevi (cron) kalanı küçük partiler halinde sürdürür; bu yüzden büyük bir mağaza biraz zaman alabilir. Bölüm, içe aktarmanın ne kadar ilerlediğini ve <strong>İçe aktarılan en eski sipariş</strong>'i gösterir.</p>
+<h2>Bilmekte fayda var</h2>
+<ul>
+<li>Tekrarlamak güvenlidir: daha önce içe aktarılmış siparişler güncellenir, asla çoğaltılmaz.</li>
+<li>Kişi eşitleme açıksa, içe aktarılan müşterilerden (misafirler dahil) kişiler oluşturulur.</li>
+<li>Eski siparişler memnuniyet anketi <strong>göndermez</strong>. Yalnızca son 7 günde tamamlanan siparişler bir anket başlatabilir.</li>
+<li>İçe aktarma durmuş gibi görünüyorsa bağlantı kartındaki <strong>Kuyruk</strong>'u ve cron işinin her dakika çalıştığını kontrol edin (bkz. "WooCommerce siparişleri nasıl eşitlenir").</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> yıllara uzanan geçmişi olan bir mağazada yakın bir tarihle (örneğin bir yıl önce) başlayın, sonucu kontrol edin ve kalanını daha sonra içe aktarın.</p></div>

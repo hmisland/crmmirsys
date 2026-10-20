@@ -157,7 +157,7 @@ $running = in_array($campaign['status'], ['queued', 'sending'], true) || $prepar
                 <label class="check"><input type="checkbox" name="confirm_consent" value="1" required> <?= e(t('marketing.confirm_consent', ['channel' => t('marketing.channel.' . $campaign['channel'])])) ?></label>
                 <?php if (isset($errors['confirm_consent'])): ?><div class="field-error"><?= e(t($errors['confirm_consent'][0])) ?></div><?php endif; ?>
             <?php endif; ?>
-            <h3 class="form-section-title"><?= icon('clock') ?><?= e(t('marketing.schedule.title')) ?></h3>
+            <h3 class="form-section-title"><?= icon('clock') ?><?= e(t('marketing.schedule.title')) ?><?= help_link('marketing-scheduled-campaigns') ?></h3>
             <label for="send-date"><?= e(t('marketing.schedule.date')) ?></label>
             <input type="text" class="crm-datepicker" id="send-date" name="send_date">
             <?php if (isset($errors['send_date'])): ?><div class="field-error"><?= e(t($errors['send_date'][0])) ?></div><?php endif; ?>

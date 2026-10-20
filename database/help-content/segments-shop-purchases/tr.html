@@ -1,0 +1,20 @@
+<p>WooCommerce modülü etkin olduğunda ve bir mağaza bağlandığında, dinamik segment oluşturucu (<strong>Pazarlama › Segmentler</strong>) bir <strong>Mağaza alışverişleri</strong> koşul grubu sunar. Bu koşullar mağazalarınızdan içe aktarılan siparişleri kullanır; böylece müşterileri ne ve ne zaman satın aldıklarına göre hedefleyebilirsiniz.</p>
+<h2>Koşullar</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Koşul</th><th>Seçenekler</th><th>Örnek</th></tr></thead>
+<tbody>
+<tr><td>Satın aldı</td><td>evet / hayır</td><td>Hiç satın almamış kişiler</td></tr>
+<tr><td>Satın alma sayısı</td><td>en az / en çok / tam olarak N</td><td>Tekrar gelen müşteriler: en az 3</td></tr>
+<tr><td>Toplam satın alma tutarı</td><td>en az / en çok</td><td>Çok harcayanlar</td></tr>
+<tr><td>Satın alınan ürün</td><td>sahip / sahip değil (bir veya daha fazla ürün)</td><td>Başlangıç setini aldı ama yedek paketi almadı</td></tr>
+<tr><td>Şu durumda siparişi var</td><td>sahip / sahip değil</td><td>İptal edilmiş veya iade edilmiş siparişi var</td></tr>
+<tr><td>Son satın alma</td><td>son N günde / N günden önce / önce / sonra</td><td>Pasif: 180 günden önce</td></tr>
+<tr><td>İlk satın alma</td><td>son N günde / N günden önce / önce / sonra</td><td>Yeni müşteriler: son 30 günde</td></tr>
+</tbody></table></div>
+<h2>Hangi siparişler satın alma sayılır</h2>
+<p>"Satın aldı", sayı, toplam, ilk ve son satın alma için yalnızca <strong>Tamamlandı</strong> veya <strong>İşleniyor</strong> durumundaki siparişler sayılır. Ödeme bekleyen, beklemedeki, başarısız, iptal edilmiş, iade edilmiş ve taslak siparişler asla sayılmaz. Bunları bulmak için <strong>Şu durumda siparişi var</strong> koşulunu kullanın.</p>
+<h2>Tüm mağazalar veya tek mağaza</h2>
+<p>Her satın alma koşulunun bir <strong>Nerede</strong> seçeneği vardır: <strong>Tüm mağazalarda</strong> (varsayılan) veya bağlı tek bir mağaza. Toplamlar kaydedildiği gibi toplanır; bu yüzden mağazalarınız farklı para birimleri kullanıyorsa tutar koşullarını tek bir mağazayla sınırlayın.</p>
+<h2>Hangi kişiler bulunur</h2>
+<p>Bir kişi, kişi eşitleme veya sipariş e-postası yoluyla kendisine bağlanan mağaza müşterileri üzerinden eşleşir. Henüz kişi olmayan müşteriler bir segmentte yer alamaz: önce kişi eşitlemeyi açın (bkz. "Mağaza müşterilerini CRM kişilerine dönüştürme"). İlk 30 günden eski siparişler ancak eski siparişleri içe aktardıktan sonra görünür.</p>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> satın alma koşullarını sıradan koşullarla birleştirin, örneğin "Son satın alma 90 günden önce" VE "şehir Tebriz", ve segmenti bir kampanyada kullanmadan önce önizleme sayısını kontrol edin.</p></div>

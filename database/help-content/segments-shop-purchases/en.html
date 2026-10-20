@@ -1,0 +1,20 @@
+<p>When the WooCommerce module is active and a shop is connected, the dynamic segment builder (<strong>Marketing › Segments</strong>) offers a <strong>Shop purchases</strong> group of conditions. They use the orders imported from your shops, so you can target customers by what and when they bought.</p>
+<h2>The conditions</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Condition</th><th>Options</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td>Has purchased</td><td>yes / no</td><td>Contacts who never bought</td></tr>
+<tr><td>Number of purchases</td><td>at least / at most / exactly N</td><td>Repeat customers: at least 3</td></tr>
+<tr><td>Total purchase amount</td><td>at least / at most</td><td>Big spenders</td></tr>
+<tr><td>Purchased product</td><td>has / does not have (one or more products)</td><td>Bought the starter kit but not the refill</td></tr>
+<tr><td>Has an order with status</td><td>has / does not have</td><td>Has a cancelled or refunded order</td></tr>
+<tr><td>Last purchase</td><td>in the last N days / more than N days ago / before / after</td><td>Inactive: more than 180 days ago</td></tr>
+<tr><td>First purchase</td><td>in the last N days / more than N days ago / before / after</td><td>New customers: in the last 30 days</td></tr>
+</tbody></table></div>
+<h2>Which orders count as a purchase</h2>
+<p>Only orders with status <strong>Completed</strong> or <strong>Processing</strong> count for “Has purchased”, number, total, first and last purchase. Pending payment, on-hold, failed, cancelled, refunded and draft orders never count. To find those, use <strong>Has an order with status</strong>.</p>
+<h2>All shops or one shop</h2>
+<p>Every purchase condition has a <strong>Where</strong> option: <strong>In all shops</strong> (default) or one connected shop. Totals are added as stored, so if your shops use different currencies, limit amount conditions to one shop.</p>
+<h2>Which contacts are found</h2>
+<p>A contact matches through the shop customers linked to it, by contact sync or by the order email. Customers who are not contacts yet cannot be in a segment: switch on contact sync first (see “Turning shop customers into CRM contacts”). Orders older than the first 30 days appear only after you import older orders.</p>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> combine purchase conditions with ordinary ones, for example “Last purchase more than 90 days ago” AND “City is Tabriz”, and check the preview count before using the segment in a campaign.</p></div>

@@ -17,6 +17,7 @@ use App\Infrastructure\Security\Csrf;
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
 
@@ -29,7 +30,7 @@ $sentimentTone = fn (?string $s): string => match ($s) {
 ?>
 <div class="page-head">
     <div>
-        <h1><?= e(t('cx.title')) ?></h1>
+        <h1><?= e(t('cx.title')) ?><?= help_link('cx-getting-started') ?></h1>
         <p><?= e(t('cx.subtitle')) ?></p>
     </div>
     <?php if ($canManage): ?>
@@ -84,7 +85,7 @@ $sentimentTone = fn (?string $s): string => match ($s) {
 
 <?php if ($test !== null && $surveys !== []): ?>
 <section class="card" id="test-invitation">
-    <h2><?= icon('send') ?><?= e(t('cx.test.title')) ?></h2>
+    <h2><?= icon('send') ?><?= e(t('cx.test.title')) ?><?= help_link('cx-test-invitation') ?></h2>
     <p class="field-hint"><?= e(t('cx.test.intro')) ?></p>
     <?php if ($test['channels'] === []): ?>
         <div class="alert alert--warning"><?= e(t('cx.test.error.channel_unavailable')) ?></div>
@@ -113,7 +114,7 @@ $sentimentTone = fn (?string $s): string => match ($s) {
 <?php endif; ?>
 
 <section class="card" id="follow-ups">
-    <h2><?= icon('alert-triangle') ?><?= e(t('cx.follow_ups')) ?></h2>
+    <h2><?= icon('alert-triangle') ?><?= e(t('cx.follow_ups')) ?><?= help_link('cx-results-follow-ups') ?></h2>
     <div class="table-responsive">
         <table class="table">
             <thead>

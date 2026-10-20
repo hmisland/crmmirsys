@@ -1,0 +1,28 @@
+<p>Contact sync turns the customers of a shop into CRM contacts, so you can see them, follow them up and reach them in campaigns. It is off until you switch it on, separately for each shop.</p>
+<h2>Switch it on</h2>
+<ol>
+<li>Go to <strong>Organization settings › Manage integrations</strong> and click <strong>Contact sync</strong> on the shop’s connection card.</li>
+<li>Tick <strong>Create and complete CRM contacts from this shop's customers</strong>.</li>
+<li>Choose a <strong>Contact group</strong>, or type a name under <strong>Or create a new contact group</strong>.</li>
+<li>Optionally add <strong>Tags</strong> (comma separated, up to 10) and a <strong>Source for new contacts</strong> (the shop’s domain by default).</li>
+<li>Check the <strong>Field mapping</strong> and click <strong>Save settings</strong>.</li>
+<li>Click <strong>Sync contacts now</strong>. It first fetches the shop’s latest orders, then creates or completes contacts. After that, the background task keeps doing it for new orders.</li>
+</ol>
+<p>Switching it on needs permission to create and edit contacts. New contacts belong to the user who switched it on. No message or campaign is sent.</p>
+<h2>How a customer is matched</h2>
+<ul>
+<li>The customer’s <strong>email</strong> and <strong>Iranian mobile</strong> are looked up among existing contacts.</li>
+<li>Found → the contact is <strong>Matched</strong>: only its <strong>empty</strong> fields are filled (<strong>Completed</strong>); existing details are never overwritten. The tags are added; the group is set only if the contact has none.</li>
+<li>Not found → a new contact is <strong>Created</strong>. It needs a first name and a valid email or mobile; otherwise the customer is <strong>Skipped</strong>.</li>
+<li>Email and mobile point to different contacts, or to several contacts → <strong>Conflict</strong>: nothing is changed.</li>
+</ul>
+<p>Skipped and conflicting customers are listed under <strong>Customers needing attention</strong> with the reason. Fix the contacts in the CRM (for example merge duplicates or correct a number); the customer is checked again when it changes in the shop, or when you save the settings.</p>
+<h2>Field mapping</h2>
+<p>Each contact field is filled from the billing details of the customer’s latest order. Choose <strong>Do not import</strong> to leave a field alone. Map at least the email or the mobile, otherwise nobody can be identified.</p>
+<p>WooCommerce has one phone field. Choose how it is used:</p>
+<ul>
+<li><strong>Automatic</strong> — a mobile number goes to Mobile, a landline to Landline; numbers of unclear kind are not imported.</li>
+<li><strong>Mobile only</strong> — other numbers are ignored.</li>
+<li><strong>Always as Landline</strong>.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Why fewer contacts than orders?</strong> One contact is made per customer. A customer with five orders is one contact. Guest customers (no shop account) are included, identified by the email and phone of their orders.</p></div>

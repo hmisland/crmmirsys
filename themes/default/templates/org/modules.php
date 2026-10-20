@@ -4,11 +4,12 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 ?>
 <section class="card">
     <h1><?= e(t('org.modules')) ?></h1>
     <p class="muted"><?= e(t('org.modules_hint')) ?></p>
-    <p><a href="/org/modules/catalog" class="btn"><?= icon('grid') ?><?= e(t('catalog.title')) ?></a></p>
+    <p><a href="/org/modules/catalog" class="btn"><?= icon('grid') ?><?= e(t('catalog.title')) ?></a><?= help_link('modules-activation-request') ?></p>
 
     <div class="table-responsive">
     <table class="table">

@@ -1,0 +1,26 @@
+<p><strong>Customer satisfaction</strong> sends a short survey to customers automatically after an event, such as a completed shop order, and collects a score and an optional comment. Dissatisfied answers become follow-ups for your team.</p>
+<div class="help-callout help-callout--warning"><p><strong>Before you start:</strong> the Customer satisfaction module must be active, and at least one delivery channel (SMS, email or Bale) must be set up in <strong>Messaging providers</strong>; invitations are sent through Marketing’s channels. For automatic surveys after orders you also need a connected WooCommerce shop.</p></div>
+<h2>Create a survey</h2>
+<ol>
+<li>Open <strong>Customer satisfaction</strong> in the sidebar and click <strong>New survey</strong>.</li>
+<li>Enter a <strong>Survey name</strong> and choose the <strong>Type</strong>:
+<ul>
+<li><strong>CSAT</strong> — satisfaction from 1 to 5.</li>
+<li><strong>NPS</strong> — likelihood to recommend from 0 to 10.</li>
+<li><strong>CES</strong> — how easy it was, from 1 to 7.</li>
+</ul></li>
+<li>Write the <strong>Main question</strong>. Optionally tick <strong>Also ask for a written comment</strong>, and edit the intro and thank-you texts.</li>
+<li>Under <strong>Send when</strong> choose <strong>An order is completed</strong> for automatic sending, or <strong>Not automatic</strong>.</li>
+<li>Set the <strong>Delay before sending</strong> (default 60 minutes, up to 30 days) and how long the link is valid (default 14 days, up to 90).</li>
+<li>Choose a <strong>Preferred channel</strong> or Automatic. If the preferred channel is not available for a customer, the first available one is used.</li>
+<li>Optionally write the <strong>Invitation message</strong> with the placeholders <code>:name</code>, <code>:order</code> and <code>:link</code>; empty uses the default text.</li>
+<li>Set the status to <strong>Active</strong> and click <strong>Save survey</strong>.</li>
+</ol>
+<h2>What happens after an order</h2>
+<ul>
+<li>When an order becomes completed, one invitation per active survey is scheduled after the delay. An order gets each survey only once.</li>
+<li>Orders completed more than 7 days ago (for example in an import of older orders) never start a survey.</li>
+<li>Each invitation has its own single-use link. Once answered, or after it expires, it cannot be used again.</li>
+<li>If no channel is available, the invitation shows <strong>Waiting for a channel</strong> and is tried again every hour; after 7 days without a channel it expires.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> before switching a survey on, send yourself a test invitation (see “Sending a test survey invitation”) to see the message and the survey page exactly as customers will.</p></div>

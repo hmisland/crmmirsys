@@ -1,0 +1,28 @@
+<p>Kişi eşitleme, bir mağazanın müşterilerini CRM kişilerine dönüştürür; böylece onları görebilir, takip edebilir ve kampanyalarla ulaşabilirsiniz. Siz açana kadar kapalıdır ve her mağaza için ayrı ayrı açılır.</p>
+<h2>Açma</h2>
+<ol>
+<li><strong>Kurum ayarları › Entegrasyonları yönet</strong> sayfasına gidin ve mağazanın bağlantı kartında <strong>Kişi eşitleme</strong>'ye tıklayın.</li>
+<li><strong>Bu mağazanın müşterilerinden CRM kişileri oluştur ve tamamla</strong> seçeneğini işaretleyin.</li>
+<li>Bir <strong>Kişi grubu</strong> seçin veya <strong>Ya da yeni bir kişi grubu oluşturun</strong> alanına bir ad yazın.</li>
+<li>İsteğe bağlı olarak <strong>Etiketler</strong> (virgülle ayrılmış, en fazla 10) ve bir <strong>Yeni kişilerin kaynağı</strong> (varsayılan olarak mağazanın alan adı) ekleyin.</li>
+<li><strong>Alan eşleme</strong>'yi kontrol edin ve <strong>Ayarları kaydet</strong>'e tıklayın.</li>
+<li><strong>Kişileri şimdi eşitle</strong>'ye tıklayın. Önce mağazanın en son siparişlerini alır, ardından kişileri oluşturur veya tamamlar. Bundan sonra arka plan görevi bunu yeni siparişler için yapmaya devam eder.</li>
+</ol>
+<p>Açmak için kişi oluşturma ve düzenleme yetkisi gerekir. Yeni kişiler, özelliği açan kullanıcıya ait olur. Hiçbir mesaj veya kampanya gönderilmez.</p>
+<h2>Bir müşteri nasıl eşleştirilir</h2>
+<ul>
+<li>Müşterinin <strong>e-postası</strong> ve <strong>İran cep numarası</strong> mevcut kişiler arasında aranır.</li>
+<li>Bulunursa → kişi <strong>Eşleşti</strong> olur: yalnızca <strong>boş</strong> alanları doldurulur (<strong>Tamamlandı</strong>); mevcut bilgiler asla üzerine yazılmaz. Etiketler eklenir; grup yalnızca kişinin grubu yoksa atanır.</li>
+<li>Bulunmazsa → yeni bir kişi <strong>Oluşturuldu</strong> olur. Bunun için bir ad ve geçerli bir e-posta veya cep numarası gerekir; yoksa müşteri <strong>Atlandı</strong> olur.</li>
+<li>E-posta ve cep numarası farklı kişilere veya birden çok kişiye işaret ediyorsa → <strong>Çakışma</strong>: hiçbir şey değiştirilmez.</li>
+</ul>
+<p>Atlanan ve çakışan müşteriler, nedeniyle birlikte <strong>İlgilenilmesi gereken müşteriler</strong> altında listelenir. Kişileri CRM'de düzeltin (örneğin yinelenenleri birleştirin veya bir numarayı düzeltin); müşteri mağazada değiştiğinde veya ayarları kaydettiğinizde yeniden kontrol edilir.</p>
+<h2>Alan eşleme</h2>
+<p>Her kişi alanı, müşterinin en son siparişindeki fatura bilgilerinden doldurulur. Bir alana dokunulmaması için <strong>İçe aktarma</strong>'yı seçin. En azından e-postayı veya cep numarasını eşleyin, aksi halde kimse tanımlanamaz.</p>
+<p>WooCommerce'te tek bir telefon alanı vardır. Nasıl kullanılacağını seçin:</p>
+<ul>
+<li><strong>Otomatik</strong> — cep numarası Cep alanına, sabit hat Sabit hat alanına gider; türü belirsiz numaralar içe aktarılmaz.</li>
+<li><strong>Yalnızca cep</strong> — diğer numaralar yok sayılır.</li>
+<li><strong>Her zaman sabit hat olarak</strong>.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Neden siparişlerden daha az kişi var?</strong> Her müşteri için bir kişi oluşturulur. Beş siparişi olan bir müşteri tek kişidir. Misafir müşteriler (mağaza hesabı olmayanlar) da dahildir; siparişlerindeki e-posta ve telefonla tanımlanırlar.</p></div>

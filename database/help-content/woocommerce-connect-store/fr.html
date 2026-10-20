@@ -1,0 +1,31 @@
+<p>L'intégration WooCommerce importe dans le CRM les clients, les commandes, les articles de commande et les produits commandés de vos boutiques WooCommerce. Le CRM ne fait que <strong>lire</strong> la boutique ; il n'y modifie jamais rien.</p>
+<div class="help-callout help-callout--warning"><p><strong>Avant de commencer :</strong> le module WooCommerce doit être actif pour votre organisation (voir <strong>Paramètres de l’organisation › Modules › Modules et fonctionnalités</strong>), et vous devez avoir le droit de modifier les paramètres de l'organisation.</p></div>
+<h2>1. Créer des clés d'API dans WordPress</h2>
+<ol>
+<li>Dans l'administration WordPress, ouvrez <strong>WooCommerce › Réglages › Avancé › API REST</strong> et cliquez sur <strong>Ajouter une clé</strong>.</li>
+<li>Saisissez une description (par exemple « CRM »), choisissez un utilisateur et réglez <strong>Droits</strong> sur <strong>Lecture</strong>.</li>
+<li>Cliquez sur <strong>Générer une clé d'API</strong> et copiez la <strong>Clé client (Consumer key)</strong> (commence par <code>ck_</code>) et le <strong>Secret client (Consumer secret)</strong> (commence par <code>cs_</code>). WordPress n'affiche le secret qu'une seule fois.</li>
+</ol>
+<h2>2. Ajouter la connexion dans le CRM</h2>
+<ol>
+<li>Allez dans <strong>Paramètres de l’organisation › Gérer les intégrations</strong>. Sur la carte WooCommerce, cliquez sur <strong>Ajouter une connexion</strong>.</li>
+<li>Saisissez un <strong>Nom de la connexion</strong> (par exemple le nom de la boutique), l'<strong>Adresse de la boutique</strong> commençant par <code>https://</code>, et les deux clés.</li>
+<li>Cliquez sur <strong>Ajouter la connexion</strong>, puis sur <strong>Tester la connexion</strong>. Si le test réussit, le statut devient <strong>Connectée</strong>.</li>
+<li>Cliquez sur <strong>Synchroniser maintenant</strong> pour lancer le premier import.</li>
+</ol>
+<p>Les clés sont stockées chiffrées et ne sont plus jamais affichées. Pour changer une clé plus tard, modifiez la connexion et remplissez uniquement le champ à remplacer ; un champ de clé vide conserve la valeur enregistrée. Une organisation peut connecter jusqu'à 10 boutiques.</p>
+<h2>3. Webhooks (recommandé)</h2>
+<p>Avec les webhooks, la boutique signale immédiatement au CRM une commande nouvelle ou modifiée. Sans eux, les changements arrivent quand même avec la synchronisation planifiée habituelle.</p>
+<ol>
+<li>Sur la carte de la connexion, ouvrez <strong>Paramètres du webhook</strong> et copiez l'<strong>URL de livraison</strong> et le <strong>Secret</strong>.</li>
+<li>Dans WordPress, ouvrez <strong>WooCommerce › Réglages › Avancé › Webhooks › Ajouter un webhook</strong>.</li>
+<li>Réglez l'état sur <strong>Actif</strong>, la version d'API sur <strong>WP REST API v3</strong>, et collez l'URL de livraison et le Secret.</li>
+<li>Créez un webhook par sujet : <strong>Commande créée</strong>, <strong>Commande mise à jour</strong> et, en option, <strong>Client mis à jour</strong>.</li>
+</ol>
+<h2>Erreurs de test fréquentes</h2>
+<ul>
+<li><strong>WooCommerce a refusé les clés</strong> — la clé ou le secret est erroné, ou la clé n'a pas le droit Lecture.</li>
+<li><strong>L’API REST WooCommerce est introuvable</strong> — vérifiez l'adresse de la boutique, et que les permaliens WordPress ne sont pas réglés sur « Simple ».</li>
+<li><strong>La boutique est injoignable</strong> — le site est hors ligne ou bloque la requête (pare-feu ou extension de sécurité). Un nouvel essai a lieu automatiquement.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> supprimer une connexion retire ses clients et commandes importés du CRM uniquement. Rien ne change dans la boutique. Pour mettre une boutique en pause, utilisez plutôt <strong>Désactiver</strong>.</p></div>

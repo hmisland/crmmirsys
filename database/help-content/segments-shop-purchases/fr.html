@@ -1,0 +1,20 @@
+<p>Quand le module WooCommerce est actif et qu'une boutique est connectée, le constructeur de segments dynamiques (<strong>Marketing › Segments</strong>) propose un groupe de conditions <strong>Achats en boutique</strong>. Elles utilisent les commandes importées de vos boutiques, pour cibler les clients selon ce qu'ils ont acheté et quand.</p>
+<h2>Les conditions</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Condition</th><th>Options</th><th>Exemple</th></tr></thead>
+<tbody>
+<tr><td>A acheté</td><td>oui / non</td><td>Les contacts qui n'ont jamais acheté</td></tr>
+<tr><td>Nombre d'achats</td><td>au moins / au plus / exactement N</td><td>Clients fidèles : au moins 3</td></tr>
+<tr><td>Montant total des achats</td><td>au moins / au plus</td><td>Les gros acheteurs</td></tr>
+<tr><td>Produit acheté</td><td>a / n’a pas (un ou plusieurs produits)</td><td>A acheté le kit de démarrage mais pas la recharge</td></tr>
+<tr><td>A une commande au statut</td><td>a / n’a pas</td><td>A une commande annulée ou remboursée</td></tr>
+<tr><td>Dernier achat</td><td>dans les N derniers jours / il y a plus de N jours / avant / après</td><td>Inactifs : il y a plus de 180 jours</td></tr>
+<tr><td>Premier achat</td><td>dans les N derniers jours / il y a plus de N jours / avant / après</td><td>Nouveaux clients : dans les 30 derniers jours</td></tr>
+</tbody></table></div>
+<h2>Quelles commandes comptent comme un achat</h2>
+<p>Seules les commandes au statut <strong>Terminée</strong> ou <strong>En cours</strong> comptent pour « A acheté », le nombre, le total, le premier et le dernier achat. Les commandes en paiement en attente, en attente, échouées, annulées, remboursées et brouillons ne comptent jamais. Pour les retrouver, utilisez <strong>A une commande au statut</strong>.</p>
+<h2>Toutes les boutiques ou une seule</h2>
+<p>Chaque condition d'achat a une option <strong>Où</strong> : <strong>Dans toutes les boutiques</strong> (par défaut) ou une boutique connectée. Les totaux sont additionnés tels qu'enregistrés : si vos boutiques utilisent des devises différentes, limitez les conditions de montant à une seule boutique.</p>
+<h2>Quels contacts sont trouvés</h2>
+<p>Un contact correspond via les clients de la boutique qui lui sont liés, par la synchronisation des contacts ou par l'e-mail de la commande. Les clients qui ne sont pas encore des contacts ne peuvent pas faire partie d'un segment : activez d'abord la synchronisation des contacts (voir « Transformer les clients de la boutique en contacts CRM »). Les commandes antérieures aux 30 premiers jours n'apparaissent qu'après l'import des commandes plus anciennes.</p>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> combinez les conditions d'achat avec des conditions ordinaires, par exemple « Dernier achat il y a plus de 90 jours » ET « Ville est Tabriz », et vérifiez le nombre dans l'aperçu avant d'utiliser le segment dans une campagne.</p></div>

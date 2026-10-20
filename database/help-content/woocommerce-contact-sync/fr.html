@@ -1,0 +1,28 @@
+<p>La synchronisation des contacts transforme les clients d'une boutique en contacts CRM, pour que vous puissiez les consulter, les relancer et les toucher dans vos campagnes. Elle reste désactivée tant que vous ne l'activez pas, séparément pour chaque boutique.</p>
+<h2>L'activer</h2>
+<ol>
+<li>Allez dans <strong>Paramètres de l’organisation › Gérer les intégrations</strong> et cliquez sur <strong>Synchronisation des contacts</strong> sur la carte de connexion de la boutique.</li>
+<li>Cochez <strong>Créer et compléter des contacts CRM à partir des clients de cette boutique</strong>.</li>
+<li>Choisissez un <strong>Groupe de contacts</strong>, ou saisissez un nom sous <strong>Ou créer un nouveau groupe de contacts</strong>.</li>
+<li>Ajoutez si besoin des <strong>Étiquettes</strong> (séparées par des virgules, 10 au maximum) et une <strong>Source des nouveaux contacts</strong> (le domaine de la boutique par défaut).</li>
+<li>Vérifiez la <strong>Correspondance des champs</strong> et cliquez sur <strong>Enregistrer les paramètres</strong>.</li>
+<li>Cliquez sur <strong>Synchroniser les contacts maintenant</strong>. Le CRM récupère d'abord les dernières commandes de la boutique, puis crée ou complète les contacts. Ensuite, la tâche d'arrière-plan continue pour les nouvelles commandes.</li>
+</ol>
+<p>L'activation nécessite le droit de créer et de modifier des contacts. Les nouveaux contacts appartiennent à l'utilisateur qui l'a activée. Aucun message ni aucune campagne n'est envoyé.</p>
+<h2>Comment un client est rapproché</h2>
+<ul>
+<li>L'<strong>e-mail</strong> et le <strong>mobile iranien</strong> du client sont recherchés parmi les contacts existants.</li>
+<li>Trouvé → le contact est classé <strong>Rapprochés</strong> : seuls ses champs <strong>vides</strong> sont remplis (<strong>Complétés</strong>) ; les informations existantes ne sont jamais écrasées. Les étiquettes sont ajoutées ; le groupe n'est attribué que si le contact n'en a pas.</li>
+<li>Non trouvé → un nouveau contact est créé (<strong>Créés</strong>). Il faut un prénom et un e-mail ou un mobile valide ; sinon le client est <strong>Ignorés</strong>.</li>
+<li>L'e-mail et le mobile désignent des contacts différents, ou plusieurs contacts → <strong>Conflits</strong> : rien n'est modifié.</li>
+</ul>
+<p>Les clients ignorés ou en conflit sont listés sous <strong>Clients à vérifier</strong> avec le motif. Corrigez les contacts dans le CRM (par exemple en fusionnant des doublons ou en corrigeant un numéro) ; le client est revérifié quand il change dans la boutique, ou quand vous enregistrez les paramètres.</p>
+<h2>Correspondance des champs</h2>
+<p>Chaque champ du contact est rempli à partir des coordonnées de facturation de la dernière commande du client. Choisissez <strong>Ne pas importer</strong> pour laisser un champ tel quel. Associez au moins l'e-mail ou le mobile, sinon personne ne peut être identifié.</p>
+<p>WooCommerce n'a qu'un champ téléphone. Choisissez comment il est utilisé :</p>
+<ul>
+<li><strong>Automatique</strong> — un numéro mobile va dans Mobile, un fixe dans Fixe ; les numéros de nature incertaine ne sont pas importés.</li>
+<li><strong>Mobile seulement</strong> — les autres numéros sont ignorés.</li>
+<li><strong>Toujours comme téléphone fixe</strong>.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Pourquoi moins de contacts que de commandes ?</strong> Un contact est créé par client. Un client avec cinq commandes donne un seul contact. Les clients invités (sans compte dans la boutique) sont inclus, identifiés par l'e-mail et le téléphone de leurs commandes.</p></div>

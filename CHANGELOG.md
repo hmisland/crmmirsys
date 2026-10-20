@@ -4,6 +4,11 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Help guides — WooCommerce, Customer satisfaction, campaigns and modules
+- 13 new help-center guides, each in en, fa, ar, tr, fr: connecting a WooCommerce shop; how orders are synchronized (webhooks, 15-minute sync, Sync now, queue, cron); turning shop customers into contacts; importing older orders; shop orders on the contact page; segments by shop purchases; scheduling a campaign; the transactional messages report; getting started with Customer satisfaction; sending a test survey invitation; survey results and follow-ups; the Modules & Features page; requesting a module activation.
+- "?" help buttons on the matching pages (Integrations, webhook settings, Contact sync, contact Shop orders panel, segment builder when shop conditions exist, campaign scheduling, Transactional, Customer satisfaction, Modules & Features, Modules, Super Admin Module requests).
+- Migration: core `0089_seed_integration_cx_module_help_articles` (data only; existing or edited guides are never overwritten). New suite `IntegrationHelpTest` (7).
+
 ### Modules & Features catalog and activation requests
 - **Organization settings → Modules → Modules & Features** (`/org/modules/catalog`, `organization.edit`): every registered, platform-active module (sample `demo` hidden) grouped by purpose, with its real status for the organization — **Active** (with an Open link), **Available**, **Request pending** or **Request rejected** (with the reason; a new request is allowed). Dependencies are shown ("Requires Wallet — Not active"); Email marketing and Bale messaging are listed under Marketing. No prices, payment links or credentials.
 - WooCommerce card lists only capabilities that exist (shops, order import, contacts, orders on the contact page, purchase segments, post-order surveys) and links to the existing integration when active. The WooCommerce integration, its routes and its module gate are unchanged.

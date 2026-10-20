@@ -17,6 +17,7 @@ use App\Infrastructure\Security\Csrf;
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\badge;
 
@@ -77,7 +78,7 @@ $renderFields = function (string $prefix, array $fields, array $values, ?array $
     <?php $provider = $entry['provider']; $disabled = !$entry['entitled']; ?>
     <section class="card provider-card<?= $disabled ? ' provider-card--unavailable' : '' ?>" id="provider-<?= e($key) ?>">
         <div class="provider-card__head">
-            <h2><span class="kpi__icon kpi__icon--info"><?= icon($provider->icon()) ?></span><?= e(t($provider->nameKey())) ?></h2>
+            <h2><span class="kpi__icon kpi__icon--info"><?= icon($provider->icon()) ?></span><?= e(t($provider->nameKey())) ?><?= $key === 'woocommerce' ? help_link('woocommerce-connect-store') : '' ?></h2>
             <?= $disabled ? badge(t('messaging.module_not_purchased'), 'disabled') : badge(t('messaging.module_available'), 'active') ?>
         </div>
         <p class="field-hint"><?= e(t($provider->descriptionKey())) ?></p>
@@ -111,7 +112,7 @@ $renderFields = function (string $prefix, array $fields, array $values, ?array $
                         <dd><span class="ltr"><?= e(local_time($c['last_webhook_at']) ?? '—') ?></span></dd>
                     </div>
                     <div class="fact">
-                        <dt><?= icon('list') ?><?= e(t('integrations.queue')) ?></dt>
+                        <dt><?= icon('list') ?><?= e(t('integrations.queue')) ?><?= $key === 'woocommerce' ? help_link('woocommerce-order-sync') : '' ?></dt>
                         <dd><?= e(t('integrations.queue_counts', ['pending' => (string) ($c['jobs']['pending'] + $c['jobs']['running']), 'failed' => (string) $c['jobs']['failed']])) ?></dd>
                     </div>
                 </dl>

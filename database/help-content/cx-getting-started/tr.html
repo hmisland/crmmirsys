@@ -1,0 +1,26 @@
+<p><strong>Müşteri memnuniyeti</strong>, tamamlanan bir mağaza siparişi gibi bir olaydan sonra müşterilere otomatik olarak kısa bir anket gönderir ve bir puan ile isteğe bağlı bir yorum toplar. Memnun olmayan yanıtlar ekibiniz için takiplere dönüşür.</p>
+<div class="help-callout help-callout--warning"><p><strong>Başlamadan önce:</strong> Müşteri memnuniyeti modülü etkin olmalı ve <strong>Mesajlaşma sağlayıcıları</strong> bölümünde en az bir gönderim kanalı (SMS, e-posta veya Bale) kurulmuş olmalıdır; davetler Pazarlama kanalları üzerinden gönderilir. Siparişlerden sonra otomatik anketler için bağlı bir WooCommerce mağazası da gerekir.</p></div>
+<h2>Anket oluşturma</h2>
+<ol>
+<li>Kenar çubuğunda <strong>Müşteri memnuniyeti</strong>'ni açın ve <strong>Yeni anket</strong>'e tıklayın.</li>
+<li>Bir <strong>Anket adı</strong> girin ve <strong>Tür</strong>'ü seçin:
+<ul>
+<li><strong>CSAT</strong> — 1'den 5'e memnuniyet.</li>
+<li><strong>NPS</strong> — 0'dan 10'a tavsiye etme olasılığı.</li>
+<li><strong>CES</strong> — 1'den 7'ye ne kadar kolay olduğu.</li>
+</ul></li>
+<li><strong>Ana soru</strong>'yu yazın. İsteğe bağlı olarak <strong>Yazılı yorum da iste</strong> seçeneğini işaretleyin ve giriş ile teşekkür metinlerini düzenleyin.</li>
+<li><strong>Ne zaman gönderilsin</strong> altında otomatik gönderim için <strong>Bir sipariş tamamlandığında</strong>'yı veya <strong>Otomatik değil</strong>'i seçin.</li>
+<li><strong>Göndermeden önce bekleme</strong> süresini (varsayılan 60 dakika, en fazla 30 gün) ve bağlantının ne kadar geçerli olacağını (varsayılan 14 gün, en fazla 90) ayarlayın.</li>
+<li>Bir <strong>Tercih edilen kanal</strong> veya Otomatik seçin. Tercih edilen kanal bir müşteri için kullanılamıyorsa ilk uygun kanal kullanılır.</li>
+<li>İsteğe bağlı olarak <strong>Davet mesajı</strong>'nı <code>:name</code>, <code>:order</code> ve <code>:link</code> yer tutucularıyla yazın; boş bırakılırsa varsayılan metin kullanılır.</li>
+<li>Durumu <strong>Etkin</strong> olarak ayarlayın ve <strong>Anketi kaydet</strong>'e tıklayın.</li>
+</ol>
+<h2>Bir siparişten sonra ne olur</h2>
+<ul>
+<li>Bir sipariş tamamlandığında, her etkin anket için bekleme süresinden sonra bir davet planlanır. Bir sipariş her anketi yalnızca bir kez alır.</li>
+<li>7 günden daha önce tamamlanmış siparişler (örneğin eski siparişlerin içe aktarılmasıyla gelenler) asla anket başlatmaz.</li>
+<li>Her davetin tek kullanımlık kendi bağlantısı vardır. Yanıtlandıktan veya süresi dolduktan sonra yeniden kullanılamaz.</li>
+<li>Hiçbir kanal kullanılamıyorsa davet <strong>Kanal bekleniyor</strong> durumunu gösterir ve her saat yeniden denenir; 7 gün boyunca kanal bulunamazsa süresi dolar.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> bir anketi açmadan önce kendinize bir test daveti gönderin (bkz. "Test anket daveti gönderme"); mesajı ve anket sayfasını tam olarak müşterilerin göreceği gibi görürsünüz.</p></div>

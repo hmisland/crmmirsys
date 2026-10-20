@@ -1,0 +1,31 @@
+<p>The WooCommerce integration brings the customers, orders, order items and ordered products of your WooCommerce shops into the CRM. The CRM only <strong>reads</strong> from the shop; it never changes anything there.</p>
+<div class="help-callout help-callout--warning"><p><strong>Before you start:</strong> the WooCommerce module must be active for your organization (see <strong>Organization settings › Modules › Modules &amp; Features</strong>), and you need permission to edit organization settings.</p></div>
+<h2>1. Create API keys in WordPress</h2>
+<ol>
+<li>In your WordPress admin open <strong>WooCommerce › Settings › Advanced › REST API</strong> and click <strong>Add key</strong>.</li>
+<li>Give it a description (for example “CRM”), choose a user and set <strong>Permissions</strong> to <strong>Read</strong>.</li>
+<li>Click <strong>Generate API key</strong> and copy the <strong>Consumer key</strong> (starts with <code>ck_</code>) and <strong>Consumer secret</strong> (starts with <code>cs_</code>). WordPress shows the secret only once.</li>
+</ol>
+<h2>2. Add the connection in the CRM</h2>
+<ol>
+<li>Go to <strong>Organization settings › Manage integrations</strong>. On the WooCommerce card click <strong>Add a connection</strong>.</li>
+<li>Enter a <strong>Connection name</strong> (for example the shop’s name), the <strong>Store address</strong> starting with <code>https://</code>, and the two keys.</li>
+<li>Click <strong>Add connection</strong>, then <strong>Test connection</strong>. When the test succeeds the status becomes <strong>Connected</strong>.</li>
+<li>Click <strong>Sync now</strong> to start the first import.</li>
+</ol>
+<p>Keys are stored encrypted and are never shown again. To change a key later, edit the connection and fill in only the field you want to replace; an empty key field keeps the saved value. One organization can connect up to 10 shops.</p>
+<h2>3. Webhooks (recommended)</h2>
+<p>With webhooks the shop tells the CRM about a new or changed order immediately. Without them, changes still arrive with the regular scheduled sync.</p>
+<ol>
+<li>On the connection card open <strong>Webhook settings</strong> and copy the <strong>Delivery URL</strong> and <strong>Secret</strong>.</li>
+<li>In WordPress open <strong>WooCommerce › Settings › Advanced › Webhooks › Add webhook</strong>.</li>
+<li>Set Status to <strong>Active</strong>, API version to <strong>WP REST API v3</strong>, and paste the Delivery URL and Secret.</li>
+<li>Create one webhook per topic: <strong>Order created</strong>, <strong>Order updated</strong> and, optionally, <strong>Customer updated</strong>.</li>
+</ol>
+<h2>Common test errors</h2>
+<ul>
+<li><strong>WooCommerce rejected the keys</strong> — the key or secret is wrong, or the key has no Read permission.</li>
+<li><strong>The REST API was not found</strong> — check the store address, and that WordPress permalinks are not set to “Plain”.</li>
+<li><strong>The store could not be reached</strong> — the site is down or blocks the request (firewall or security plugin). It is retried automatically.</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> deleting a connection removes its imported customers and orders from the CRM only. Nothing changes in the shop. To pause a shop instead, use <strong>Disable</strong>.</p></div>

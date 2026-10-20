@@ -1,0 +1,23 @@
+<p>Une fois la boutique connectée, ses commandes arrivent dans le CRM de trois façons :</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Moyen</th><th>Quand</th></tr></thead>
+<tbody>
+<tr><td>Webhook</td><td>Immédiatement, quand la boutique signale une commande nouvelle ou modifiée (si les webhooks sont configurés).</td></tr>
+<tr><td>Synchronisation planifiée</td><td>Automatiquement toutes les 15 minutes : les commandes modifiées depuis la dernière synchronisation.</td></tr>
+<tr><td><strong>Synchroniser maintenant</strong></td><td>Quand vous cliquez dessus sur la carte de la connexion : la synchronisation est mise en file d'attente et s'exécute en arrière-plan en quelques minutes.</td></tr>
+</tbody></table></div>
+<p>La première synchronisation d'une boutique importe les commandes des <strong>30 derniers jours</strong>. Les commandes plus anciennes peuvent être importées séparément (voir « Importer les commandes WooCommerce plus anciennes »). Une commande déjà importée est mise à jour, jamais dupliquée.</p>
+<h2>La tâche d'arrière-plan (cron)</h2>
+<p>Les synchronisations planifiées, les tâches en file d'attente et les nouveaux essais sont exécutés par une tâche d'arrière-plan que votre hébergeur lance chaque minute. Sans elle, une synchronisation reste « en attente » dans la file. Elle est configurée une seule fois par la personne qui gère l'hébergement, dans <strong>cPanel › Tâches Cron</strong>, avec une planification toutes les minutes et une commande comme :</p>
+<pre><code>/usr/local/bin/php /home/ACCOUNT/public_html/app/bin/scheduler.php</code></pre>
+<p>Remplacez <code>ACCOUNT</code> par votre nom d'utilisateur cPanel. Il s'agit d'une commande serveur, pas d'une adresse web : ne l'ouvrez pas dans le navigateur.</p>
+<h2>Lire la carte de la connexion</h2>
+<ul>
+<li><strong>Dernière synchro réussie</strong> / <strong>Dernière tentative</strong> — quand la boutique a été lue pour la dernière fois ; si la tentative est plus récente que la réussite, le dernier essai a échoué et son erreur est affichée.</li>
+<li><strong>Dernier webhook</strong> — quand la boutique a envoyé son dernier webhook. Vide signifie que les webhooks ne sont pas configurés ou n'arrivent pas.</li>
+<li><strong>File d’attente</strong> — les tâches en attente et celles en échec. Un gros import est découpé en petits lots : plusieurs lots en attente sont donc normaux juste après <strong>Synchroniser maintenant</strong> ou un import de commandes plus anciennes.</li>
+</ul>
+<h2>Ce qui est copié</h2>
+<p>Uniquement les clients, les commandes, les articles de commande et les produits qu'elles contiennent. Les clients invités (sans compte dans la boutique) sont inclus, identifiés par l'e-mail et le téléphone de leur commande. Les données de paiement et les mots de passe ne sont jamais copiés.</p>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> si <strong>Synchroniser maintenant</strong> indique qu'une synchronisation est déjà en file d'attente, la demande précédente ne s'est pas encore exécutée. Vérifiez que la tâche cron tourne ; le nombre de tâches en attente dans <strong>File d’attente</strong> doit baisser en quelques minutes.</p></div>
+<div class="help-callout help-callout--warning"><p><strong>Connexion désactivée :</strong> aucune synchronisation ne s'exécute et les webhooks reçus sont ignorés jusqu'à ce que vous cliquiez sur <strong>Activer</strong>.</p></div>

@@ -1,0 +1,20 @@
+<p>When a contact is linked to a shop customer, the contact page shows a <strong>Shop orders</strong> panel with that customer’s orders from every connected shop.</p>
+<h2>What the panel shows</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Shop</td><td>The connection the order came from.</td></tr>
+<tr><td>Order</td><td>The order number in WooCommerce.</td></tr>
+<tr><td>Date</td><td>When the order was placed.</td></tr>
+<tr><td>Status</td><td>Completed, Processing, On hold, Pending payment, Cancelled, Refunded, Failed or Draft — as in the shop.</td></tr>
+<tr><td>Total</td><td>The order total in the shop’s currency.</td></tr>
+</tbody></table></div>
+<h2>When is a contact linked to a customer?</h2>
+<ul>
+<li>When contact sync creates or matches the contact (see “Turning shop customers into CRM contacts”).</li>
+<li>When the order’s email matches the email of an existing contact.</li>
+</ul>
+<p>If the panel says <strong>No shop orders for this contact</strong>, the contact is not linked to any shop customer yet, or the customer’s orders have not been imported (for example orders older than 30 days — see “Importing older WooCommerce orders”).</p>
+<h2>Who sees it</h2>
+<p>Everyone who can view the contact, as long as the WooCommerce module is active for the organization. The panel is read-only: orders are changed in the shop and arrive with the next sync.</p>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> the same orders power the “Shop purchases” conditions of Marketing segments, for example “bought product X in the last 90 days”.</p></div>

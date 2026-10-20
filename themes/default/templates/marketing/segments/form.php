@@ -49,6 +49,9 @@ $active = 'segments';
             <h3 class="form-section-title"><?= e(t('marketing.segment.rules')) ?></h3>
             <input type="hidden" name="rules_json" value="<?= e((string) ($old['rules_json'] ?? '')) ?>" data-segment-rules>
             <div class="segment-builder" data-segment-builder></div>
+            <?php if (array_filter($builder['fields'] ?? [], fn (array $f): bool => str_starts_with((string) $f['key'], 'woo_')) !== []): ?>
+                <p class="field-hint"><?= e(t('woocommerce.segment.category')) ?><?= help_link('segments-shop-purchases') ?></p>
+            <?php endif; ?>
             <noscript><div class="alert alert--warning"><?= e(t('marketing.segment.needs_js')) ?></div></noscript>
             <?php foreach ($err('rules') as $message): ?><div class="field-error"><?= e($message) ?></div><?php endforeach; ?>
             <?php if (!$canSeeContacts): ?><p class="field-hint"><?= e(t('marketing.segment.personal_hidden')) ?></p><?php endif; ?>

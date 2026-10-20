@@ -1,0 +1,20 @@
+<p>Bir kişi bir mağaza müşterisine bağlandığında, kişi sayfası o müşterinin bağlı tüm mağazalardaki siparişlerini içeren bir <strong>Mağaza siparişleri</strong> paneli gösterir.</p>
+<h2>Panelin gösterdikleri</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Sütun</th><th>Anlamı</th></tr></thead>
+<tbody>
+<tr><td>Mağaza</td><td>Siparişin geldiği bağlantı.</td></tr>
+<tr><td>Sipariş</td><td>WooCommerce'teki sipariş numarası.</td></tr>
+<tr><td>Tarih</td><td>Siparişin verildiği zaman.</td></tr>
+<tr><td>Durum</td><td>Tamamlandı, İşleniyor, Beklemede, Ödeme bekleniyor, İptal edildi, İade edildi, Başarısız veya Taslak — mağazadaki gibi.</td></tr>
+<tr><td>Toplam</td><td>Mağazanın para birimiyle sipariş toplamı.</td></tr>
+</tbody></table></div>
+<h2>Bir kişi bir müşteriye ne zaman bağlanır?</h2>
+<ul>
+<li>Kişi eşitleme kişiyi oluşturduğunda veya eşleştirdiğinde (bkz. "Mağaza müşterilerini CRM kişilerine dönüştürme").</li>
+<li>Siparişin e-postası mevcut bir kişinin e-postasıyla eşleştiğinde.</li>
+</ul>
+<p>Panel <strong>Bu kişinin mağaza siparişi yok.</strong> diyorsa, kişi henüz hiçbir mağaza müşterisine bağlı değildir veya müşterinin siparişleri içe aktarılmamıştır (örneğin 30 günden eski siparişler — bkz. "Eski WooCommerce siparişlerini içe aktarma").</p>
+<h2>Kimler görür</h2>
+<p>Kuruluş için WooCommerce modülü etkin olduğu sürece, kişiyi görüntüleyebilen herkes. Panel salt okunurdur: siparişler mağazada değiştirilir ve bir sonraki eşitlemeyle gelir.</p>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> aynı siparişler Pazarlama segmentlerindeki "Mağaza alışverişleri" koşullarını da besler; örneğin "son 90 günde X ürününü satın aldı".</p></div>

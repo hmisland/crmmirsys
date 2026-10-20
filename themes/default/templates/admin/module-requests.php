@@ -16,6 +16,7 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 
 $moduleName = function (array $row): string {
     $translated = t('catalog.module.' . $row['module_key'] . '.name');
@@ -24,7 +25,7 @@ $moduleName = function (array $row): string {
 };
 ?>
 <section class="card">
-    <h1><?= e(t('catalog.admin.title')) ?></h1>
+    <h1><?= e(t('catalog.admin.title')) ?><?= help_link('modules-activation-request') ?></h1>
     <p class="muted"><?= e(t('catalog.admin.subtitle')) ?></p>
 
     <form method="get" action="/admin/module-requests" class="inline-form-row filter-bar">

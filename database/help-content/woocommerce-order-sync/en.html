@@ -1,0 +1,23 @@
+<p>After a shop is connected, its orders reach the CRM in three ways:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Way</th><th>When</th></tr></thead>
+<tbody>
+<tr><td>Webhook</td><td>Immediately, when the shop reports a new or changed order (if webhooks are set up).</td></tr>
+<tr><td>Scheduled sync</td><td>Automatically every 15 minutes: orders changed since the last sync.</td></tr>
+<tr><td><strong>Sync now</strong></td><td>When you click it on the connection card: the sync is queued and runs in the background within a few minutes.</td></tr>
+</tbody></table></div>
+<p>The first sync of a shop imports the orders of the <strong>last 30 days</strong>. Older orders can be imported separately (see “Importing older WooCommerce orders”). An order that was already imported is updated, never duplicated.</p>
+<h2>The background task (cron)</h2>
+<p>Scheduled syncs, queued work and retries are run by one background task that your host starts every minute. Without it, a sync stays “waiting” in the queue. It is set up once by whoever manages the hosting, in <strong>cPanel › Cron Jobs</strong>, with a schedule of every minute and a command like:</p>
+<pre><code>/usr/local/bin/php /home/ACCOUNT/public_html/app/bin/scheduler.php</code></pre>
+<p>Replace <code>ACCOUNT</code> with your cPanel user name. This is a server command, not a web address: do not open it in the browser.</p>
+<h2>Reading the connection card</h2>
+<ul>
+<li><strong>Last successful sync</strong> / <strong>Last attempt</strong> — when the shop was last read; if the attempt is newer than the success, the last try failed and its error is shown.</li>
+<li><strong>Last webhook</strong> — when the shop last sent a webhook. Empty means webhooks are not set up or do not arrive.</li>
+<li><strong>Queue</strong> — work waiting and work that failed. A large import is split into small batches, so several waiting batches are normal right after <strong>Sync now</strong> or an import of older orders.</li>
+</ul>
+<h2>What is copied</h2>
+<p>Only customers, orders, order items and the products in them. Guest customers (no shop account) are included, identified by the email and phone of their order. Payment details and passwords are never copied.</p>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> if <strong>Sync now</strong> says a sync is already queued, the earlier request has not run yet. Check that the cron job is running; the waiting count in <strong>Queue</strong> should go down within a few minutes.</p></div>
+<div class="help-callout help-callout--warning"><p><strong>Disabled connection:</strong> no sync runs and incoming webhooks are ignored until you click <strong>Enable</strong>.</p></div>

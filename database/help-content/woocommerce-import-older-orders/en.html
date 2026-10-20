@@ -1,0 +1,16 @@
+<p>The first sync of a shop imports only the orders of the <strong>last 30 days</strong>. Customers who bought earlier are therefore not in the CRM yet. Use <strong>Import older orders</strong> to bring them in.</p>
+<h2>Steps</h2>
+<ol>
+<li>Go to <strong>Organization settings › Manage integrations</strong> and click <strong>Contact sync</strong> on the shop’s connection card.</li>
+<li>In the <strong>Import older orders</strong> section, either choose a date under <strong>Import orders changed since</strong>, or tick <strong>From the beginning (whole shop history)</strong>.</li>
+<li>Click <strong>Import older orders</strong> and confirm.</li>
+</ol>
+<p>The first part is imported immediately. The background task (cron) continues with the rest in small batches, so a large shop can take a while. The section shows how far the import has got and the <strong>Oldest imported order</strong>.</p>
+<h2>Good to know</h2>
+<ul>
+<li>It is safe to repeat: orders already imported are updated, never duplicated.</li>
+<li>If contact sync is switched on, contacts are created from the imported customers (guests included).</li>
+<li>Old orders do <strong>not</strong> send satisfaction surveys. Only orders completed in the last 7 days can start a survey.</li>
+<li>If the import seems to stop, check the <strong>Queue</strong> on the connection card and that the cron job runs every minute (see “How WooCommerce orders are synchronized”).</li>
+</ul>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> for a shop with years of history, start with a recent date (for example one year ago), check the result, and import the rest later.</p></div>

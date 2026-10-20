@@ -15,6 +15,7 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 
 // A module's catalog name / description when translated, else the registry's own name.
 $label = function (string $key, string $fallback): string {
@@ -26,7 +27,7 @@ $stateTone = ['active' => 'active', 'pending' => 'pending', 'rejected' => 'rejec
 ?>
 <div class="page-head">
     <div>
-        <h1><?= e(t('catalog.title')) ?></h1>
+        <h1><?= e(t('catalog.title')) ?><?= help_link('modules-catalog') ?></h1>
         <p><?= e(t('catalog.subtitle')) ?></p>
     </div>
     <div class="actions">

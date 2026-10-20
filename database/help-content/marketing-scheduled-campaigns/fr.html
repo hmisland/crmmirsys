@@ -1,0 +1,19 @@
+<p>Une campagne peut être envoyée juste après l'approbation ou à la date et à l'heure de votre choix, par exemple demain à 10:00.</p>
+<h2>Programmer une campagne</h2>
+<ol>
+<li>Créez la campagne comme d'habitude (<strong>Marketing › Campagnes</strong>), enregistrez-la et ouvrez-la.</li>
+<li>Dans la section d'approbation, remplissez <strong>Envoyer plus tard (facultatif)</strong> : une <strong>Date d'envoi</strong> et une <strong>Heure d'envoi</strong> (HH:MM).</li>
+<li>Cliquez sur <strong>Approuver et envoyer</strong> et confirmez. La campagne affiche <strong>Programmée</strong> et l'heure à laquelle elle sera envoyée.</li>
+</ol>
+<p>Laissez les deux champs vides pour envoyer juste après l'approbation, comme avant. L'approbation nécessite le droit d'envoyer des campagnes.</p>
+<h2>Règles</h2>
+<ul>
+<li>L'heure est celle du fuseau horaire de votre organisation (indiqué sous les champs).</li>
+<li>L'heure d'envoi doit être au moins une minute dans le futur et au plus un an à l'avance.</li>
+<li>Les <strong>destinataires sont figés à l'approbation</strong>. Les contacts ajoutés au segment ensuite ne sont pas inclus.</li>
+<li>Au début de l'envoi, les désinscriptions, le fournisseur du canal et l'accès au module sont revérifiés. Une personne qui s'est désinscrite entre-temps est ignorée.</li>
+<li>L'envoi est lancé par la tâche d'arrière-plan (cron) : il démarre environ une minute après l'heure choisie.</li>
+</ul>
+<h2>Modifier ou arrêter une campagne programmée</h2>
+<p>Jusqu'à l'heure choisie, cliquez sur <strong>Annuler la campagne</strong> pour l'arrêter ; rien n'est envoyé. Pour changer le texte, l'audience ou l'heure, recréez la campagne avec les nouveaux paramètres et programmez-la.</p>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> envoyez un message de test avant d'approuver. Programmez les campagnes SMS à des heures raisonnables : votre fournisseur SMS peut bloquer les messages promotionnels la nuit.</p></div>

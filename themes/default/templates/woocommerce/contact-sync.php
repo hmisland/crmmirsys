@@ -23,6 +23,7 @@ use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\local_time;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 
 $id = (int) $connection['id'];
 $error = fn (string $field): string => isset($errors[$field]) ? '<div class="field-error">' . e(t($errors[$field])) . '</div>' : '';
@@ -31,7 +32,7 @@ $statusTone = ['created' => 'active', 'updated' => 'active', 'matched' => 'sent'
 ?>
 <div class="page-head">
     <div>
-        <h1><?= e(t('woocommerce.contacts.title')) ?></h1>
+        <h1><?= e(t('woocommerce.contacts.title')) ?><?= help_link('woocommerce-contact-sync') ?></h1>
         <p><?= e($connection['name']) ?> — <span class="ltr"><?= e((string) ($connection['config']['store_url'] ?? '')) ?></span></p>
     </div>
     <div class="actions">
@@ -65,7 +66,7 @@ $statusTone = ['created' => 'active', 'updated' => 'active', 'matched' => 'sent'
             <dd><span class="ltr"><?= e(local_time($connection['last_successful_sync_at']) ?? '—') ?></span></dd>
         </div>
         <div class="fact">
-            <dt><?= icon('list') ?><?= e(t('integrations.queue')) ?></dt>
+            <dt><?= icon('list') ?><?= e(t('integrations.queue')) ?><?= help_link('woocommerce-order-sync') ?></dt>
             <dd><?= e(t('integrations.queue_counts', ['pending' => (string) ($jobs['pending'] + $jobs['running']), 'failed' => (string) $jobs['failed']])) ?></dd>
         </div>
     </dl>
@@ -98,7 +99,7 @@ $statusTone = ['created' => 'active', 'updated' => 'active', 'matched' => 'sent'
 </section>
 
 <section class="card card--form" id="import-history">
-    <h2><?= icon('history') ?><?= e(t('woocommerce.contacts.history.title')) ?></h2>
+    <h2><?= icon('history') ?><?= e(t('woocommerce.contacts.history.title')) ?><?= help_link('woocommerce-import-older-orders') ?></h2>
     <p class="field-hint"><?= e(t('woocommerce.contacts.history.intro')) ?></p>
     <dl class="fact-row">
         <div class="fact">

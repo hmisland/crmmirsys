@@ -1,0 +1,20 @@
+<p>Quand un contact est lié à un client de la boutique, la fiche du contact affiche un panneau <strong>Commandes de la boutique</strong> avec les commandes de ce client dans toutes les boutiques connectées.</p>
+<h2>Ce qu'affiche le panneau</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Colonne</th><th>Signification</th></tr></thead>
+<tbody>
+<tr><td>Boutique</td><td>La connexion d'où vient la commande.</td></tr>
+<tr><td>Commande</td><td>Le numéro de commande dans WooCommerce.</td></tr>
+<tr><td>Date</td><td>La date à laquelle la commande a été passée.</td></tr>
+<tr><td>Statut</td><td>Terminée, En cours, En attente, Paiement en attente, Annulée, Remboursée, Échouée ou Brouillon — comme dans la boutique.</td></tr>
+<tr><td>Total</td><td>Le total de la commande dans la devise de la boutique.</td></tr>
+</tbody></table></div>
+<h2>Quand un contact est-il lié à un client ?</h2>
+<ul>
+<li>Quand la synchronisation des contacts crée ou rapproche le contact (voir « Transformer les clients de la boutique en contacts CRM »).</li>
+<li>Quand l'e-mail de la commande correspond à l'e-mail d'un contact existant.</li>
+</ul>
+<p>Si le panneau indique <strong>Aucune commande de boutique pour ce contact</strong>, le contact n'est encore lié à aucun client de la boutique, ou les commandes du client n'ont pas été importées (par exemple les commandes de plus de 30 jours — voir « Importer les commandes WooCommerce plus anciennes »).</p>
+<h2>Qui le voit</h2>
+<p>Toute personne qui peut consulter le contact, à condition que le module WooCommerce soit actif pour l'organisation. Le panneau est en lecture seule : les commandes se modifient dans la boutique et arrivent avec la synchronisation suivante.</p>
+<div class="help-callout help-callout--tip"><p><strong>Astuce :</strong> ces mêmes commandes alimentent les conditions « Achats en boutique » des segments Marketing, par exemple « a acheté le produit X ces 90 derniers jours ».</p></div>

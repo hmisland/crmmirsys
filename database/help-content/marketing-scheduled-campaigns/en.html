@@ -1,0 +1,19 @@
+<p>A campaign can be sent right after approval or at a date and time you choose, for example tomorrow at 10:00.</p>
+<h2>Schedule a campaign</h2>
+<ol>
+<li>Create the campaign as usual (<strong>Marketing › Campaigns</strong>), save it and open it.</li>
+<li>In the approval section, fill in <strong>Send later (optional)</strong>: a <strong>Send date</strong> and a <strong>Send time</strong> (HH:MM).</li>
+<li>Click <strong>Approve and send</strong> and confirm. The campaign shows <strong>Scheduled</strong> and the time it will be sent.</li>
+</ol>
+<p>Leave both fields empty to send right after approval, as before. Approving needs the permission to send campaigns.</p>
+<h2>Rules</h2>
+<ul>
+<li>The time is in your organization’s time zone (shown under the fields).</li>
+<li>The send time must be at least one minute in the future and at most one year ahead.</li>
+<li>The <strong>recipients are fixed at approval</strong>. Contacts added to the segment later are not included.</li>
+<li>When sending starts, opt-outs, the channel provider and module access are checked again. Someone who opted out in the meantime is skipped.</li>
+<li>Sending is started by the background task (cron), so it begins within about a minute of the chosen time.</li>
+</ul>
+<h2>Change or stop a scheduled campaign</h2>
+<p>Until the chosen time, click <strong>Cancel campaign</strong> to stop it; nothing is sent. To change the text, audience or time, create the campaign again with the new details and schedule it.</p>
+<div class="help-callout help-callout--tip"><p><strong>Tip:</strong> send a test message before approving. Schedule SMS campaigns for reasonable hours: your SMS provider may block promotional messages at night.</p></div>

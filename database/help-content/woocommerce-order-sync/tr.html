@@ -1,0 +1,23 @@
+<p>Bir mağaza bağlandıktan sonra siparişleri CRM'e üç yolla ulaşır:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Yol</th><th>Ne zaman</th></tr></thead>
+<tbody>
+<tr><td>Webhook</td><td>Mağaza yeni veya değişen bir sipariş bildirdiğinde, anında (webhook'lar kuruluysa).</td></tr>
+<tr><td>Zamanlanmış eşitleme</td><td>Her 15 dakikada bir otomatik olarak: son eşitlemeden bu yana değişen siparişler.</td></tr>
+<tr><td><strong>Şimdi eşitle</strong></td><td>Bağlantı kartında tıkladığınızda: eşitleme sıraya alınır ve birkaç dakika içinde arka planda çalışır.</td></tr>
+</tbody></table></div>
+<p>Bir mağazanın ilk eşitlemesi <strong>son 30 günün</strong> siparişlerini içe aktarır. Daha eski siparişler ayrıca içe aktarılabilir (bkz. "Eski WooCommerce siparişlerini içe aktarma"). Daha önce içe aktarılmış bir sipariş güncellenir, asla çoğaltılmaz.</p>
+<h2>Arka plan görevi (cron)</h2>
+<p>Zamanlanmış eşitlemeleri, sıradaki işleri ve yeniden denemeleri, sunucunuzun her dakika başlattığı tek bir arka plan görevi çalıştırır. Bu görev olmadan eşitleme kuyrukta "bekliyor" durumunda kalır. Barındırmayı yöneten kişi tarafından bir kez, <strong>cPanel › Cron İşleri</strong> bölümünde, her dakika çalışacak şekilde ve şuna benzer bir komutla kurulur:</p>
+<pre><code>/usr/local/bin/php /home/ACCOUNT/public_html/app/bin/scheduler.php</code></pre>
+<p><code>ACCOUNT</code> yerine cPanel kullanıcı adınızı yazın. Bu bir web adresi değil, sunucu komutudur: tarayıcıda açmayın.</p>
+<h2>Bağlantı kartını okuma</h2>
+<ul>
+<li><strong>Son başarılı eşitleme</strong> / <strong>Son deneme</strong> — mağazanın en son ne zaman okunduğu; deneme başarıdan daha yeniyse son deneme başarısız olmuştur ve hatası gösterilir.</li>
+<li><strong>Son webhook</strong> — mağazanın en son ne zaman webhook gönderdiği. Boşsa webhook'lar kurulmamıştır veya ulaşmıyordur.</li>
+<li><strong>Kuyruk</strong> — bekleyen ve başarısız olan işler. Büyük bir içe aktarma küçük partilere bölünür; bu yüzden <strong>Şimdi eşitle</strong> veya eski siparişleri içe aktarma sonrasında birkaç bekleyen parti görmek normaldir.</li>
+</ul>
+<h2>Neler kopyalanır</h2>
+<p>Yalnızca müşteriler, siparişler, sipariş kalemleri ve bunlardaki ürünler. Misafir müşteriler (mağaza hesabı olmayanlar) da dahildir; siparişlerindeki e-posta ve telefonla tanımlanırlar. Ödeme bilgileri ve parolalar asla kopyalanmaz.</p>
+<div class="help-callout help-callout--tip"><p><strong>İpucu:</strong> <strong>Şimdi eşitle</strong> zaten sırada bir eşitleme olduğunu söylüyorsa önceki istek henüz çalışmamıştır. Cron işinin çalıştığını kontrol edin; <strong>Kuyruk</strong>'taki bekleyen sayısı birkaç dakika içinde azalmalıdır.</p></div>
+<div class="help-callout help-callout--warning"><p><strong>Devre dışı bağlantı:</strong> <strong>Etkinleştir</strong>'e tıklayana kadar eşitleme yapılmaz ve gelen webhook'lar yok sayılır.</p></div>

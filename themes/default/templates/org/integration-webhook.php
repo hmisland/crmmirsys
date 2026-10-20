@@ -11,11 +11,12 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 use function App\Infrastructure\Theme\icon;
 ?>
 <div class="page-head">
     <div>
-        <h1><?= e(t('integrations.webhook_title')) ?></h1>
+        <h1><?= e(t('integrations.webhook_title')) ?><?= help_link('woocommerce-connect-store') ?></h1>
         <p><?= e(t('integrations.webhook_subtitle')) ?></p>
     </div>
     <div class="actions">
