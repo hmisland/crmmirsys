@@ -60,7 +60,7 @@ return [
         $a = $boot();
         foreach (['en' => 'ltr', 'fa' => 'rtl', 'ar' => 'rtl', 'tr' => 'ltr', 'fr' => 'ltr'] as $locale => $dir) {
             $a->locale($locale);
-            $list = $a->request('GET', '/help')['body'];
+            $list = $a->request('GET', '/help', ['per_page' => '100'])['body'];
             LiteAssert::contains('dir="' . $dir . '"', $list);
             foreach (INT_HELP as $slug) {
                 $meta = require $root . "/database/help-content/{$slug}/meta.php";

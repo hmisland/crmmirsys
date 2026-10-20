@@ -2487,6 +2487,13 @@ body.nav-locked { overflow: hidden; }
 .help-card__title a:hover { color: var(--brand-600); }
 .help-card__title .icon { flex: none; margin-top: 0.15em; color: var(--brand-600); }
 .help-card__summary { margin: 0; color: var(--color-muted); }
+/* Help center: categories on a card, the titles-only list view, the category picker of the article form. */
+.help-card__categories { margin: 0; display: flex; align-items: center; gap: var(--space-1); color: var(--color-muted); font-size: var(--text-sm); }
+.help-list { list-style: none; margin: 0; padding: 0; }
+.help-list > li { display: flex; align-items: center; gap: var(--space-2); padding-block: var(--space-2); border-bottom: 1px solid var(--color-border); }
+.help-list > li:last-child { border-bottom: 0; }
+.help-list a { display: inline-flex; align-items: center; gap: var(--space-2); unicode-bidi: plaintext; }
+.help-category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: var(--space-1) var(--space-3); }
 .help-card__admin { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
 .help-card__spacer { flex: 1; }
 

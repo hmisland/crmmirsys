@@ -4,6 +4,12 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Help center: categories, FAQ, pagination and a list view
+- Help articles have **categories** — one article can be in several: Frequently asked questions, General, CRM platform, and one per module (Sales, WooCommerce, Marketing, Email marketing, Customer satisfaction, Finance…, named as in Modules & Features). The Super Admin ticks them in the article form.
+- The help page has a **category filter** (with article counts; FAQ is always offered, even while empty, the other categories once they have articles), **pagination** (25 per page by default), and a **Cards / List** switch — cards stay the default; the list shows titles only. Search, category and view are kept together.
+- The 48 existing guides are filed under their modules by the migration (the deal/contract guide under Sales, Contracts and Projects; shop-purchase segments under Marketing and WooCommerce…).
+- Migration: core `0091_create_help_article_categories_table` (new table + categories of the existing guides; safe to repeat). 11 new translation keys × 5 languages. New suite `HelpCategoriesTest` (8); the help suites read the list with 100 per page. Removed a stray translation work file from `database/help-content`.
+
 ### Fix — tickets and module requests: Super Admin actions gave a 500; ticket list alignment; ticket attachments
 - **500 after a Super Admin reply** (the reply was saved): the organization's timeline was written outside any organization context — a Super Admin has none — so the request failed after saving; reloading then hit the POST-only reply address (404). Timeline entries of tickets and of module activation requests (approve / reject had the same flaw) are now written inside the ticket's / request's organization. Tests now act as a real Super Admin (no organization context).
 - **Ticket lists:** the number and date cells were left-to-right as a whole, so in Persian/Arabic they drifted away from their column headers; only the value is left-to-right now (tickets, module requests, ticket facts).

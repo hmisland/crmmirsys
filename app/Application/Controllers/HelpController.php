@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Application\Controllers;
 
+use App\Application\Services\HelpCategories;
 use App\Core\Exceptions\AuthorizationException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Request;
 use App\Core\Response;
 use App\Infrastructure\Localization\Locale;
 use App\Infrastructure\Localization\Translator;
+use App\Infrastructure\Pagination\Pagination;
 use App\Infrastructure\Repositories\HelpArticleRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\HtmlSanitizer;
@@ -42,11 +44,32 @@ final class HelpController extends BaseController
     {
         $user = $this->requireUser();
         $isSuperAdmin = !empty($user['is_super_admin']);
-        $search = trim((string) $request->query('q', ''));
+        $search = mb_substr(trim((string) $request->query('q', '')), 0, 100);
+        $category = (string) $request->query('category', '');
+        if (!HelpCategories::valid($category)) {
+            $category = '';
+        }
+        // Cards (default) or a list of titles only.
+        $view = $request->query('view') === 'list' ? 'list' : 'grid';
+        $locale = $this->locale();
+        $pagination = Pagination::fromRequest($request, $this->articles->countForLocale($locale, $isSuperAdmin, $search, $category));
+
+        // The filter offers every category that has articles, plus the ones always listed (FAQ) and the selected one.
+        $counts = $this->articles->categoryCounts($locale, $isSuperAdmin);
+        $categories = [];
+        foreach (HelpCategories::KEYS as $key) {
+            if (($counts[$key] ?? 0) > 0 || in_array($key, HelpCategories::ALWAYS_LISTED, true) || $key === $category) {
+                $categories[$key] = ['label' => HelpCategories::label($key), 'count' => $counts[$key] ?? 0];
+            }
+        }
 
         return $this->viewWithLayout('help/index', 'layout', [
-            'articles' => $this->articles->listForLocale($this->locale(), $isSuperAdmin, mb_substr($search, 0, 100)),
+            'articles' => $this->articles->listForLocale($locale, $isSuperAdmin, $search, $category, $pagination->perPage, $pagination->offset()),
             'search' => $search,
+            'category' => $category,
+            'categories' => $categories,
+            'view' => $view,
+            'pagination' => $pagination,
             'canManage' => $isSuperAdmin,
             // "Send a ticket" to the platform team (organization admins).
             'canSendTicket' => $this->tickets?->canUse($user) ?? false,
@@ -80,7 +103,7 @@ final class HelpController extends BaseController
     {
         $this->requireSuperAdmin();
 
-        return $this->form(null, ['slug' => '', 'sort_order' => 0, 'is_published' => 1], [], []);
+        return $this->form(null, ['slug' => '', 'sort_order' => 0, 'is_published' => 1, 'categories' => []], [], []);
     }
 
     public function edit(Request $request): Response
@@ -88,7 +111,7 @@ final class HelpController extends BaseController
         $this->requireSuperAdmin();
         $article = $this->findOrFail((int) $request->attribute('id'));
 
-        return $this->form($article, $article, $this->articles->translations((int) $article['id']), []);
+        return $this->form($article, $article + ['categories' => $this->articles->categoriesOf((int) $article['id'])], $this->articles->translations((int) $article['id']), []);
     }
 
     public function store(Request $request): Response
@@ -125,6 +148,7 @@ final class HelpController extends BaseController
             'slug' => $slug,
             'sort_order' => (int) $request->input('sort_order', 0),
             'is_published' => $request->input('is_published') === '1',
+            'categories' => HelpCategories::normalize((array) $request->input('categories', [])),
         ];
 
         $translations = [];
@@ -169,7 +193,7 @@ final class HelpController extends BaseController
             return $this->form($existing, $values, $translations, $errors, 422);
         }
 
-        $this->articles->save($id, $values, $filled, $userId);
+        $this->articles->save($id, $values, $filled, $userId, $values['categories']);
         Session::setFlash('success', t('help.flash.saved'));
 
         return $this->redirect('/help/' . rawurlencode($slug));
@@ -183,6 +207,7 @@ final class HelpController extends BaseController
             'translations' => $translations,
             'errors' => $errors,
             'locales' => Translator::SUPPORTED_LOCALES,
+            'categoryOptions' => array_combine(HelpCategories::KEYS, array_map(fn (string $k): string => HelpCategories::label($k), HelpCategories::KEYS)),
         ], $status);
     }
 

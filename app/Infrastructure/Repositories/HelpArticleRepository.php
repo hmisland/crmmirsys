@@ -13,8 +13,71 @@ final class HelpArticleRepository extends BaseRepository
 {
     public const FALLBACK_LOCALE = 'en';
 
-    /** Articles in display order, each resolved to $locale (or en). */
-    public function listForLocale(string $locale, bool $includeUnpublished, string $search = ''): array
+    /**
+     * Articles in display order, each resolved to $locale (or en), optionally
+     * one category and one page; each row carries its categories.
+     */
+    public function listForLocale(string $locale, bool $includeUnpublished, string $search = '', string $category = '', ?int $limit = null, int $offset = 0): array
+    {
+        [$where, $params] = $this->listConditions($locale, $includeUnpublished, $search, $category);
+        $rows = $this->findMany(
+            "SELECT a.id, a.slug, a.sort_order, a.is_published, a.updated_at,
+                    COALESCE(tl.title, tf.title, a.slug) AS title,
+                    COALESCE(tl.summary, tf.summary) AS summary,
+                    (SELECT GROUP_CONCAT(x.locale ORDER BY x.locale) FROM help_article_translations x WHERE x.article_id = a.id) AS locales,
+                    (SELECT GROUP_CONCAT(c.category) FROM help_article_categories c WHERE c.article_id = a.id) AS categories
+             FROM help_articles a
+             LEFT JOIN help_article_translations tl ON tl.article_id = a.id AND tl.locale = :locale
+             LEFT JOIN help_article_translations tf ON tf.article_id = a.id AND tf.locale = :fallback
+             WHERE {$where}
+             ORDER BY a.sort_order, a.id"
+                . ($limit !== null ? ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset) : ''),
+            $params
+        );
+
+        return array_map(fn (array $r): array => ['categories' => $r['categories'] !== null ? explode(',', (string) $r['categories']) : []] + $r, $rows);
+    }
+
+    public function countForLocale(string $locale, bool $includeUnpublished, string $search = '', string $category = ''): int
+    {
+        [$where, $params] = $this->listConditions($locale, $includeUnpublished, $search, $category);
+
+        return (int) ($this->findOne(
+            "SELECT COUNT(*) AS c FROM help_articles a
+             LEFT JOIN help_article_translations tl ON tl.article_id = a.id AND tl.locale = :locale
+             LEFT JOIN help_article_translations tf ON tf.article_id = a.id AND tf.locale = :fallback
+             WHERE {$where}",
+            $params
+        )['c'] ?? 0);
+    }
+
+    /** @return array<string, int> category => readable articles in it (same visibility as the list, no search) */
+    public function categoryCounts(string $locale, bool $includeUnpublished): array
+    {
+        [$where, $params] = $this->listConditions($locale, $includeUnpublished, '', '');
+        $counts = [];
+        foreach ($this->findMany(
+            "SELECT c.category, COUNT(*) AS n FROM help_article_categories c
+             JOIN help_articles a ON a.id = c.article_id
+             LEFT JOIN help_article_translations tl ON tl.article_id = a.id AND tl.locale = :locale
+             LEFT JOIN help_article_translations tf ON tf.article_id = a.id AND tf.locale = :fallback
+             WHERE {$where} GROUP BY c.category",
+            $params
+        ) as $row) {
+            $counts[(string) $row['category']] = (int) $row['n'];
+        }
+
+        return $counts;
+    }
+
+    /** @return string[] */
+    public function categoriesOf(int $articleId): array
+    {
+        return array_column($this->findMany('SELECT category FROM help_article_categories WHERE article_id = :id', ['id' => $articleId]), 'category');
+    }
+
+    /** @return array{0: string, 1: array} */
+    private function listConditions(string $locale, bool $includeUnpublished, string $search, string $category): array
     {
         // Readers only see articles that exist in their language or in English: a guide written for
         // one language only (e.g. the Kavenegar SMS guides, Persian/Iran only) never shows up as an
@@ -26,19 +89,12 @@ final class HelpArticleRepository extends BaseRepository
             $params['q'] = '%' . $search . '%';
             $params['q2'] = '%' . $search . '%';
         }
+        if ($category !== '') {
+            $where .= ' AND EXISTS (SELECT 1 FROM help_article_categories hc WHERE hc.article_id = a.id AND hc.category = :category)';
+            $params['category'] = $category;
+        }
 
-        return $this->findMany(
-            "SELECT a.id, a.slug, a.sort_order, a.is_published, a.updated_at,
-                    COALESCE(tl.title, tf.title, a.slug) AS title,
-                    COALESCE(tl.summary, tf.summary) AS summary,
-                    (SELECT GROUP_CONCAT(x.locale ORDER BY x.locale) FROM help_article_translations x WHERE x.article_id = a.id) AS locales
-             FROM help_articles a
-             LEFT JOIN help_article_translations tl ON tl.article_id = a.id AND tl.locale = :locale
-             LEFT JOIN help_article_translations tf ON tf.article_id = a.id AND tf.locale = :fallback
-             WHERE {$where}
-             ORDER BY a.sort_order, a.id",
-            $params
-        );
+        return [$where, $params];
     }
 
     /** One article by slug, resolved to $locale (or en); null when missing or not written in either. */
@@ -90,10 +146,11 @@ final class HelpArticleRepository extends BaseRepository
      *
      * @param array{slug: string, sort_order: int, is_published: bool} $article
      * @param array<string, array{title: string, summary: string, body: string}> $translations only non-empty locales
+     * @param string[]|null $categories the article's categories (replaces them); null leaves them as they are
      */
-    public function save(?int $id, array $article, array $translations, int $userId): int
+    public function save(?int $id, array $article, array $translations, int $userId, ?array $categories = null): int
     {
-        $work = function () use ($id, $article, $translations, $userId) {
+        $work = function () use ($id, $article, $translations, $userId, $categories) {
             $columns = [
                 'slug' => $article['slug'],
                 'sort_order' => $article['sort_order'],
@@ -115,6 +172,12 @@ final class HelpArticleRepository extends BaseRepository
                     'summary' => $tr['summary'] !== '' ? $tr['summary'] : null,
                     'body' => $tr['body'],
                 ]);
+            }
+            if ($categories !== null) {
+                $this->delete('help_article_categories', 'article_id = :id', ['id' => $id]);
+                foreach (array_unique($categories) as $category) {
+                    $this->query('INSERT INTO help_article_categories (article_id, category) VALUES (:id, :category)', ['id' => $id, 'category' => $category]);
+                }
             }
 
             return $id;

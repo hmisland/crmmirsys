@@ -4,6 +4,7 @@
 /** @var array<string, array> $translations keyed by locale */
 /** @var array<string, string> $errors */
 /** @var string[] $locales */
+/** @var array<string, string> $categoryOptions category key => label */
 
 use App\Infrastructure\Security\Csrf;
 
@@ -35,6 +36,19 @@ $err = fn (string $key) => $errors[$key] ?? null;
             <?= e(t('help.published')) ?>
         </label>
         <p class="field-hint"><?= e(t('help.published_hint')) ?></p>
+
+        <fieldset class="fieldset--plain">
+            <legend><?= e(t('help.categories')) ?></legend>
+            <div class="help-category-grid">
+                <?php foreach ($categoryOptions as $key => $label): ?>
+                    <label class="check">
+                        <input type="checkbox" name="categories[]" value="<?= e($key) ?>"<?= in_array($key, (array) ($values['categories'] ?? []), true) ? ' checked' : '' ?>>
+                        <?= e($label) ?>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+            <p class="field-hint"><?= e(t('help.categories_hint')) ?></p>
+        </fieldset>
     </section>
 
     <section class="card card--form" data-tabs>

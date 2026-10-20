@@ -67,7 +67,7 @@ return [
         $a = $boot();
         foreach (['en' => 'ltr', 'fa' => 'rtl', 'ar' => 'rtl', 'tr' => 'ltr', 'fr' => 'ltr'] as $locale => $dir) {
             $a->locale($locale);
-            $list = $a->request('GET', '/help')['body'];
+            $list = $a->request('GET', '/help', ['per_page' => '100'])['body'];
             LiteAssert::contains('dir="' . $dir . '"', $list);
             $slugs = $locale === 'fa' ? array_merge(MKT_HELP_ALL, MKT_HELP_FA_ONLY) : MKT_HELP_ALL;
             foreach ($slugs as $slug) {
@@ -87,7 +87,7 @@ return [
         $a = $boot();
         foreach (['en', 'ar', 'tr', 'fr'] as $locale) {
             $a->locale($locale);
-            $list = $a->request('GET', '/help')['body'];
+            $list = $a->request('GET', '/help', ['per_page' => '100'])['body'];
             foreach (MKT_HELP_FA_ONLY as $slug) {
                 LiteAssert::notContains('/help/' . $slug . '"', $list, "{$slug} listed in {$locale}");
                 LiteAssert::same('notfound', $a->outcome('GET', '/help/' . $slug), "{$slug} reachable in {$locale}");

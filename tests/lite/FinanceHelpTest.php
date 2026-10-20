@@ -73,7 +73,7 @@ $tests['FH2 every guide reads in every language (page + popup): title, example, 
     $a = $boot();
     foreach (['en' => 'ltr', 'fa' => 'rtl', 'ar' => 'rtl', 'tr' => 'ltr', 'fr' => 'ltr'] as $locale => $dir) {
         $a->locale($locale);
-        $list = $a->request('GET', '/help')['body'];
+        $list = $a->request('GET', '/help', ['per_page' => '100'])['body'];
         LiteAssert::contains('dir="' . $dir . '"', $list);
         foreach (FIN_HELP_SLUGS as $slug) {
             $meta = require $root . "/database/help-content/{$slug}/meta.php";

@@ -63,7 +63,7 @@ return [
             $a->locale($locale);
             foreach ([$a->admin, $a->noRole] as $user) {
                 $a->as($user);
-                $list = $a->request('GET', '/help')['body'];
+                $list = $a->request('GET', '/help', ['per_page' => '100'])['body'];
                 LiteAssert::contains('href="/help/' . HELP_SEED_SLUG . '"', $list, "list link ({$locale})");
                 LiteAssert::contains('dir="' . $dir . '"', $list);
                 LiteAssert::notContains('help.', strip_tags($list), "raw key on list ({$locale})");
@@ -82,7 +82,7 @@ return [
     'H3. the sidebar shows the guide link to org users' => function () use ($boot) {
         $a = $boot();
         $a->as($a->noRole);
-        LiteAssert::contains('href="/help" class="nav-item"', $a->request('GET', '/help')['body']);
+        LiteAssert::contains('href="/help" class="nav-item"', $a->request('GET', '/help', ['per_page' => '100'])['body']);
         $a->as($a->admin);
     },
 
@@ -162,11 +162,11 @@ return [
         $a = $boot();
         $a->as($superAdmin);
         $a->request('POST', '/admin/help', [], $article('lite-hidden', ['en' => ['title' => 'Hidden', 'summary' => '', 'body' => '<p>x</p>']], '0'));
-        LiteAssert::contains('href="/help/lite-hidden"', $a->request('GET', '/help')['body']);
+        LiteAssert::contains('href="/help/lite-hidden"', $a->request('GET', '/help', ['per_page' => '100'])['body']);
         LiteAssert::same('ok', $a->outcome('GET', '/help/lite-hidden'));
 
         $a->as($a->noRole);
-        LiteAssert::notContains('lite-hidden', $a->request('GET', '/help')['body']);
+        LiteAssert::notContains('lite-hidden', $a->request('GET', '/help', ['per_page' => '100'])['body']);
         LiteAssert::same('notfound', $a->outcome('GET', '/help/lite-hidden'));
         $a->as($a->admin);
     },
