@@ -51,6 +51,7 @@ use Modules\Marketing\Services\QueueWorker;
 use Modules\Marketing\Services\SuppressionService;
 use Modules\Marketing\Services\TemplateService;
 use Modules\Marketing\Services\TransactionalDelivery;
+use Modules\Marketing\Services\TransactionalHistory;
 use Modules\Marketing\Services\UnsubscribeLinks;
 use Modules\Marketing\Services\WebhookService;
 
@@ -140,15 +141,17 @@ final class MarketingModule implements ModuleInterface, ProvidesServices
         );
         $this->segmentService = new SegmentService($segmentRepository, $segmentRules, $this->conditions, new SegmentPreviewRepository($segmentRules, $segmentAudience), $authorization, $timeline);
         $this->segmentController = new SegmentController($templates, $this->segmentService);
+        $transactionalMessages = new TransactionalMessageRepository();
         $this->worker = new QueueWorker(
             $campaigns, $messages, $suppressions, $channels, $entitlements, $composer, $sms, $timeline,
             $container->make(LoggerInterface::class),
             $audience,
+            $transactionalMessages,
         );
         // Phase 2: single transactional messages for other modules (Core TransactionalDeliveryInterface),
         // through the same channels, opt-out list and entitlements as campaigns.
         $this->transactional = new TransactionalDelivery(
-            new TransactionalMessageRepository(), $suppressions, $channels, $entitlements, $composer, $email, $sms, $timeline,
+            $transactionalMessages, $suppressions, $channels, $entitlements, $composer, $email, $sms, $timeline,
             $container->make(LoggerInterface::class),
         );
         $suppressionService = new SuppressionService($suppressions, $messages, $authorization, $timeline);
@@ -160,11 +163,12 @@ final class MarketingModule implements ModuleInterface, ProvidesServices
             $this->campaignService,
             $suppressionService,
             $templateService,
+            new TransactionalHistory($transactionalMessages, $authorization),
         );
         $this->publicController = new PublicController(
             $templates,
             $suppressionService,
-            new WebhookService($email, $messages, $suppressions, new WebhookEventRepository(), $entitlements, $timeline),
+            new WebhookService($email, $messages, $suppressions, new WebhookEventRepository(), $entitlements, $timeline, $transactionalMessages),
         );
 
         // "Marketing messages" box on the contact page (send history per contact).
@@ -214,6 +218,7 @@ final class MarketingModule implements ModuleInterface, ProvidesServices
 
             $router->get('', fn (Request $r) => $marketing->dashboard($r), [$view]);
             $router->get('/history', fn (Request $r) => $marketing->history($r), [$view]);
+            $router->get('/transactional', fn (Request $r) => $marketing->transactional($r), [$view]);
 
             $router->get('/suppressions', fn (Request $r) => $marketing->suppressions($r), [$view]);
             $router->post('/suppressions', fn (Request $r) => $marketing->addSuppression($r), [$rbac(MarketingPermission::MANAGE_SUPPRESSIONS), $csrf]);

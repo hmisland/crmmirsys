@@ -13,6 +13,7 @@ use Modules\Marketing\Channels\ChannelRegistry;
 use Modules\Marketing\Channels\RecoverableChannel;
 use Modules\Marketing\MessageRepository;
 use Modules\Marketing\SuppressionRepository;
+use Modules\Marketing\TransactionalMessageRepository;
 
 /**
  * The send queue. There is no job system on shared hosting, so the
@@ -55,6 +56,7 @@ final class QueueWorker
         private readonly TimelineService $timeline,
         private readonly LoggerInterface $logger,
         private readonly ?AudienceResolver $audience = null,
+        private readonly ?TransactionalMessageRepository $transactional = null,
     ) {
     }
 
@@ -179,13 +181,19 @@ final class QueueWorker
 
     /**
      * Delivery reports for SMS sent in the last 47 hours, organization by
-     * organization (Kavenegar sms/status.json, up to 500 ids per call).
+     * organization (Kavenegar sms/status.json, up to 500 ids per call) —
+     * campaign messages and (Phase B) transactional messages.
      * Email delivery comes from provider webhooks instead.
      */
     public function pollAllDeliveryReports(float $deadline): int
     {
         $updated = 0;
-        foreach ($this->messages->organizationsWithSmsSince($this->now('-' . self::REPORT_WINDOW_HOURS . ' hours')) as $organizationId) {
+        $since = $this->now('-' . self::REPORT_WINDOW_HOURS . ' hours');
+        $organizations = array_unique(array_merge(
+            $this->messages->organizationsWithSmsSince($since),
+            $this->transactional?->organizationsWithSmsSince($since) ?? [],
+        ));
+        foreach ($organizations as $organizationId) {
             if (microtime(true) >= $deadline) {
                 break;
             }
@@ -202,7 +210,30 @@ final class QueueWorker
     /** Delivery reports for the CURRENT organization. Returns rows whose state changed. */
     public function pollDeliveryReports(int $limit = 500): int
     {
-        $rows = $this->messages->awaitingSmsReport($this->now('-' . self::REPORT_WINDOW_HOURS . ' hours'), $this->now('-5 minutes'), $limit);
+        $since = $this->now('-' . self::REPORT_WINDOW_HOURS . ' hours');
+        $changed = $this->applySmsReports(
+            $this->messages->awaitingSmsReport($since, $this->now('-5 minutes'), $limit),
+            fn (int $id, array $fields) => $this->messages->updateDelivery($id, $fields),
+        );
+        if ($this->transactional !== null) {
+            $changed += $this->applySmsReports(
+                $this->transactional->awaitingSmsReport($since, $this->now('-5 minutes'), $limit),
+                fn (int $id, array $fields) => $this->transactional->updateDelivery($id, $fields),
+            );
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Asks each sending account for the state of its messages and stores
+     * what it reports; "blocked" (the recipient refused promotional SMS at
+     * the operator) also adds an SMS opt-out.
+     *
+     * @param \Closure(int, array): void $update
+     */
+    private function applySmsReports(array $rows, \Closure $update): int
+    {
         if ($rows === []) {
             return 0;
         }
@@ -229,7 +260,7 @@ final class QueueWorker
                     }
                     $changed++;
                 }
-                $this->messages->updateDelivery((int) $row['id'], $fields);
+                $update((int) $row['id'], $fields);
             }
         }
 

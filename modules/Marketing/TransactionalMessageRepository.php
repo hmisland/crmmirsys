@@ -106,4 +106,89 @@ final class TransactionalMessageRepository extends TenantScopedRepository
     {
         return $this->findOne('SELECT id FROM contacts WHERE id = :id AND organization_id = :org_id', ['id' => $contactId, 'org_id' => OrganizationContext::id()]) !== null;
     }
+
+    // --- History page (Phase B) ----------------------------------------------------
+
+    /** @param array{q?: string, status?: string, channel?: string, purpose?: string} $filters */
+    public function page(array $filters, int $limit, int $offset): array
+    {
+        [$where, $params] = $this->conditions($filters);
+
+        return $this->findMany(
+            'SELECT * FROM marketing_transactional_messages WHERE ' . $where . ' ORDER BY id DESC LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset),
+            $params
+        );
+    }
+
+    public function count(array $filters): int
+    {
+        [$where, $params] = $this->conditions($filters);
+
+        return (int) ($this->findOne('SELECT COUNT(*) AS c FROM marketing_transactional_messages WHERE ' . $where, $params)['c'] ?? 0);
+    }
+
+    /** @return string[] purposes used in this organization (for the filter) */
+    public function purposes(): array
+    {
+        return array_column($this->findMany(
+            'SELECT DISTINCT purpose FROM marketing_transactional_messages WHERE organization_id = :org_id ORDER BY purpose',
+            ['org_id' => OrganizationContext::id()]
+        ), 'purpose');
+    }
+
+    // --- Delivery reports (Phase B) --------------------------------------------------
+
+    /** Sent SMS still waiting for a final delivery state (provider keeps status for 48 hours). */
+    public function awaitingSmsReport(string $since, string $checkedBefore, int $limit): array
+    {
+        return $this->findMany(
+            "SELECT id, provider, provider_message_id, address, contact_id FROM marketing_transactional_messages
+             WHERE organization_id = :org_id AND channel = 'sms' AND status = 'sent' AND provider_message_id IS NOT NULL
+             AND (delivery_status IS NULL OR delivery_status IN ('queued', 'sent'))
+             AND sent_at >= :since AND (status_checked_at IS NULL OR status_checked_at < :checked_before)
+             ORDER BY id LIMIT " . max(1, $limit),
+            ['org_id' => OrganizationContext::id(), 'since' => $since, 'checked_before' => $checkedBefore]
+        );
+    }
+
+    /** @return int[] organizations with transactional SMS sent since $since */
+    public function organizationsWithSmsSince(string $since): array
+    {
+        return array_map('intval', array_column($this->findMany(
+            "SELECT DISTINCT organization_id FROM marketing_transactional_messages WHERE channel = 'sms' AND status = 'sent' AND sent_at >= :since",
+            ['since' => $since]
+        ), 'organization_id'));
+    }
+
+    public function updateDelivery(int $id, array $fields): void
+    {
+        $this->update('marketing_transactional_messages', $fields, 'id = :id AND organization_id = :org_id', ['id' => $id, 'org_id' => OrganizationContext::id()]);
+    }
+
+    public function findByProviderMessageId(string $providerPrefix, string $messageId): ?array
+    {
+        return $this->findOne(
+            'SELECT * FROM marketing_transactional_messages WHERE organization_id = :org_id AND provider_message_id = :mid AND provider LIKE :provider ORDER BY id DESC LIMIT 1',
+            ['org_id' => OrganizationContext::id(), 'mid' => $messageId, 'provider' => $providerPrefix . '%']
+        );
+    }
+
+    /** @return array{0: string, 1: array} */
+    private function conditions(array $filters): array
+    {
+        $where = 'organization_id = :org_id';
+        $params = ['org_id' => OrganizationContext::id()];
+        foreach (['status', 'channel', 'purpose'] as $key) {
+            if (!empty($filters[$key])) {
+                $where .= " AND {$key} = :{$key}";
+                $params[$key] = (string) $filters[$key];
+            }
+        }
+        if (!empty($filters['q'])) {
+            $where .= ' AND (address LIKE :q1 OR recipient_name LIKE :q2)';
+            $params['q1'] = $params['q2'] = '%' . $filters['q'] . '%';
+        }
+
+        return [$where, $params];
+    }
 }

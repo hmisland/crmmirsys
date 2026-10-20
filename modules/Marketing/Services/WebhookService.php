@@ -11,6 +11,7 @@ use App\Infrastructure\Email\BrevoWebhookParser;
 use App\Infrastructure\Repositories\OrganizationContext;
 use Modules\Marketing\MessageRepository;
 use Modules\Marketing\SuppressionRepository;
+use Modules\Marketing\TransactionalMessageRepository;
 use Modules\Marketing\WebhookEventRepository;
 
 /**
@@ -27,6 +28,8 @@ use Modules\Marketing\WebhookEventRepository;
  *
  * Final states are never downgraded (a late "deferred" doesn't undo
  * "delivered"); bounce, complaint and unsubscribe add a suppression.
+ * Events for transactional messages (Phase B, e.g. survey invitations)
+ * update marketing_transactional_messages the same way.
  */
 final class WebhookService
 {
@@ -50,6 +53,7 @@ final class WebhookService
         private readonly WebhookEventRepository $events,
         private readonly Entitlements $entitlements,
         private readonly TimelineService $timeline,
+        private readonly ?TransactionalMessageRepository $transactional = null,
     ) {
     }
 
@@ -93,8 +97,13 @@ final class WebhookService
         }
 
         $message = $this->messages->findByProviderMessageId($provider, $event['message_id']);
+        $update = fn (int $id, array $fields) => $this->messages->updateDelivery($id, $fields);
+        if ($message === null && $this->transactional !== null) {
+            $message = $this->transactional->findByProviderMessageId($provider, $event['message_id']);
+            $update = fn (int $id, array $fields) => $this->transactional->updateDelivery($id, $fields);
+        }
         if ($message === null) {
-            return false; // not one of our campaign messages (e.g. a test email)
+            return false; // not one of our campaign or transactional messages (e.g. a test email)
         }
 
         $current = array_search((string) $message['delivery_status'], self::STORED, true);
@@ -107,7 +116,7 @@ final class WebhookService
             if ($event['reason'] !== '' && $event['type'] !== 'delivered') {
                 $fields['error'] = mb_substr($event['reason'], 0, 500);
             }
-            $this->messages->updateDelivery((int) $message['id'], $fields);
+            $update((int) $message['id'], $fields);
         }
 
         if (isset(self::SUPPRESS[$event['type']])) {

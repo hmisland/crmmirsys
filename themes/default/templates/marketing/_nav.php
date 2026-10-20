@@ -1,5 +1,5 @@
 <?php
-/** @var string $active one of dashboard|campaigns|segments|templates|history|suppressions */
+/** @var string $active one of dashboard|campaigns|segments|templates|history|transactional|suppressions */
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
@@ -11,6 +11,7 @@ $marketingTabs = [
     'segments' => ['/marketing/segments', 'filter', 'marketing.nav.segments'],
     'templates' => ['/marketing/templates', 'file-text', 'marketing.nav.templates'],
     'history' => ['/marketing/history', 'history', 'marketing.nav.history'],
+    'transactional' => ['/marketing/transactional', 'send', 'marketing.nav.transactional'],
     'suppressions' => ['/marketing/suppressions', 'ban', 'marketing.nav.suppressions'],
 ];
 ?>

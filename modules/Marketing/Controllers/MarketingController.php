@@ -17,6 +17,7 @@ use Modules\Marketing\Services\ContactPrivacy;
 use Modules\Marketing\Services\InsightsService;
 use Modules\Marketing\Services\SuppressionService;
 use Modules\Marketing\Services\TemplateService;
+use Modules\Marketing\Services\TransactionalHistory;
 
 use function App\Infrastructure\Theme\t;
 
@@ -29,6 +30,7 @@ final class MarketingController extends BaseController
         private readonly CampaignService $campaigns,
         private readonly SuppressionService $suppressions,
         private readonly TemplateService $messageTemplates,
+        private readonly ?TransactionalHistory $transactional = null,
     ) {
         parent::__construct($templates);
     }
@@ -58,6 +60,28 @@ final class MarketingController extends BaseController
 
         return $this->viewWithLayout('marketing/history', 'layout', [
             'messages' => $this->campaigns->canSeeContacts($user) ? $messages : ContactPrivacy::maskRows($messages),
+            'filters' => $filters,
+            'pagination' => $pagination,
+        ]);
+    }
+
+    /** Phase B: transactional messages (sent by other modules through Marketing). */
+    public function transactional(Request $request): Response
+    {
+        $user = CurrentUser::user();
+        $filters = [
+            'q' => trim((string) $request->query('q', '')),
+            'status' => (string) $request->query('status', ''),
+            'channel' => (string) $request->query('channel', ''),
+            'purpose' => (string) $request->query('purpose', ''),
+        ];
+        $history = $this->transactional ?? throw new \App\Core\Exceptions\NotFoundException();
+        $pagination = Pagination::fromRequest($request, $history->count($user, $filters));
+        $rows = $history->page($user, $filters, $pagination->perPage, $pagination->offset());
+
+        return $this->viewWithLayout('marketing/transactional', 'layout', [
+            'rows' => $this->campaigns->canSeeContacts($user) ? $rows : ContactPrivacy::maskRows($rows),
+            'purposes' => $history->purposes($user),
             'filters' => $filters,
             'pagination' => $pagination,
         ]);

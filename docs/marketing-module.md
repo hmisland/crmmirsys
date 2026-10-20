@@ -88,6 +88,7 @@ needs someone with `marketing.send` to approve it.
 | Marketing `0005` | `marketing_webhook_events` (UNIQUE provider+event key) |
 | Marketing `0006` | default permission grants |
 | Marketing `0013` | `marketing_transactional_messages` (UNIQUE org+reference) — Phase 2 transactional delivery, see §5a |
+| Marketing `0014` | delivery report columns on `marketing_transactional_messages` (Phase B) |
 
 All additive: no existing table or column changes. Rollback: each
 migration's `down()` drops only its own table (`0006` removes only
@@ -170,9 +171,17 @@ SMS/Email/Bale provider themselves.
   contact's timeline. The message text is not stored: it can carry a
   single-use public link. (The SMS account's own `sms_logs` still records
   SMS texts, as for every SMS in the app.)
-- **Not included:** delivery reports for transactional messages (SMS
-  report polling and email webhooks cover campaign rows only), no UI list
-  yet (the caller shows its own status, e.g. the CX invitations list).
+- **Delivery reports (Phase B):** the worker's SMS status polling
+  (Kavenegar, 47-hour window) and Brevo webhook events also update
+  transactional rows (`delivery_status`, `delivered_at`; final states never
+  downgraded, replays ignored; SMS "blocked", email bounce / complaint /
+  unsubscribe add an opt-out). "sent" still means accepted by the provider;
+  Sender and Safir (Bale) send no delivery reports, so those stay "Not
+  reported".
+- **Marketing → Transactional** (`/marketing/transactional`,
+  `marketing.view`): source (purpose), recipient (masked without
+  `contacts.view`), channel, status, delivery, errors; filters by source,
+  channel, status and search; paginated.
 
 ## 6. Provider capabilities (verified against official docs, 2026-10)
 

@@ -4,6 +4,13 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Phase B — Delivery reports and a page for transactional messages
+- **SMS delivery reports** for transactional messages (e.g. survey invitations): the Marketing worker's existing Kavenegar status polling now covers them too (same 47-hour window; "blocked" adds an SMS opt-out). Organizations that only sent transactional SMS are included.
+- **Email delivery events:** Brevo webhook events update transactional emails the same way as campaign emails — replays ignored, final states never downgraded, bounce / complaint / unsubscribe add an opt-out; scoped to the webhook's organization.
+- "Accepted by provider" is never shown as delivered; Sender and Bale (Safir) send no delivery reports and stay "Not reported".
+- **Marketing → Transactional** page: source, recipient (masked without `contacts.view`), channel, status, delivery state, errors, times; filters and pagination; `marketing.view`.
+- Migration: Marketing `0014_add_delivery_reports_to_transactional_messages` (additive). 12 new translation keys × 5 languages. New suite `TransactionalReportsTest` (9); 5 mutation checks.
+
 ### Phase A — WooCommerce customers become CRM contacts
 - **Per-shop contact sync** (Organization settings → Integrations → shop → Contact sync): on/off, contact group (required first; can be created there, existing names reused), tags, source for new contacts (default: the shop's domain), field mapping, "Sync contacts now", last run summary, counts per status and a list of skipped / conflicting customers.
 - **Safe matching:** by normalized email and Iranian mobile (main and additional numbers, common stored forms). Matched contacts get only their empty fields filled — nothing is overwritten or erased, their source is kept, the group is set only when empty, tags are added once. Email and mobile on different contacts, or several contacts per identifier → reported as a conflict, nothing changed. New contacts only with a first name and a valid email or Iranian mobile.
