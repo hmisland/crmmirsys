@@ -105,6 +105,9 @@ final class WooCommerceModule implements ModuleInterface, ProvidesServices
             $syncRepository,
             $this->contactSync,
             $categories,
+            $container->make(\App\Infrastructure\Integrations\IntegrationService::class),
+            $container->make(\App\Infrastructure\Integrations\IntegrationWorker::class),
+            $container->make(\App\Infrastructure\Integrations\IntegrationJobRepository::class),
         );
 
         $contactSync = $this->contactSync;

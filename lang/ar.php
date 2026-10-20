@@ -3333,4 +3333,12 @@ return [
     'cx.test.error.no_mobile' => 'لا يحتوي ملفك الشخصي على رقم جوال إيراني صالح. أضفه أولًا.',
     'cx.test.error.rate_limited' => 'عدد كبير من الدعوات التجريبية. حاول بعد ساعة.',
     'marketing.transactional.purpose.cx_survey_test' => 'استبيان رضا العملاء (تجريبي)',
+    'woocommerce.contacts.imported_customers' => 'عملاء المتجر المستوردون',
+    'woocommerce.contacts.imported_orders' => 'الطلبات المستوردة',
+    'woocommerce.contacts.no_customers_yet' => 'لم يُستورد أي عميل من هذا المتجر بعد. «مزامنة جهات الاتصال الآن» تجلب أولًا أحدث طلبات المتجر؛ وبعد ذلك تواصل المهمة الخلفية (cron، كل دقيقة) استيراد الطلبات الجديدة.',
+    'woocommerce.contacts.run_hint' => 'تجلب أحدث طلبات المتجر، ثم تنشئ جهات الاتصال من العملاء أو تكملها.',
+    'woocommerce.contacts.run_disabled_hint' => 'لاستخدام هذا الزر، فعّل «إنشاء جهات اتصال CRM وإكمالها…» واختر مجموعة جهات اتصال واحفظ الإعدادات أدناه.',
+    'woocommerce.contacts.import_done' => 'الاستيراد من المتجر: عولجت :jobs دفعات، و:remaining ما زالت في الطابور.',
+    'woocommerce.contacts.run_nothing' => 'لم يكن هناك عملاء بانتظار المزامنة (العملاء المستوردون حتى الآن: :customers).',
+    'woocommerce.contacts.import_error' => 'فشل الاستيراد من المتجر: :error',
 ];

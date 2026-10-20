@@ -3228,4 +3228,12 @@ return [
     'cx.test.error.no_mobile' => 'Votre profil n\'a pas de numéro mobile iranien valide. Ajoutez-le d\'abord.',
     'cx.test.error.rate_limited' => 'Trop d\'invitations de test. Réessayez dans une heure.',
     'marketing.transactional.purpose.cx_survey_test' => 'Enquête de satisfaction client (test)',
+    'woocommerce.contacts.imported_customers' => 'Clients de la boutique importés',
+    'woocommerce.contacts.imported_orders' => 'Commandes importées',
+    'woocommerce.contacts.no_customers_yet' => 'Aucun client n\'a encore été importé de cette boutique. « Synchroniser les contacts maintenant » récupère d\'abord les dernières commandes ; ensuite la tâche de fond (cron, chaque minute) continue d\'importer les nouvelles commandes.',
+    'woocommerce.contacts.run_hint' => 'Récupère les dernières commandes de la boutique, puis crée ou complète les contacts à partir des clients.',
+    'woocommerce.contacts.run_disabled_hint' => 'Pour utiliser ce bouton, cochez « Créer et compléter des contacts CRM… », choisissez un groupe de contacts et enregistrez les paramètres ci-dessous.',
+    'woocommerce.contacts.import_done' => 'Import boutique : :jobs lots traités, :remaining encore en file.',
+    'woocommerce.contacts.run_nothing' => 'Aucun client de la boutique n\'attendait de synchronisation (clients importés jusqu\'ici : :customers).',
+    'woocommerce.contacts.import_error' => 'L\'import depuis la boutique a échoué : :error',
 ];

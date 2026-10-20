@@ -106,7 +106,9 @@ Per shop: Organization settings → Integrations → shop → **Contact sync**
   name and a valid email or Iranian mobile; otherwise *skipped* with a reason.
 * **When:** right after an order/customer import (before the order event, so Customer Satisfaction gets the
   contact), by the cron task `woocommerce.contacts` (pending customers of enabled shops), and by "Sync contacts
-  now" (one bounded batch). A customer is pending only when its data changed; claims make runs idempotent.
+  now" — which first fetches the shop's latest orders (queues the order sync and runs this shop's queued jobs in
+  the request, ~15 s, same jobs and claims as cron; a job waiting to retry is made due now), then syncs one
+  bounded batch of customers. A customer is pending only when its data changed; claims make runs idempotent.
   Phone-only guest checkouts are now stored as customers (`guest-phone:` key).
 * **Orders on the contact page:** "Shop orders" panel (`contacts.view`) reads the existing `woo_orders` through
   `woo_customers.contact_id` — no copy of the orders.

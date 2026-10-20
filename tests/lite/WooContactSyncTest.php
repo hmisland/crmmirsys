@@ -11,16 +11,36 @@ declare(strict_types=1);
  * Tests run in order and share fixtures.
  */
 
+use App\Infrastructure\Http\HttpClientInterface;
+use App\Infrastructure\Http\HttpResponse;
+use App\Infrastructure\Integrations\IntegrationRegistry;
 use App\Infrastructure\Integrations\IntegrationService;
 use App\Infrastructure\Modules\OrganizationEntitlements;
 use App\Infrastructure\Repositories\OrganizationContext;
 use Modules\WooCommerce\ContactSync\ContactFieldMapper;
 use Modules\WooCommerce\ContactSync\ContactSyncSettingsService;
 use Modules\WooCommerce\ContactSync\CustomerContactSync;
+use Modules\WooCommerce\Api\WooCommerceClient;
 use Modules\WooCommerce\Services\WooOrderImporter;
+use Modules\WooCommerce\WooCommerceProvider;
 use Tests\Lite\Support\LocalApp;
 
 require_once __DIR__ . '/Support/LocalApp.php';
+
+/** The shop's REST API, faked: returns the queued order lists; never calls a real store. */
+final class FakeContactSyncShopHttp implements HttpClientInterface
+{
+    /** @var array<int, array> order lists to return, one per request */
+    public array $pages = [];
+    public int $calls = 0;
+
+    public function request(string $method, string $url, array $headers = [], ?string $body = null, int $timeoutSeconds = 15): HttpResponse
+    {
+        $this->calls++;
+
+        return new HttpResponse(200, (string) json_encode(array_shift($this->pages) ?? []), ['x-wp-totalpages' => '1']);
+    }
+}
 
 $h = new \stdClass();
 $h->ready = false;
@@ -62,6 +82,9 @@ $setup = function () use ($h): void {
     $h->categoryId = (int) $pdo->lastInsertId();
 
     $h->importer = $c->make(WooOrderImporter::class);
+    // The shop's API is always faked in this suite (the "Sync contacts now" button fetches orders first).
+    $h->http = new FakeContactSyncShopHttp();
+    $c->make(IntegrationRegistry::class)->register(new WooCommerceProvider(new WooCommerceClient($h->http), $h->importer, ['per_page' => 50, 'pages_per_job' => 1, 'initial_days' => 30]));
     $h->sync = $c->make(CustomerContactSync::class);
     $h->ready = true;
 };
@@ -426,6 +449,41 @@ return [
         LiteAssert::true($totals['created'] >= 1);
         LiteAssert::same('created', $customer('late.lite@example.test')['contact_sync_status']);
         LiteAssert::same($h->a->orgId, OrganizationContext::id(), 'context restored');
+    },
+
+    '"Sync contacts now" fetches the shop\'s latest orders first (no cron needed), then creates the contacts' => function () use ($setup, $h, $order, $customer) {
+        $setup();
+        $http = $h->http;
+        // A sync job left waiting to retry by an earlier failure must not block the button.
+        $h->a->pdo->exec("INSERT INTO integration_jobs (organization_id, connection_id, job_type, resource, dedupe_key, status, attempts, max_attempts, available_at, last_error)
+            VALUES ({$h->a->orgId}, {$h->connId}, 'sync', 'orders', 'sync:{$h->connId}:orders', 'pending', 1, 5, UTC_TIMESTAMP() + INTERVAL 1 HOUR, 'woocommerce.error.unreachable')
+            ON DUPLICATE KEY UPDATE status = 'pending', available_at = UTC_TIMESTAMP() + INTERVAL 1 HOUR");
+        $http->pages[] = [$order(['first_name' => 'Button', 'last_name' => 'Lite', 'email' => 'button.lite@example.test', 'phone' => '09125550123'])];
+        LiteAssert::same(null, $customer('button.lite@example.test'), 'not imported before the click');
+
+        $h->a->as($h->a->admin);
+        $res = $h->a->request('POST', '/org/integrations/' . $h->connId . '/contact-sync/run');
+        LiteAssert::same(302, $res['status']);
+        LiteAssert::true($http->calls >= 1, 'the shop was asked for its orders');
+        $row = $customer('button.lite@example.test');
+        LiteAssert::same('created', $row['contact_sync_status']);
+        LiteAssert::same('Button', $h->a->pdo->query('SELECT first_name FROM contacts WHERE id = ' . (int) $row['contact_id'])->fetchColumn());
+        $page = $h->a->request('GET', '/org/integrations/' . $h->connId . '/contact-sync')['body'];
+        LiteAssert::contains('Shop import:', $page, 'the result is reported');
+        LiteAssert::contains('Shop customers imported', $page);
+    },
+
+    'button off until the sync is on: the page says what to do; a shop without customers says why nothing happens' => function () use ($setup, $h) {
+        $setup();
+        $h->a->as($h->a->admin);
+        $h->a->pdo->exec("UPDATE woo_contact_sync_settings SET enabled = 0 WHERE connection_id = {$h->connId}");
+        LiteAssert::contains('To use this button', $h->a->request('GET', '/org/integrations/' . $h->connId . '/contact-sync')['body']);
+        $h->a->pdo->exec("UPDATE woo_contact_sync_settings SET enabled = 1 WHERE connection_id = {$h->connId}");
+
+        $created = $h->a->container()->make(IntegrationService::class)->create($h->a->admin, 'woocommerce', [
+            'name' => 'Empty lite shop', 'store_url' => 'https://empty-lite.example.com', 'consumer_key' => 'ck_' . str_repeat('c3', 20), 'consumer_secret' => 'cs_' . str_repeat('d4', 20),
+        ]);
+        LiteAssert::contains('No customers have been imported', $h->a->request('GET', '/org/integrations/' . (int) $created['id'] . '/contact-sync')['body']);
     },
 
     'rollback leaves no test rows behind' => function () use ($setup, $h) {

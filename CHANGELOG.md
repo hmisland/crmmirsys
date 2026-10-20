@@ -4,6 +4,12 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Fix — "Sync contacts now" did nothing without cron
+- **Cause:** the button only synced customers already imported from the shop; orders are imported by the background task (cron), and "Sync now" on the Integrations page only queues that import. Without a running cron there were no customers, so nothing happened. A sync waiting to retry after a failed attempt also blocked a second click. The button was also disabled (without explanation) until contact sync was switched on and saved.
+- **Now:** "Sync contacts now" first fetches the shop's latest orders — it queues the usual order sync and runs this shop's queued jobs right away (time-limited, same jobs and claims as cron, a job waiting to retry is retried now) — then syncs the contacts, and reports both results and any shop error.
+- The contact sync page shows imported customers / orders, the last successful import, the import queue and the last shop error; explains why the button is disabled; warns when no customer has been imported yet.
+- Core: `IntegrationWorker::runForConnection()`, `IntegrationJobRepository::claimForConnection()` / `makeSyncDueNow()`. No migrations. 8 new translation keys × 5 languages; `WooContactSyncTest` now 25 tests.
+
 ### Phase E — Test survey invitation
 - **Customer Satisfaction → Send a test invitation** (users with `cx.manage`): choose a survey (also one not switched on yet) and a ready channel; a real invitation with a single-use link goes to your own profile mobile or email through the normal invitation flow and Marketing delivery.
 - Clearly a test: "[Test]" at the start of the message, "Test" in the invitations list, purpose "survey (test)" in Marketing → Transactional.

@@ -10,6 +10,9 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Infrastructure\Integrations\IntegrationConnection;
 use App\Infrastructure\Integrations\IntegrationConnectionRepository;
+use App\Infrastructure\Integrations\IntegrationJobRepository;
+use App\Infrastructure\Integrations\IntegrationService;
+use App\Infrastructure\Integrations\IntegrationWorker;
 use App\Infrastructure\Repositories\ContactCategoryRepository;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
@@ -18,6 +21,7 @@ use Modules\WooCommerce\ContactSync\ContactSyncRepository;
 use Modules\WooCommerce\ContactSync\ContactSyncSettingsService;
 use Modules\WooCommerce\ContactSync\CustomerContactSync;
 use Modules\WooCommerce\WooCommerceProvider;
+use Modules\WooCommerce\WooDataRepository;
 
 use function App\Infrastructure\Theme\t;
 
@@ -31,6 +35,8 @@ final class ContactSyncController extends BaseController
 {
     private const MANUAL_BATCH = 300;
     private const MANUAL_SECONDS = 20;
+    /** Time for fetching the shop's latest orders before the contacts are synced. */
+    private const IMPORT_SECONDS = 15;
 
     public function __construct(
         TemplateEngine $templates,
@@ -39,6 +45,9 @@ final class ContactSyncController extends BaseController
         private readonly ContactSyncRepository $sync,
         private readonly CustomerContactSync $contactSync,
         private readonly ContactCategoryRepository $categories,
+        private readonly ?IntegrationService $integrations = null,
+        private readonly ?IntegrationWorker $worker = null,
+        private readonly ?IntegrationJobRepository $jobs = null,
     ) {
         parent::__construct($templates);
     }
@@ -64,6 +73,8 @@ final class ContactSyncController extends BaseController
             'form' => $form,
             'categories' => $this->categories->all(),
             'counts' => $this->sync->statusCounts($connection->id()),
+            'shopData' => (new WooDataRepository())->counts($connection->id()),
+            'jobs' => $this->jobs?->countsForConnection($connection->id(), $connection->organizationId()) ?? ['pending' => 0, 'running' => 0, 'failed' => 0],
             'problems' => $this->sync->problems($connection->id()),
             'errors' => (array) (json_decode((string) Session::getFlash('woo_contact_sync_errors'), true) ?? []),
         ]);
@@ -87,18 +98,51 @@ final class ContactSyncController extends BaseController
         return $this->redirect($back);
     }
 
-    /** "Sync contacts now": one bounded batch in this request (the cron task continues the rest). */
+    /**
+     * "Sync contacts now": first fetches the shop's latest orders (queues the
+     * usual order sync and runs this shop's queued jobs now, within a time
+     * limit — the same jobs cron runs, so nothing is processed twice), then
+     * syncs one bounded batch of customers. The cron task continues the rest.
+     */
     public function run(Request $request): Response
     {
         $connection = $this->connection($request);
         $back = '/org/integrations/' . $connection->id() . '/contact-sync';
+        $user = (array) CurrentUser::user();
+
+        $import = null;
+        if ($this->integrations !== null && $this->worker !== null) {
+            try {
+                $this->integrations->requestSync($user, $connection->id());
+                // A sync waiting to retry after a failure is tried again now: the user asked for it.
+                $this->jobs?->makeSyncDueNow($connection->id(), $connection->organizationId());
+                $import = $this->worker->runForConnection($connection->id(), $connection->organizationId(), self::IMPORT_SECONDS);
+            } catch (\DomainException $e) {
+                Session::setFlash('error', t($e->getMessage()));
+
+                return $this->redirect($back);
+            }
+        }
+        $importError = $this->connections->find($connection->id())?->toView()['last_error'] ?? null;
+
         $summary = $this->contactSync->processPending($connection->id(), self::MANUAL_BATCH, microtime(true) + self::MANUAL_SECONDS);
         if ($summary === null) {
             Session::setFlash('error', t('woocommerce.contacts.error.not_enabled'));
 
             return $this->redirect($back);
         }
-        Session::setFlash('success', t('woocommerce.contacts.run_done', array_map('strval', $summary)));
+        $messages = [];
+        if ($import !== null) {
+            $messages[] = t('woocommerce.contacts.import_done', ['jobs' => (string) $import['processed'], 'remaining' => (string) $import['remaining']]);
+        }
+        $handled = array_sum(array_intersect_key($summary, array_flip(CustomerContactSync::STATUSES)));
+        $messages[] = $handled > 0
+            ? t('woocommerce.contacts.run_done', array_map('strval', $summary))
+            : t('woocommerce.contacts.run_nothing', ['customers' => (string) ((new WooDataRepository())->counts($connection->id())['customers'])]);
+        if ($importError !== null && $importError !== '') {
+            $messages[] = t('woocommerce.contacts.import_error', ['error' => t((string) $importError)]);
+        }
+        Session::setFlash($importError !== null && $importError !== '' && $handled === 0 ? 'error' : 'success', implode(' ', $messages));
 
         return $this->redirect($back);
     }

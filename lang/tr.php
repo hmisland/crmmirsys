@@ -3333,4 +3333,12 @@ return [
     'cx.test.error.no_mobile' => 'Profilinizde geçerli bir İran cep numarası yok. Önce profilinize ekleyin.',
     'cx.test.error.rate_limited' => 'Çok fazla test daveti. Bir saat sonra tekrar deneyin.',
     'marketing.transactional.purpose.cx_survey_test' => 'Müşteri memnuniyeti anketi (test)',
+    'woocommerce.contacts.imported_customers' => 'İçe aktarılan mağaza müşterileri',
+    'woocommerce.contacts.imported_orders' => 'İçe aktarılan siparişler',
+    'woocommerce.contacts.no_customers_yet' => 'Bu mağazadan henüz müşteri içe aktarılmadı. "Kişileri şimdi eşitle" önce mağazanın son siparişlerini alır; ardından arka plan görevi (cron, her dakika) yeni siparişleri içe aktarmaya devam eder.',
+    'woocommerce.contacts.run_hint' => 'Mağazanın son siparişlerini alır, ardından müşterilerden kişi oluşturur veya kişileri tamamlar.',
+    'woocommerce.contacts.run_disabled_hint' => 'Bu düğmeyi kullanmak için "CRM kişileri oluştur ve tamamla…" seçeneğini işaretleyin, bir kişi grubu seçin ve aşağıdaki ayarları kaydedin.',
+    'woocommerce.contacts.import_done' => 'Mağaza içe aktarımı: :jobs parti işlendi, :remaining hâlâ kuyrukta.',
+    'woocommerce.contacts.run_nothing' => 'Eşitlenmeyi bekleyen mağaza müşterisi yoktu (şimdiye kadar içe aktarılan müşteri: :customers).',
+    'woocommerce.contacts.import_error' => 'Mağazadan içe aktarma başarısız: :error',
 ];

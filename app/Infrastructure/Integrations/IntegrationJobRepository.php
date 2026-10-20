@@ -116,6 +116,35 @@ final class IntegrationJobRepository extends BaseRepository
     }
 
     /** @return array{pending: int, running: int, failed: int} for one connection (settings page) */
+    /**
+     * A user asked to sync now: this connection's waiting sync jobs (e.g. one
+     * backing off after a failed attempt) become due immediately.
+     */
+    public function makeSyncDueNow(int $connectionId, int $organizationId): void
+    {
+        $this->query(
+            "UPDATE integration_jobs SET available_at = :now WHERE connection_id = :conn AND organization_id = :org AND status = 'pending' AND job_type = :type AND available_at > :now2",
+            ['now' => date('Y-m-d H:i:s'), 'now2' => date('Y-m-d H:i:s'), 'conn' => $connectionId, 'org' => $organizationId, 'type' => IntegrationJob::SYNC]
+        );
+    }
+
+    /** Like claim(), limited to one connection of one organization (an on-demand run from its settings page). */
+    public function claimForConnection(int $connectionId, int $organizationId, int $limit): array
+    {
+        $token = bin2hex(random_bytes(16));
+        $this->query(
+            "UPDATE integration_jobs SET status = 'running', locked_at = :now, locked_by = :token, attempts = attempts + 1
+             WHERE status = 'pending' AND available_at <= :now2 AND connection_id = :conn AND organization_id = :org
+             ORDER BY available_at, id LIMIT " . max(1, $limit),
+            ['now' => date('Y-m-d H:i:s'), 'now2' => date('Y-m-d H:i:s'), 'token' => $token, 'conn' => $connectionId, 'org' => $organizationId]
+        );
+
+        return array_map(
+            fn (array $row) => IntegrationJob::fromRow($row),
+            $this->findMany('SELECT * FROM integration_jobs WHERE locked_by = :token ORDER BY id', ['token' => $token])
+        );
+    }
+
     public function countsForConnection(int $connectionId, int $organizationId): array
     {
         $rows = $this->findMany(

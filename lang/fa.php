@@ -3333,4 +3333,12 @@ return [
     'cx.test.error.no_mobile' => 'پروفایل شما شمارهٔ موبایل ایرانی معتبر ندارد. ابتدا آن را در پروفایل ثبت کنید.',
     'cx.test.error.rate_limited' => 'تعداد دعوت‌نامه‌های آزمایشی زیاد است. یک ساعت دیگر دوباره تلاش کنید.',
     'marketing.transactional.purpose.cx_survey_test' => 'نظرسنجی رضایت مشتری (آزمایشی)',
+    'woocommerce.contacts.imported_customers' => 'مشتریان واردشده از فروشگاه',
+    'woocommerce.contacts.imported_orders' => 'سفارش‌های واردشده',
+    'woocommerce.contacts.no_customers_yet' => 'هنوز هیچ مشتری‌ای از این فروشگاه وارد نشده است. «همگام‌سازی مخاطبین همین حالا» ابتدا آخرین سفارش‌های فروشگاه را دریافت می‌کند؛ پس از آن کار پس‌زمینه (cron، هر دقیقه) سفارش‌های جدید را وارد می‌کند.',
+    'woocommerce.contacts.run_hint' => 'آخرین سفارش‌های فروشگاه را دریافت می‌کند و سپس از مشتریان، مخاطب می‌سازد یا مخاطبان را تکمیل می‌کند.',
+    'woocommerce.contacts.run_disabled_hint' => 'برای استفاده از این دکمه، گزینهٔ «ایجاد و تکمیل مخاطبین CRM…» را تیک بزنید، یک گروه مخاطبین انتخاب کنید و تنظیمات پایین را ذخیره کنید.',
+    'woocommerce.contacts.import_done' => 'دریافت از فروشگاه: :jobs بسته پردازش شد، :remaining هنوز در صف.',
+    'woocommerce.contacts.run_nothing' => 'هیچ مشتری‌ای برای همگام‌سازی منتظر نبود (مشتریان واردشده تاکنون: :customers).',
+    'woocommerce.contacts.import_error' => 'دریافت اطلاعات از فروشگاه ناموفق بود: :error',
 ];

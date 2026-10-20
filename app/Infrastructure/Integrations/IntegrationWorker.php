@@ -62,6 +62,33 @@ final class IntegrationWorker
         return $stats;
     }
 
+    /**
+     * On demand (a user pressed a button on the connection's page): process
+     * only this connection's queued jobs, within the time budget — the same
+     * claims, checks and job handling as the cron run, so cron and this can
+     * never process one job twice.
+     *
+     * @return array{processed: int, failed: int, remaining: int}
+     */
+    public function runForConnection(int $connectionId, int $organizationId, int $budgetSeconds): array
+    {
+        $deadline = time() + max(1, $budgetSeconds);
+        $this->entitlements->reset();
+        $stats = ['processed' => 0, 'failed' => 0];
+        while (time() < $deadline) {
+            $batch = $this->jobs->claimForConnection($connectionId, $organizationId, self::CLAIM_SIZE);
+            if ($batch === []) {
+                break;
+            }
+            foreach ($batch as $job) {
+                $stats[$this->process($job) ? 'processed' : 'failed']++;
+            }
+        }
+        $counts = $this->jobs->countsForConnection($connectionId, $organizationId);
+
+        return $stats + ['remaining' => $counts['pending'] + $counts['running']];
+    }
+
     public function scheduleDueSyncs(): int
     {
         $queued = 0;

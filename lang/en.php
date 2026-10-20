@@ -3342,4 +3342,12 @@ return [
     'cx.test.error.no_mobile' => 'Your profile has no valid Iranian mobile number. Add it to your profile first.',
     'cx.test.error.rate_limited' => 'Too many test invitations. Try again in an hour.',
     'marketing.transactional.purpose.cx_survey_test' => 'Customer satisfaction survey (test)',
+    'woocommerce.contacts.imported_customers' => 'Shop customers imported',
+    'woocommerce.contacts.imported_orders' => 'Orders imported',
+    'woocommerce.contacts.no_customers_yet' => 'No customers have been imported from this shop yet. "Sync contacts now" first fetches the shop\'s latest orders; after that the background task (cron, every minute) keeps importing new orders.',
+    'woocommerce.contacts.run_hint' => 'Fetches the shop\'s latest orders, then creates or completes contacts from the customers.',
+    'woocommerce.contacts.run_disabled_hint' => 'To use this button, tick "Create and complete CRM contacts…", choose a contact group and save the settings below.',
+    'woocommerce.contacts.import_done' => 'Shop import: :jobs batches processed, :remaining still queued.',
+    'woocommerce.contacts.run_nothing' => 'No shop customers were waiting to be synced (customers imported so far: :customers).',
+    'woocommerce.contacts.import_error' => 'Importing from the shop failed: :error',
 ];

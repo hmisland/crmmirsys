@@ -10,6 +10,8 @@
  * @var array[] $categories contact groups of the organization
  * @var array<string, int> $counts customer sync status => count
  * @var array[] $problems skipped / conflicting customers
+ * @var array{customers: int, orders: int, products: int} $shopData rows imported from the shop so far
+ * @var array{pending: int, running: int, failed: int} $jobs the shop's import queue
  * @var array<string, string> $errors
  */
 
@@ -46,6 +48,30 @@ $statusTone = ['created' => 'active', 'updated' => 'active', 'matched' => 'sent'
     <?php if (!empty($form['last_error'])): ?>
         <div class="alert alert--error"><?= e(t((string) $form['last_error'])) ?></div>
     <?php endif; ?>
+    <?php if (!empty($connection['last_error'])): ?>
+        <div class="alert alert--error"><?= e(t('woocommerce.contacts.import_error', ['error' => t((string) $connection['last_error'])])) ?></div>
+    <?php endif; ?>
+    <dl class="fact-row">
+        <div class="fact">
+            <dt><?= icon('package') ?><?= e(t('woocommerce.contacts.imported_customers')) ?></dt>
+            <dd><?= e((string) $shopData['customers']) ?></dd>
+        </div>
+        <div class="fact">
+            <dt><?= e(t('woocommerce.contacts.imported_orders')) ?></dt>
+            <dd><?= e((string) $shopData['orders']) ?></dd>
+        </div>
+        <div class="fact">
+            <dt><?= icon('check-circle') ?><?= e(t('integrations.last_success')) ?></dt>
+            <dd><span class="ltr"><?= e(local_time($connection['last_successful_sync_at']) ?? '—') ?></span></dd>
+        </div>
+        <div class="fact">
+            <dt><?= icon('list') ?><?= e(t('integrations.queue')) ?></dt>
+            <dd><?= e(t('integrations.queue_counts', ['pending' => (string) ($jobs['pending'] + $jobs['running']), 'failed' => (string) $jobs['failed']])) ?></dd>
+        </div>
+    </dl>
+    <?php if ($shopData['customers'] === 0): ?>
+        <div class="alert alert--warning"><?= e(t('woocommerce.contacts.no_customers_yet')) ?></div>
+    <?php endif; ?>
     <dl class="fact-row">
         <div class="fact">
             <dt><?= icon('clock') ?><?= e(t('woocommerce.contacts.last_run')) ?></dt>
@@ -67,6 +93,7 @@ $statusTone = ['created' => 'active', 'updated' => 'active', 'matched' => 'sent'
             <button type="submit" class="btn btn--primary"<?= $form['enabled'] ? '' : ' disabled' ?>><?= icon('refresh') ?><?= e(t('woocommerce.contacts.run')) ?></button>
         </form>
     </div>
+    <div class="field-hint"><?= e(t($form['enabled'] ? 'woocommerce.contacts.run_hint' : 'woocommerce.contacts.run_disabled_hint')) ?></div>
 </section>
 
 <form method="post" action="/org/integrations/<?= e($id) ?>/contact-sync" class="card card--form">
