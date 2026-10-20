@@ -20,7 +20,8 @@ final class PlatformTicketRepository extends BaseRepository
     public const SIDE_ORGANIZATION = 'organization';
     public const SIDE_PLATFORM = 'platform';
 
-    public function create(int $organizationId, int $userId, string $subject, string $category, string $priority, string $body): int
+    /** @return array{0: int, 1: int} the new ticket id and its first message id */
+    public function create(int $organizationId, int $userId, string $subject, string $category, string $priority, string $body): array
     {
         $now = date('Y-m-d H:i:s');
         $id = $this->insertGetId('platform_tickets', [
@@ -33,9 +34,7 @@ final class PlatformTicketRepository extends BaseRepository
             'last_activity_at' => $now,
             'created_at' => $now,
         ]);
-        $this->addMessage($id, $userId, self::SIDE_ORGANIZATION, $body);
-
-        return $id;
+        return [$id, $this->addMessage($id, $userId, self::SIDE_ORGANIZATION, $body)];
     }
 
     public function addMessage(int $ticketId, int $userId, string $side, string $body): int

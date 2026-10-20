@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Controllers;
 
 use App\Application\Services\PlatformTicketService;
+use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
@@ -47,12 +48,16 @@ final class PlatformTicketController extends BaseController
 
     public function store(Request $request): Response
     {
+        $failed = 0;
         try {
-            $id = $this->tickets->create((array) CurrentUser::user(), $request->all());
+            $id = $this->tickets->create((array) CurrentUser::user(), $request->all(), $request->files('attachments'), $failed);
         } catch (ValidationException $e) {
             return $this->form($e->errors, $request->all());
         }
         Session::setFlash('success', t('platform_tickets.created', ['id' => (string) $id]));
+        if ($failed > 0) {
+            Session::setFlash('error', t('platform_tickets.error.attachment_not_saved', ['count' => (string) $failed]));
+        }
 
         return $this->redirect('/org/tickets/' . $id);
     }
@@ -68,8 +73,11 @@ final class PlatformTicketController extends BaseController
     {
         $id = (int) $request->attribute('id');
         try {
-            $this->tickets->replyAsOrganization((array) CurrentUser::user(), $id, (string) $request->input('body', ''));
+            $failed = $this->tickets->replyAsOrganization((array) CurrentUser::user(), $id, (string) $request->input('body', ''), $request->files('attachments'));
             Session::setFlash('success', t('platform_tickets.reply_sent'));
+            if ($failed > 0) {
+                Session::setFlash('error', t('platform_tickets.error.attachment_not_saved', ['count' => (string) $failed]));
+            }
         } catch (ValidationException $e) {
             Session::setFlash('error', t((string) (array_values($e->errors)[0][0] ?? 'platform_tickets.error.body')));
         }
@@ -88,6 +96,23 @@ final class PlatformTicketController extends BaseController
         }
 
         return $this->redirect('/org/tickets/' . $id);
+    }
+
+    /** A file of this ticket; 404 unless it belongs to one of the ticket's messages (and the ticket to the viewer). */
+    public function download(Request $request): Response
+    {
+        $found = $this->tickets->attachment((array) CurrentUser::user(), (int) $request->attribute('id'), (int) $request->attribute('attachmentId'));
+        if ($found === null) {
+            throw new NotFoundException();
+        }
+        $attachment = $found['attachment'];
+        $name = str_replace(['"', "\r", "\n"], '', (string) $attachment['filename']);
+
+        return Response::html((string) file_get_contents($found['path']))
+            ->withHeader('Content-Type', (string) $attachment['mime_type'])
+            ->withHeader('Content-Disposition', 'attachment; filename="' . $name . '"; filename*=UTF-8\'\'' . rawurlencode((string) $attachment['filename']))
+            ->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('Cache-Control', 'private, no-store');
     }
 
     private function form(array $errors, array $old): Response

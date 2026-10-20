@@ -13,6 +13,7 @@ use App\Infrastructure\Localization\Translator;
 use App\Infrastructure\Repositories\AdminAnnouncementRepository;
 use App\Infrastructure\Repositories\ModuleActivationRequestRepository;
 use App\Infrastructure\Repositories\ModuleRepository;
+use App\Infrastructure\Repositories\OrganizationContext;
 use App\Infrastructure\Repositories\UserRepository;
 
 /**
@@ -132,7 +133,7 @@ final class ModuleActivationRequestService
         if ($id === null) {
             throw new ValidationException(['module' => ['catalog.error.already_pending']]);
         }
-        $this->timeline->record('organization', $organizationId, 'module_request.created', 'Activation requested: ' . $moduleKey, (int) $user['id']);
+        $this->audit($organizationId, 'module_request.created', 'Activation requested: ' . $moduleKey, (int) $user['id']);
     }
 
     // --- Super Admin side ---------------------------------------------------------------
@@ -183,7 +184,7 @@ final class ModuleActivationRequestService
             return [$request, $wasActive];
         });
 
-        $this->timeline->record('organization', (int) $request['organization_id'], 'module_request.approved', 'Activation approved: ' . $request['module_key'], (int) $user['id']);
+        $this->audit((int) $request['organization_id'], 'module_request.approved', 'Activation approved: ' . $request['module_key'], (int) $user['id']);
         $this->notify($request, $user, 'approved', null);
 
         return $wasActive;
@@ -206,7 +207,7 @@ final class ModuleActivationRequestService
             return $request;
         });
 
-        $this->timeline->record('organization', (int) $request['organization_id'], 'module_request.rejected', 'Activation rejected: ' . $request['module_key'], (int) $user['id']);
+        $this->audit((int) $request['organization_id'], 'module_request.rejected', 'Activation rejected: ' . $request['module_key'], (int) $user['id']);
         $this->notify($request, $user, 'rejected', $reason !== '' ? $reason : null);
     }
 
@@ -216,6 +217,15 @@ final class ModuleActivationRequestService
     }
 
     // --- Internals --------------------------------------------------------------------
+
+    /**
+     * The organization's timeline, written inside that organization's
+     * context: a Super Admin request has no organization of its own.
+     */
+    private function audit(int $organizationId, string $type, string $description, int $userId): void
+    {
+        OrganizationContext::runAs($organizationId, fn () => $this->timeline->record('organization', $organizationId, $type, $description, $userId));
+    }
 
     private function pendingRequest(int $requestId): array
     {

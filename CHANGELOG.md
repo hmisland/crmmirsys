@@ -4,6 +4,12 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Fix — tickets and module requests: Super Admin actions gave a 500; ticket list alignment; ticket attachments
+- **500 after a Super Admin reply** (the reply was saved): the organization's timeline was written outside any organization context — a Super Admin has none — so the request failed after saving; reloading then hit the POST-only reply address (404). Timeline entries of tickets and of module activation requests (approve / reject had the same flaw) are now written inside the ticket's / request's organization. Tests now act as a real Super Admin (no organization context).
+- **Ticket lists:** the number and date cells were left-to-right as a whole, so in Persian/Arabic they drifted away from their column headers; only the value is left-to-right now (tickets, module requests, ticket facts).
+- **Attachments on tickets** (new ticket and every reply, both sides): txt, csv, jpg, png, webp; at most 5 MB each and 5 per message; the file's real content must match its extension (e.g. an HTML page renamed .txt is refused). Stored with the shared attachment service (random name, outside the web root); listed under each message; downloaded only through the ticket page's own checks (another organization or another ticket's address → 404). If a file cannot be stored after the message is saved, the message stays and the sender is told.
+- No migrations (attachments use the existing `attachments` table). 7 new translation keys × 5 languages. `PlatformTicketTest` now 15; 9 mutation checks.
+
 ### Tickets to the platform team (organization admin → Super Admin)
 - **Help › Send a ticket** (`/org/tickets`, `organization.edit`): organization admins send a ticket (subject, category, priority, message) and follow the conversation; they can reply and close. Only their own organization's tickets. A **New ticket** button on the Help page; the menu item sits right under Help and shows how many tickets the platform team has answered.
 - **Super Admin → Tickets** (`/admin/tickets`): every organization's tickets, waiting ones first (urgent on top); search by subject, organization or number; filter by status; reply (optionally closing), close / reopen, change priority. The menu shows how many tickets are waiting.

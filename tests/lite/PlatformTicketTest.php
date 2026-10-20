@@ -68,6 +68,7 @@ return [
         $setup();
         $a = $h->a;
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         LiteAssert::same(200, $a->request('GET', '/org/tickets/create')['status']);
         $response = $a->request('POST', '/org/tickets', [], $valid);
         $h->id = (int) $a->pdo->query('SELECT MAX(id) FROM platform_tickets')->fetchColumn();
@@ -97,6 +98,7 @@ return [
         LiteAssert::same('platform_tickets.error.priority', ($h->errorOf)(fn () => $h->svc->create($a->admin, ['priority' => 'low'] + $valid)));
         LiteAssert::same('platform_tickets.error.body', ($h->errorOf)(fn () => $h->svc->create($a->admin, ['body' => str_repeat('x', 5001)] + $valid)));
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         $form = $a->request('POST', '/org/tickets', [], ['body' => ''] + $valid);
         LiteAssert::same(null, $form['location']);
         LiteAssert::contains('Write a message (up to 5000 characters).', $form['body']);
@@ -119,7 +121,8 @@ return [
             $a->as($a->member);
             LiteAssert::same('forbidden', $a->outcome('GET', '/org/tickets'));
         }
-        LiteAssert::same('csrf', (function () use ($a, $valid) { $a->as($a->admin); return $a->outcome('POST', '/org/tickets', [], ['_csrf' => 'bad'] + $valid); })());
+        LiteAssert::same('csrf', (function () use ($a, $valid) { $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId); return $a->outcome('POST', '/org/tickets', [], ['_csrf' => 'bad'] + $valid); })());
     },
 
     'organization isolation: another organization never sees or touches the ticket' => function () use ($setup, $h) {
@@ -137,6 +140,7 @@ return [
         $setup();
         $a = $h->a;
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         foreach (['/admin/tickets', '/admin/tickets/' . $h->id] as $path) {
             LiteAssert::same('forbidden', $a->outcome('GET', $path), $path);
         }
@@ -157,6 +161,7 @@ return [
         LiteAssert::same(2, $h->svc->openCount());
 
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $list = $a->request('GET', '/admin/tickets');
         LiteAssert::same(200, $list['status']);
         LiteAssert::contains('href="/admin/tickets/' . $h->id . '"', $list['body']);
@@ -169,6 +174,7 @@ return [
         $a = $h->a;
         $before = ($h->inbox)();
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $a->request('POST', '/admin/tickets/' . $h->id . '/reply', [], ['body' => 'Enable the Marketing module first.']);
         LiteAssert::same('Reply sent; the sender has been notified.', Session::getFlash('success'));
         LiteAssert::same('answered', ($h->ticket)($h->id)['status']);
@@ -178,6 +184,7 @@ return [
         LiteAssert::same(1, (int) $a->pdo->query("SELECT COUNT(*) FROM timeline_events WHERE subject_type = 'organization' AND subject_id = {$a->orgId} AND type = 'platform_ticket.answered'")->fetchColumn());
 
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         $page = $a->request('GET', '/org/tickets/' . $h->id)['body'];
         LiteAssert::contains('Enable the Marketing module first.', $page);
         LiteAssert::contains('note--platform', $page);
@@ -197,6 +204,7 @@ return [
         $setup();
         $a = $h->a;
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $a->request('POST', '/admin/tickets/' . $h->id . '/reply', [], ['body' => 'Solved.', 'close' => '1']);
         $t = ($h->ticket)($h->id);
         LiteAssert::same('closed', $t['status']);
@@ -205,6 +213,7 @@ return [
         LiteAssert::same('platform_tickets.error.already_closed', ($h->errorOf)(fn () => $h->svc->closeAsOrganization($a->admin, $h->id)));
 
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         LiteAssert::contains('Replying reopens it.', $a->request('GET', '/org/tickets/' . $h->id)['body']);
         $h->svc->replyAsOrganization($a->admin, $h->id, 'One more question.');
         $t = ($h->ticket)($h->id);
@@ -212,6 +221,7 @@ return [
         LiteAssert::same(null, $t['closed_at']);
 
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $a->request('POST', '/admin/tickets/' . $h->id . '/status', [], ['status' => 'closed']);
         LiteAssert::same('closed', ($h->ticket)($h->id)['status']);
         $a->request('POST', '/admin/tickets/' . $h->id . '/status', [], ['status' => 'open']);
@@ -229,6 +239,7 @@ return [
         $setup();
         $a = $h->a;
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         $a->request('POST', '/org/tickets/' . $h->urgent . '/close');
         LiteAssert::same('Ticket closed.', Session::getFlash('success'));
         $t = ($h->ticket)($h->urgent);
@@ -240,11 +251,13 @@ return [
         $setup();
         $a = $h->a;
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         $help = $a->request('GET', '/help')['body'];
         LiteAssert::contains('href="/org/tickets/create"', $help, 'button on the Help page');
         LiteAssert::contains('href="/org/tickets" class="nav-item"', $help, 'menu item under Help');
         LiteAssert::true(strpos($help, 'href="/help" class="nav-item"') < strpos($help, 'href="/org/tickets" class="nav-item"'), 'listed right under Help');
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         LiteAssert::contains('href="/admin/tickets" class="nav-item"', $a->request('GET', '/help')['body']);
     },
 
@@ -259,6 +272,92 @@ return [
         LiteAssert::same('platform_tickets.error.rate_limited', ($h->errorOf)(fn () => $h->svc->create($a->admin, $valid)));
         $a->pdo->exec("UPDATE platform_tickets SET created_at = DATE_SUB(NOW(), INTERVAL 2 HOUR) WHERE created_by_user_id = {$a->admin['id']}");
         LiteAssert::true($h->svc->create($a->admin, $valid) > 0, 'allowed again an hour later');
+    },
+
+    'list rows line up with their headers (no ltr direction on a table cell)' => function () use ($setup, $h) {
+        $setup();
+        $a = $h->a;
+        $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
+        $org = $a->request('GET', '/org/tickets')['body'];
+        LiteAssert::contains('<td><span class="ltr">#' . $h->id . '</span></td>', $org);
+        LiteAssert::same(0, preg_match('/<td[^>]*class="[^"]*\bltr\b/', $org), 'no ltr table cell (org list)');
+        $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
+        LiteAssert::same(0, preg_match('/<td[^>]*class="[^"]*\bltr\b/', $a->request('GET', '/admin/tickets')['body']), 'no ltr table cell (admin list)');
+        LiteAssert::same(0, preg_match('/<d[dt][^>]*class="[^"]*\bltr\b/', $a->request('GET', '/admin/tickets/' . $h->id)['body']), 'no ltr fact cell');
+    },
+
+    'attachments: type, real content, size and count are checked before anything is saved' => function () use ($setup, $h, $valid) {
+        $setup();
+        $a = $h->a;
+        $dir = sys_get_temp_dir() . '/lite-ticket-' . bin2hex(random_bytes(4));
+        mkdir($dir);
+        $file = function (string $name, string $content) use ($dir): array {
+            file_put_contents($dir . '/' . $name, $content);
+
+            return ['name' => $name, 'tmp_name' => $dir . '/' . $name, 'error' => UPLOAD_ERR_OK, 'size' => strlen($content)];
+        };
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+        $messages = fn (): int => (int) $a->pdo->query("SELECT COUNT(*) FROM platform_ticket_messages WHERE ticket_id = {$h->id}")->fetchColumn();
+        $before = $messages();
+        $reply = fn (array $files) => ($h->errorOf)(fn () => $h->svc->replyAsOrganization($a->admin, $h->id, 'With a file', $files));
+        LiteAssert::same('platform_tickets.error.attachment_type', $reply([$file('report.pdf', '%PDF-1.4')]), 'pdf not allowed');
+        LiteAssert::same('platform_tickets.error.attachment_type', $reply([$file('page.txt', "<!DOCTYPE html><html><body><script>alert(1)</script></body></html>")]), 'html disguised as txt');
+        LiteAssert::same('platform_tickets.error.attachment_type', $reply([$file('fake.png', 'just text')]), 'text disguised as png');
+        LiteAssert::same('platform_tickets.error.attachment_size', $reply([['size' => PlatformTicketService::ATTACHMENT_MAX_BYTES + 1] + $file('big.txt', 'x')]));
+        LiteAssert::same('platform_tickets.error.attachment_size', $reply([['error' => UPLOAD_ERR_INI_SIZE] + $file('big2.txt', 'x')]));
+        LiteAssert::same('platform_tickets.error.attachment_count', $reply(array_map(fn ($i) => $file("n{$i}.txt", 'note'), range(1, 6))));
+        LiteAssert::same($before, $messages(), 'nothing saved when a file is refused');
+        LiteAssert::same('platform_tickets.error.attachment_type', ($h->errorOf)(fn () => $h->svc->create($a->admin, $valid, [$file('x.exe', 'MZ')])));
+
+        // Allowed files pass every check; the shared AttachmentService then refuses
+        // a file that was not really uploaded (CLI) — the reply is kept and the
+        // failure is counted, so the sender is told instead of resending.
+        $failed = $h->svc->replyAsOrganization($a->admin, $h->id, 'With good files', [$file('notes.txt', "hello\n"), $file('list.csv', "a,b\n1,2\n"), $file('dot.png', $png)]);
+        LiteAssert::same(3, $failed);
+        LiteAssert::same($before + 1, $messages(), 'reply saved');
+        array_map('unlink', glob($dir . '/*'));
+        rmdir($dir);
+    },
+
+    'attachments: listed on both sides, downloaded only through the ticket' => function () use ($setup, $h, $valid) {
+        $setup();
+        $a = $h->a;
+        $messageId = (int) $a->pdo->query("SELECT id FROM platform_ticket_messages WHERE ticket_id = {$h->id} ORDER BY id LIMIT 1")->fetchColumn();
+        $stored = $a->orgId . '/lite-ticket-' . bin2hex(random_bytes(6)) . '.txt';
+        $root = dirname(__DIR__, 2) . '/storage/uploads';
+        @mkdir(dirname($root . '/' . $stored), 0755, true);
+        file_put_contents($root . '/' . $stored, "ticket file\n");
+        $a->pdo->prepare("INSERT INTO attachments (organization_id, attachable_type, attachable_id, user_id, filename, stored_path, mime_type, size) VALUES (?, 'platform_ticket_message', ?, ?, 'notes.txt', ?, 'text/plain', 12)")
+            ->execute([$a->orgId, $messageId, $a->admin['id'], $stored]);
+        $att = (int) $a->pdo->lastInsertId();
+        try {
+            $a->as($a->admin);
+            \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
+            $page = $a->request('GET', '/org/tickets/' . $h->id)['body'];
+            LiteAssert::contains('href="/org/tickets/' . $h->id . '/attachments/' . $att . '"', $page);
+            LiteAssert::contains('notes.txt', $page);
+            $download = $a->request('GET', '/org/tickets/' . $h->id . '/attachments/' . $att);
+            LiteAssert::same(200, $download['status']);
+            LiteAssert::same("ticket file\n", $download['body']);
+            // Another ticket's URL with this file, an unknown file: 404.
+            LiteAssert::same('notfound', $a->outcome('GET', '/org/tickets/' . $h->urgent . '/attachments/' . $att));
+            LiteAssert::same('notfound', $a->outcome('GET', '/org/tickets/' . $h->id . '/attachments/999999'));
+            LiteAssert::same(null, $h->svc->attachment(array_merge($a->admin, ['organization_id' => $a->otherOrgId]), $h->id, $att), 'other organization');
+            $a->as($a->noRole);
+            LiteAssert::same('forbidden', $a->outcome('GET', '/org/tickets/' . $h->id . '/attachments/' . $att));
+
+            $a->as($h->super);
+            \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
+            LiteAssert::contains('href="/admin/tickets/' . $h->id . '/attachments/' . $att . '"', $a->request('GET', '/admin/tickets/' . $h->id)['body']);
+            LiteAssert::same("ticket file\n", $a->request('GET', '/admin/tickets/' . $h->id . '/attachments/' . $att)['body']);
+            $a->as($a->admin);
+            \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
+            LiteAssert::same('forbidden', $a->outcome('GET', '/admin/tickets/' . $h->id . '/attachments/' . $att));
+        } finally {
+            @unlink($root . '/' . $stored);
+        }
     },
 
     'ticket keys are translated in all five languages' => function () {

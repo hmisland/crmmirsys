@@ -48,13 +48,13 @@ use function App\Infrastructure\Theme\t;
         <?php endif; ?>
         <?php foreach ($tickets as $ticket): ?>
             <tr>
-                <td class="ltr">#<?= e($ticket['id']) ?></td>
+                <td><span class="ltr">#<?= e($ticket['id']) ?></span></td>
                 <td><a href="/admin/tickets/<?= e($ticket['id']) ?>"><?= e($ticket['subject']) ?></a></td>
                 <td><?= e($ticket['organization_name']) ?></td>
                 <td><?= e(t('platform_tickets.category.' . $ticket['category'])) ?></td>
                 <td><?= badge(t('platform_tickets.priority.' . $ticket['priority']), $ticket['priority'] === 'normal' ? null : ($ticket['priority'] === 'urgent' ? 'failed' : 'pending')) ?></td>
                 <td><?= badge(t('platform_tickets.status.' . $ticket['status']), ['open' => 'open', 'answered' => 'pending'][$ticket['status']] ?? null) ?></td>
-                <td class="nowrap ltr"><?= e(local_time($ticket['last_activity_at'])) ?></td>
+                <td class="nowrap"><span class="ltr"><?= e(local_time($ticket['last_activity_at'])) ?></span></td>
             </tr>
         <?php endforeach; ?>
         </tbody>

@@ -6,6 +6,7 @@ namespace App\Application\Controllers;
 
 use App\Application\Services\PlatformTicketService;
 use App\Core\Exceptions\AuthorizationException;
+use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Request;
 use App\Core\Response;
@@ -51,7 +52,13 @@ final class PlatformTicketAdminController extends BaseController
     {
         $id = (int) $request->attribute('id');
         $close = (string) $request->input('close', '') === '1';
-        $this->attempt(fn () => $this->tickets->replyAsPlatform($this->superAdmin(), $id, (string) $request->input('body', ''), $close), $close ? 'platform_tickets.admin.replied_closed' : 'platform_tickets.admin.replied');
+        $failed = 0;
+        $this->attempt(function () use ($id, $request, $close, &$failed): void {
+            $failed = $this->tickets->replyAsPlatform($this->superAdmin(), $id, (string) $request->input('body', ''), $close, $request->files('attachments'));
+        }, $close ? 'platform_tickets.admin.replied_closed' : 'platform_tickets.admin.replied');
+        if ($failed > 0) {
+            Session::setFlash('error', t('platform_tickets.error.attachment_not_saved', ['count' => (string) $failed]));
+        }
 
         return $this->redirect('/admin/tickets/' . $id . '#reply');
     }
@@ -71,6 +78,23 @@ final class PlatformTicketAdminController extends BaseController
         $this->attempt(fn () => $this->tickets->setPriority($this->superAdmin(), $id, (string) $request->input('priority', '')), 'platform_tickets.admin.priority_saved');
 
         return $this->redirect('/admin/tickets/' . $id);
+    }
+
+    /** A file of this ticket; 404 unless it belongs to one of the ticket's messages (and the ticket to the viewer). */
+    public function download(Request $request): Response
+    {
+        $found = $this->tickets->attachment($this->superAdmin(), (int) $request->attribute('id'), (int) $request->attribute('attachmentId'));
+        if ($found === null) {
+            throw new NotFoundException();
+        }
+        $attachment = $found['attachment'];
+        $name = str_replace(['"', "\r", "\n"], '', (string) $attachment['filename']);
+
+        return Response::html((string) file_get_contents($found['path']))
+            ->withHeader('Content-Type', (string) $attachment['mime_type'])
+            ->withHeader('Content-Disposition', 'attachment; filename="' . $name . '"; filename*=UTF-8\'\'' . rawurlencode((string) $attachment['filename']))
+            ->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('Cache-Control', 'private, no-store');
     }
 
     private function attempt(callable $action, string $successKey): void

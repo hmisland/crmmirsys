@@ -142,6 +142,7 @@ $platformTickets = new \App\Application\Services\PlatformTicketService(
     new \App\Infrastructure\Repositories\AdminAnnouncementRepository(),
     new \App\Infrastructure\Repositories\UserRepository(),
     dirname(__DIR__) . '/lang',
+    $container->make(\App\Application\Services\AttachmentService::class),
 );
 $container->instance(\App\Application\Services\PlatformTicketService::class, $platformTickets);
 $platformTicketController = new \App\Application\Controllers\PlatformTicketController($container->make(TemplateEngine::class), $platformTickets);
@@ -339,6 +340,7 @@ $router->group('/org', [new AuthMiddleware()], function (Router $router) use (
     $router->get('/tickets/{id}', fn (Request $r) => $platformTicketController->show($r), [new RbacMiddleware('organization.edit')]);
     $router->post('/tickets/{id}/reply', fn (Request $r) => $platformTicketController->reply($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
     $router->post('/tickets/{id}/close', fn (Request $r) => $platformTicketController->close($r), [new RbacMiddleware('organization.edit'), new CsrfMiddleware()]);
+    $router->get('/tickets/{id}/attachments/{attachmentId}', fn (Request $r) => $platformTicketController->download($r), [new RbacMiddleware('organization.edit')]);
     $router->get('/modules/{id}/access', fn (Request $r) => $orgModulesController->manageAccess($r));
     $router->post('/modules/{id}/access/{userId}/restrict', fn (Request $r) => $orgModulesController->restrictUser($r), [new CsrfMiddleware()]);
     $router->post('/modules/{id}/access/{userId}/allow', fn (Request $r) => $orgModulesController->allowUser($r), [new CsrfMiddleware()]);
@@ -396,6 +398,7 @@ $router->get('/admin/tickets', fn (Request $r) => $platformTicketAdminController
 $router->get('/admin/tickets/{id}', fn (Request $r) => $platformTicketAdminController->show($r), [new AuthMiddleware()]);
 $router->post('/admin/tickets/{id}/reply', fn (Request $r) => $platformTicketAdminController->reply($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 $router->post('/admin/tickets/{id}/status', fn (Request $r) => $platformTicketAdminController->status($r), [new AuthMiddleware(), new CsrfMiddleware()]);
+$router->get('/admin/tickets/{id}/attachments/{attachmentId}', fn (Request $r) => $platformTicketAdminController->download($r), [new AuthMiddleware()]);
 $router->post('/admin/tickets/{id}/priority', fn (Request $r) => $platformTicketAdminController->priority($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 $router->get('/admin/module-requests', fn (Request $r) => $moduleRequestAdminController->index($r), [new AuthMiddleware()]);
 $router->post('/admin/module-requests/{id}/approve', fn (Request $r) => $moduleRequestAdminController->approve($r), [new AuthMiddleware(), new CsrfMiddleware()]);

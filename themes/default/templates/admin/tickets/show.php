@@ -5,6 +5,7 @@
  *
  * @var array $ticket
  * @var list<array> $messages
+ * @var array<int, list<array>> $attachments message id => files
  * @var string[] $priorities
  */
 
@@ -16,6 +17,7 @@ use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\t;
 
 $viewerSide = 'platform';
+$attachmentBase = '/admin/tickets/' . (int) $ticket['id'] . '/attachments/';
 $closed = $ticket['status'] === 'closed';
 ?>
 <div class="page-head">
@@ -59,10 +61,13 @@ $closed = $ticket['status'] === 'closed';
 
 <section class="card card--form" id="reply">
     <h2><?= icon('reply') ?><?= e(t('platform_tickets.reply')) ?></h2>
-    <form method="post" action="/admin/tickets/<?= e($ticket['id']) ?>/reply">
+    <form method="post" action="/admin/tickets/<?= e($ticket['id']) ?>/reply" enctype="multipart/form-data">
         <?= Csrf::field() ?>
         <label for="reply-body"><?= e(t('platform_tickets.field.body')) ?></label>
         <textarea id="reply-body" name="body" rows="6" maxlength="<?= e(PlatformTicketService::BODY_MAX) ?>" required></textarea>
+        <label for="reply-attachments"><?= e(t('platform_tickets.field.attachments')) ?></label>
+        <input type="file" id="reply-attachments" name="attachments[]" multiple accept=".txt,.csv,.jpg,.jpeg,.png,.webp,text/plain,text/csv,image/jpeg,image/png,image/webp">
+        <p class="field-hint"><?= e(t('platform_tickets.attachments_hint')) ?></p>
         <label class="check check--spaced"><input type="checkbox" name="close" value="1"> <?= e(t('platform_tickets.admin.reply_and_close')) ?></label>
         <p class="field-hint"><?= e(t('platform_tickets.admin.reply_hint')) ?></p>
         <div class="actions">

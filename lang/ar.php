@@ -3526,4 +3526,11 @@ return [
     'platform_tickets.notice.answered_closed_body' => 'رد فريق المنصّة على تذكرتك #:id «:subject» وأغلقها. رد عليها إذا كنت بحاجة إلى مزيد من المساعدة.',
     'platform_tickets.notice.closed_title' => 'تم إغلاق تذكرتك #:id',
     'platform_tickets.notice.closed_body' => 'أغلق فريق المنصّة تذكرتك #:id «:subject». رد عليها إذا كنت بحاجة إلى مزيد من المساعدة.',
+    'platform_tickets.field.attachments' => 'المرفقات (اختياري)',
+    'platform_tickets.attachments_hint' => 'حتى 5 ملفات: txt أو csv أو jpg أو png أو webp، بحد أقصى 5 ميغابايت لكل ملف.',
+    'platform_tickets.error.attachment_type' => 'يُسمح فقط بملفات txt وcsv وjpg وpng وwebp، ويجب أن يطابق المحتوى نوع الملف.',
+    'platform_tickets.error.attachment_size' => 'الحد الأقصى لكل ملف 5 ميغابايت.',
+    'platform_tickets.error.attachment_count' => '5 ملفات كحد أقصى لكل رسالة.',
+    'platform_tickets.error.attachment_failed' => 'تعذّر رفع الملف. حاول مرة أخرى.',
+    'platform_tickets.error.attachment_not_saved' => 'تم حفظ الرسالة، لكن تعذّر حفظ :count ملف. أرسلها مرة أخرى في رد.',
 ];

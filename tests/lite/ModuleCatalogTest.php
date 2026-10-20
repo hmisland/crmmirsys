@@ -90,6 +90,7 @@ return [
         $setup();
         $a = $h->a;
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         ($h->entitle)('woocommerce', false);
         $page = $a->request('GET', '/org/modules/catalog');
         LiteAssert::same(200, $page['status']);
@@ -116,12 +117,14 @@ return [
             LiteAssert::same('forbidden', $a->outcome('GET', '/org/modules/catalog'));
         }
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
     },
 
     'WooCommerce card: verified highlights, real status, request button when not entitled' => function () use ($setup, $h) {
         $setup();
         $a = $h->a;
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         ($h->entitle)('woocommerce', false);
         $card = ($h->card)('woocommerce');
         LiteAssert::same('available', $card['state']);
@@ -146,6 +149,7 @@ return [
         $setup();
         $a = $h->a;
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         ($h->entitle)('woocommerce', true);
         $a->pdo->exec("INSERT INTO integration_connections (organization_id, provider, name, enabled, status, webhook_key, created_at, updated_at)
             VALUES ({$a->orgId}, 'woocommerce', 'Catalog test shop', 1, 'active', '" . str_repeat('c', 40) . "', NOW(), NOW())");
@@ -161,6 +165,7 @@ return [
         $a->as($a->noRole);
         LiteAssert::same('forbidden', $a->outcome('GET', '/org/integrations'));
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         ($h->entitle)('woocommerce', true);
     },
 
@@ -185,6 +190,7 @@ return [
         LiteAssert::same('wallet', $notifications['dependencies'][0]['key']);
         LiteAssert::false($notifications['dependencies'][0]['active'], 'wallet shown as not active');
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         LiteAssert::contains('Requires Wallet', $a->request('GET', '/org/modules/catalog')['body']);
     },
 
@@ -192,6 +198,7 @@ return [
         $setup();
         $a = $h->a;
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         ($h->entitle)('woocommerce', false);
         $response = $a->request('POST', '/org/modules/catalog/woocommerce/request');
         LiteAssert::same('/org/modules/catalog#module-woocommerce', $response['location']);
@@ -226,6 +233,7 @@ return [
         ($h->entitle)('projects', true);
         LiteAssert::same('catalog.error.already_active', ($h->errorOf)(fn () => $h->svc->request($a->admin, 'projects')));
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         $a->request('POST', '/org/modules/catalog/no_such_module/request');
         LiteAssert::same('This module is not available for activation requests.', Session::getFlash('error'));
     },
@@ -251,6 +259,7 @@ return [
         $a = $h->a;
         $id = (int) ($h->pending)('woocommerce')['id'];
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         LiteAssert::same('forbidden', $a->outcome('GET', '/admin/module-requests'));
         LiteAssert::same('forbidden', $a->outcome('POST', '/admin/module-requests/' . $id . '/approve'));
         LiteAssert::same('forbidden', $a->outcome('POST', '/admin/module-requests/' . $id . '/reject'));
@@ -258,6 +267,7 @@ return [
         LiteAssert::same('pending', ($h->pending)('woocommerce')['status']);
 
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $page = $a->request('GET', '/admin/module-requests');
         LiteAssert::same(200, $page['status']);
         LiteAssert::contains('/admin/module-requests/' . $id . '/approve', $page['body']);
@@ -285,6 +295,7 @@ return [
         $h->svc->request($a->admin, 'notifications');
         $id = (int) ($h->pending)('notifications')['id'];
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $response = $a->request('POST', '/admin/module-requests/' . $id . '/approve');
         LiteAssert::same('/admin/module-requests', $response['location']);
         LiteAssert::contains('still pending', (string) Session::getFlash('error'));
@@ -298,6 +309,7 @@ return [
         $id = (int) ($h->pending)('woocommerce')['id'];
         $announcementsBefore = (int) $a->pdo->query("SELECT COUNT(*) FROM admin_announcement_recipients WHERE user_id = {$a->admin['id']}")->fetchColumn();
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $response = $a->request('POST', '/admin/module-requests/' . $id . '/approve', [], ['back_organization' => (string) $a->orgId]);
         LiteAssert::same('/admin/organizations/' . $a->orgId . '/modules', $response['location']);
         LiteAssert::same('Request approved; the module is now active for the organization.', Session::getFlash('success'));
@@ -320,6 +332,7 @@ return [
         LiteAssert::same('catalog.admin.error.already_processed', ($h->errorOf)(fn () => $h->svc->approve($h->super, $id)));
         LiteAssert::same('approved', $a->pdo->query("SELECT status FROM module_activation_requests WHERE id = {$id}")->fetchColumn());
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $a->request('POST', '/admin/module-requests/' . $id . '/reject', [], ['reason' => 'late']);
         LiteAssert::same('This request has already been reviewed.', Session::getFlash('error'));
     },
@@ -340,6 +353,7 @@ return [
         LiteAssert::same('catalog.admin.error.reason_length', ($h->errorOf)(fn () => $h->svc->reject($h->super, $id, str_repeat('x', 501))));
         $announcementsBefore = (int) $a->pdo->query("SELECT COUNT(*) FROM admin_announcement_recipients WHERE user_id = {$a->admin['id']}")->fetchColumn();
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $a->request('POST', '/admin/module-requests/' . $id . '/reject', [], ['reason' => 'Enable Wallet first']);
         LiteAssert::same('Request rejected.', Session::getFlash('success'));
         $row = $a->pdo->query("SELECT * FROM module_activation_requests WHERE id = {$id}")->fetch(\PDO::FETCH_ASSOC);
@@ -352,6 +366,7 @@ return [
         LiteAssert::same(1, (int) $a->pdo->query("SELECT COUNT(*) FROM timeline_events WHERE subject_type = 'organization' AND subject_id = {$a->orgId} AND type = 'module_request.rejected'")->fetchColumn());
 
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         LiteAssert::same('rejected', ($h->card)('notifications')['state']);
         $page = $a->request('GET', '/org/modules/catalog')['body'];
         LiteAssert::contains('Request rejected', $page);
@@ -366,12 +381,14 @@ return [
         $setup();
         $a = $h->a;
         $a->as($h->super);
+        \App\Infrastructure\Repositories\OrganizationContext::reset(); // a real Super Admin request has no organization
         $id = ($h->moduleId)('contracts');
         LiteAssert::same('ok', $a->outcome('POST', '/admin/organizations/' . $a->orgId . '/modules/' . $id . '/disable'));
         LiteAssert::same(0, (int) $a->pdo->query("SELECT enabled FROM organization_modules WHERE organization_id = {$a->orgId} AND module_id = {$id}")->fetchColumn());
         LiteAssert::same('ok', $a->outcome('POST', '/admin/organizations/' . $a->orgId . '/modules/' . $id . '/enable'));
         LiteAssert::same(1, (int) $a->pdo->query("SELECT enabled FROM organization_modules WHERE organization_id = {$a->orgId} AND module_id = {$id}")->fetchColumn());
         $a->as($a->admin);
+        \App\Infrastructure\Repositories\OrganizationContext::set($a->orgId);
         LiteAssert::same('forbidden', $a->outcome('POST', '/admin/organizations/' . $a->orgId . '/modules/' . $id . '/disable'));
     },
 

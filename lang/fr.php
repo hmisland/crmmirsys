@@ -3421,4 +3421,11 @@ return [
     'platform_tickets.notice.answered_closed_body' => 'L\'équipe de la plateforme a répondu à votre ticket n° :id « :subject » et l\'a fermé. Répondez-y si vous avez besoin d\'aide supplémentaire.',
     'platform_tickets.notice.closed_title' => 'Votre ticket n° :id a été fermé',
     'platform_tickets.notice.closed_body' => 'L\'équipe de la plateforme a fermé votre ticket n° :id « :subject ». Répondez-y si vous avez besoin d\'aide supplémentaire.',
+    'platform_tickets.field.attachments' => 'Pièces jointes (facultatif)',
+    'platform_tickets.attachments_hint' => 'Jusqu\'à 5 fichiers : txt, csv, jpg, png ou webp, 5 Mo maximum chacun.',
+    'platform_tickets.error.attachment_type' => 'Seuls les fichiers txt, csv, jpg, png et webp sont autorisés, et le contenu doit correspondre au type de fichier.',
+    'platform_tickets.error.attachment_size' => 'Chaque fichier peut faire 5 Mo au maximum.',
+    'platform_tickets.error.attachment_count' => '5 fichiers au maximum par message.',
+    'platform_tickets.error.attachment_failed' => 'Le fichier n\'a pas pu être envoyé. Réessayez.',
+    'platform_tickets.error.attachment_not_saved' => 'Le message a été enregistré, mais :count fichier(s) n\'ont pas pu être stockés. Renvoyez-les dans une réponse.',
 ];

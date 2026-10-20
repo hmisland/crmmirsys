@@ -3526,4 +3526,11 @@ return [
     'platform_tickets.notice.answered_closed_body' => 'Platform ekibi #:id numaralı “:subject” talebinize yanıt verdi ve talebi kapattı. Daha fazla yardıma ihtiyacınız olursa yanıt verin.',
     'platform_tickets.notice.closed_title' => '#:id numaralı talebiniz kapatıldı',
     'platform_tickets.notice.closed_body' => 'Platform ekibi #:id numaralı “:subject” talebinizi kapattı. Daha fazla yardıma ihtiyacınız olursa yanıt verin.',
+    'platform_tickets.field.attachments' => 'Ekler (isteğe bağlı)',
+    'platform_tickets.attachments_hint' => 'En fazla 5 dosya: txt, csv, jpg, png veya webp, her biri en fazla 5 MB.',
+    'platform_tickets.error.attachment_type' => 'Yalnızca txt, csv, jpg, png ve webp dosyalarına izin verilir ve içerik dosya türüyle eşleşmelidir.',
+    'platform_tickets.error.attachment_size' => 'Her dosya en fazla 5 MB olabilir.',
+    'platform_tickets.error.attachment_count' => 'Mesaj başına en fazla 5 dosya.',
+    'platform_tickets.error.attachment_failed' => 'Dosya yüklenemedi. Tekrar deneyin.',
+    'platform_tickets.error.attachment_not_saved' => 'Mesaj kaydedildi, ancak :count dosya saklanamadı. Bunları bir yanıtta tekrar gönderin.',
 ];

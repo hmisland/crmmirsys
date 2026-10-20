@@ -60,7 +60,7 @@ $moduleName = function (array $row): string {
                 <td><a href="/admin/organizations/<?= e($row['organization_id']) ?>/modules"><?= e($row['organization_name']) ?></a></td>
                 <td><?= e($moduleName($row)) ?></td>
                 <td><?= e($row['requester_name'] !== '' ? $row['requester_name'] : ($row['requester_email'] ?? '—')) ?></td>
-                <td class="nowrap ltr"><?= e(local_time($row['created_at'])) ?></td>
+                <td class="nowrap"><span class="ltr"><?= e(local_time($row['created_at'])) ?></span></td>
                 <td><?= badge(t('catalog.request_status.' . $row['status']), $row['status']) ?></td>
                 <td>
                     <?php if ($row['status'] === 'pending'): ?>

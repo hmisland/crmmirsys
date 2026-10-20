@@ -3535,4 +3535,11 @@ return [
     'platform_tickets.notice.answered_closed_body' => 'The platform team replied to your ticket #:id “:subject” and closed it. Reply to it if you need more help.',
     'platform_tickets.notice.closed_title' => 'Your ticket #:id was closed',
     'platform_tickets.notice.closed_body' => 'The platform team closed your ticket #:id “:subject”. Reply to it if you need more help.',
+    'platform_tickets.field.attachments' => 'Attachments (optional)',
+    'platform_tickets.attachments_hint' => 'Up to 5 files: txt, csv, jpg, png or webp, at most 5 MB each.',
+    'platform_tickets.error.attachment_type' => 'Only txt, csv, jpg, png and webp files are allowed, and the content must match the file type.',
+    'platform_tickets.error.attachment_size' => 'Each file may be at most 5 MB.',
+    'platform_tickets.error.attachment_count' => 'At most 5 files per message.',
+    'platform_tickets.error.attachment_failed' => 'The file could not be uploaded. Try again.',
+    'platform_tickets.error.attachment_not_saved' => 'The message was saved, but :count file(s) could not be stored. Send them again in a reply.',
 ];

@@ -3526,4 +3526,11 @@ return [
     'platform_tickets.notice.answered_closed_body' => 'تیم پلتفرم به تیکت #:id «:subject» پاسخ داد و آن را بست. اگر به کمک بیشتری نیاز دارید، به آن پاسخ دهید.',
     'platform_tickets.notice.closed_title' => 'تیکت #:id بسته شد',
     'platform_tickets.notice.closed_body' => 'تیم پلتفرم تیکت #:id «:subject» را بست. اگر به کمک بیشتری نیاز دارید، به آن پاسخ دهید.',
+    'platform_tickets.field.attachments' => 'پیوست (اختیاری)',
+    'platform_tickets.attachments_hint' => 'حداکثر ۵ فایل: txt، csv، jpg، png یا webp، هر کدام حداکثر ۵ مگابایت.',
+    'platform_tickets.error.attachment_type' => 'فقط فایل‌های txt، csv، jpg، png و webp مجاز است و محتوای فایل باید با نوع آن یکی باشد.',
+    'platform_tickets.error.attachment_size' => 'حجم هر فایل حداکثر ۵ مگابایت است.',
+    'platform_tickets.error.attachment_count' => 'حداکثر ۵ فایل در هر پیام.',
+    'platform_tickets.error.attachment_failed' => 'بارگذاری فایل انجام نشد. دوباره تلاش کنید.',
+    'platform_tickets.error.attachment_not_saved' => 'پیام ثبت شد، اما :count فایل ذخیره نشد. آن‌ها را در یک پاسخ دوباره بفرستید.',
 ];

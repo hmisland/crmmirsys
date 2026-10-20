@@ -30,7 +30,7 @@ $error = fn (string $field): ?string => isset($errors[$field]) ? t((string) $err
 <?php if ($error('ticket') !== null): ?><div class="alert alert--error"><?= e($error('ticket')) ?></div><?php endif; ?>
 
 <section class="card card--form">
-    <form method="post" action="/org/tickets">
+    <form method="post" action="/org/tickets" enctype="multipart/form-data">
         <?= Csrf::field() ?>
 
         <label for="ticket-subject"><?= e(t('platform_tickets.field.subject')) ?></label>
@@ -57,6 +57,11 @@ $error = fn (string $field): ?string => isset($errors[$field]) ? t((string) $err
         <textarea id="ticket-body" name="body" rows="8" maxlength="<?= e(PlatformTicketService::BODY_MAX) ?>" required><?= e((string) ($old['body'] ?? '')) ?></textarea>
         <?php if ($error('body') !== null): ?><div class="field-error"><?= e($error('body')) ?></div><?php endif; ?>
         <p class="field-hint"><?= e(t('platform_tickets.body_hint')) ?></p>
+
+        <label for="ticket-attachments"><?= e(t('platform_tickets.field.attachments')) ?></label>
+        <input type="file" id="ticket-attachments" name="attachments[]" multiple accept=".txt,.csv,.jpg,.jpeg,.png,.webp,text/plain,text/csv,image/jpeg,image/png,image/webp">
+        <p class="field-hint"><?= e(t('platform_tickets.attachments_hint')) ?></p>
+        <?php if ($error('attachments') !== null): ?><div class="field-error"><?= e($error('attachments')) ?></div><?php endif; ?>
 
         <div class="actions">
             <button type="submit" class="btn btn--primary"><?= icon('send') ?><?= e(t('platform_tickets.send')) ?></button>
