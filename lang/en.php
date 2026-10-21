@@ -3823,4 +3823,6 @@ It is valid for :minutes minutes. If you did not request it, ignore this message
     'projects.alert.project_line' => 'Project :project — expected end :date (:days days late)',
     'projects.alert.milestone_line' => 'Milestone ":milestone" of :project — :date (:days days late)',
     'projects.alert.open' => 'Projects dashboard',
+    'common.copy' => 'Copy',
+    'common.copied' => 'Copied',
 ];

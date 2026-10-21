@@ -1136,6 +1136,10 @@ legend { padding-inline: var(--space-2); font-weight: var(--weight-semibold); fo
 [dir="rtl"] .settings-tile__links a::after { transform: scaleX(-1); }
 .settings-tile__links a:hover { background: var(--gray-50); color: var(--brand-700); text-decoration: none; }
 .settings-tile__links a:hover .icon { color: var(--brand-600); }
+/* A long URL on one line (truncated, LTR) with a Copy button beside it. */
+.copy-field { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.copy-field__link { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: start; }
+.copy-field .btn { flex: 0 0 auto; }
 
 /* ---- Badges / status pills ---- */
 .badge {

@@ -46,7 +46,10 @@ $currentTimezone = (string) ($old['default_timezone'] ?? $organization['default_
         <h2><span class="kpi__icon"><?= icon('users') ?></span><?= e(t('customer_portal.settings.title')) ?></h2>
         <p class="field-hint"><?= e(t('customer_portal.settings.hint')) ?></p>
         <?php $portalUrl = rtrim((string) \App\Infrastructure\Config\Config::get('app.url', ''), '/') . '/customer/login/' . rawurlencode((string) $organization['slug']); ?>
-        <p><a href="<?= e($portalUrl) ?>" class="ltr" target="_blank" rel="noopener"><?= e($portalUrl) ?></a></p>
+        <div class="copy-field">
+            <a href="<?= e($portalUrl) ?>" class="copy-field__link ltr" target="_blank" rel="noopener" title="<?= e($portalUrl) ?>"><?= e($portalUrl) ?></a>
+            <button type="button" class="btn btn--sm" data-copy="<?= e($portalUrl) ?>" data-copied-label="<?= e(t('common.copied')) ?>"><?= icon('copy') ?><span><?= e(t('common.copy')) ?></span></button>
+        </div>
     </section>
     <?php endif; ?>
 

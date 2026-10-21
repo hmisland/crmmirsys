@@ -102,6 +102,34 @@
         if (alert) alert.remove();
     });
 
+    // ---- Copy to clipboard: <button data-copy="text" data-copied-label="Copied"> ----
+    // Shows the "copied" label on the button for two seconds.
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest ? e.target.closest('[data-copy]') : null;
+        if (!btn) return;
+        var text = btn.getAttribute('data-copy') || '';
+        var done = function () {
+            var label = btn.querySelector('span');
+            var copied = btn.getAttribute('data-copied-label');
+            if (!label || !copied) return;
+            var original = label.textContent;
+            label.textContent = copied;
+            setTimeout(function () { label.textContent = original; }, 2000);
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done, function () {});
+            return;
+        }
+        var field = document.createElement('textarea');
+        field.value = text;
+        field.setAttribute('readonly', '');
+        field.className = 'visually-hidden';
+        document.body.appendChild(field);
+        field.select();
+        try { document.execCommand('copy'); done(); } catch (err) { /* nothing to do */ }
+        field.remove();
+    });
+
     // ---- Auto-open notice dialogs (e.g. "no permission" after a 403) ----
     // Rendered with `open` so the message is visible even without JS;
     // with JS it is re-opened as a real modal (focus trap, Esc, backdrop).

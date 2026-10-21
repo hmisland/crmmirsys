@@ -3792,4 +3792,6 @@ return [
     'projects.alert.project_line' => 'المشروع :project — النهاية المتوقعة :date (متأخر :days يومًا)',
     'projects.alert.milestone_line' => 'المرحلة «:milestone» من :project — :date (متأخرة :days يومًا)',
     'projects.alert.open' => 'لوحة المشاريع',
+    'common.copy' => 'نسخ',
+    'common.copied' => 'تم النسخ',
 ];

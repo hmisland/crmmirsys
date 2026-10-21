@@ -3792,4 +3792,6 @@ return [
     'projects.alert.project_line' => 'Proje :project — beklenen bitiş :date (:days gün gecikmeli)',
     'projects.alert.milestone_line' => ':project projesinin ":milestone" kilometre taşı — :date (:days gün gecikmeli)',
     'projects.alert.open' => 'Proje panosu',
+    'common.copy' => 'Kopyala',
+    'common.copied' => 'Kopyalandı',
 ];

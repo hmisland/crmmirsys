@@ -3687,4 +3687,6 @@ Il est valable :minutes minutes. Si vous ne l\'avez pas demandé, ignorez ce mes
     'projects.alert.project_line' => 'Projet :project — fin prévue le :date (:days jours de retard)',
     'projects.alert.milestone_line' => 'Jalon « :milestone » de :project — :date (:days jours de retard)',
     'projects.alert.open' => 'Tableau de bord des projets',
+    'common.copy' => 'Copier',
+    'common.copied' => 'Copié',
 ];

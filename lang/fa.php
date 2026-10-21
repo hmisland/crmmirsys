@@ -3814,4 +3814,6 @@ return [
     'projects.alert.project_line' => 'پروژه‌ی :project — پایان پیش‌بینی‌شده :date (:days روز تأخیر)',
     'projects.alert.milestone_line' => 'نقطه عطف «:milestone» از :project — :date (:days روز تأخیر)',
     'projects.alert.open' => 'داشبورد پروژه‌ها',
+    'common.copy' => 'کپی',
+    'common.copied' => 'کپی شد',
 ];
