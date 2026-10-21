@@ -46,6 +46,13 @@ if ($command === 'migrate') {
     exit(0);
 }
 
+if ($command === 'license-ok') {
+    require __DIR__ . '/license/OfflineLicense.php';
+    $status = (new MirsysOfflineLicense($root))->status();
+    echo ($status['ok'] ? 'valid' : 'invalid: ' . $status['reason']) . "\n";
+    exit($status['ok'] ? 0 : 1);
+}
+
 if ($command === 'superadmin') {
     $email = strtolower(trim((string) ($argv[2] ?? '')));
     $stmt = $pdo->prepare('SELECT id, organization_id FROM users WHERE LOWER(email) = ?');

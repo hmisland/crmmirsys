@@ -49,7 +49,7 @@ if not exist "%PHPINI%" (
 ) else (
     echo   php.ini already exists - kept.
 )
-"%PHP%" -c "%PHPINI%" -r "foreach (['pdo_mysql','mbstring','bcmath'] as $e) { if (extension_loaded($e) === false) { echo '  [ERROR] PHP extension missing: '.$e.PHP_EOL; exit(1);} } echo '  PHP extensions OK'.PHP_EOL;"
+"%PHP%" -c "%PHPINI%" -r "foreach (['pdo_mysql','mbstring','bcmath','openssl'] as $e) { if (extension_loaded($e) === false) { echo '  [ERROR] PHP extension missing: '.$e.PHP_EOL; exit(1);} } echo '  PHP extensions OK'.PHP_EOL;"
 if errorlevel 1 goto :fail
 
 echo.
@@ -119,7 +119,8 @@ echo.
 echo [7/7] Done.
 echo ==========================================================
 echo   Start the CRM : windows-offline\start.bat
-echo   Then register the first account in the browser and run:
+echo   Open http://localhost:8080 - it shows the INSTALL CODE. Send it to the vendor,
+echo   install the license file on that page, then register the first account and run:
 echo       windows-offline\make-superadmin.bat  your@email
 echo ==========================================================
 echo.
