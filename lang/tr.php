@@ -3714,4 +3714,11 @@ return [
     'finance.row_discount' => 'İndirim',
     'finance.row_tax_rate' => 'KDV %',
     'finance.row_tax' => 'KDV',
+    'admin.unverified.title' => 'Doğrulanmamış kullanıcılar',
+    'admin.unverified.subtitle' => 'E-postası henüz doğrulanmamış kullanıcılar. Doğrulama e-postası ulaşmadıysa kullanıcıyı buradan elle doğrulayabilirsiniz.',
+    'admin.unverified.search' => 'Ad, e-posta veya kuruluşa göre ara',
+    'admin.unverified.verify' => 'Elle doğrula',
+    'admin.unverified.verify_confirm' => ':email e-postası elle doğrulansın mı? Kullanıcı giriş yapabilecek.',
+    'admin.unverified.verified' => ':email e-postası doğrulandı.',
+    'admin.unverified.empty' => 'Doğrulanmamış kullanıcı yok.',
 ];

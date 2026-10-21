@@ -144,6 +144,7 @@ $navGroups = [];
 if ($isSuperAdmin) {
     $navGroups[] = ['label' => t('nav.group_platform'), 'items' => [
         ['href' => '/admin/organizations', 'icon' => 'building', 'label' => t('admin.all_organizations'), 'match' => ['/admin/organizations']],
+        ['href' => '/admin/unverified-users', 'icon' => 'check-circle', 'label' => t('admin.unverified.title'), 'match' => ['/admin/unverified-users']],
         ['href' => '/admin/modules', 'icon' => 'layers', 'label' => t('admin.modules_platform'), 'match' => ['/admin/modules']],
         ['href' => '/admin/module-requests', 'icon' => 'inbox', 'label' => t('catalog.admin.title'), 'match' => ['/admin/module-requests']],
         ['href' => '/admin/wallet/settings', 'icon' => 'wallet', 'label' => t('admin.wallet_settings_platform'), 'match' => ['/admin/wallet/settings', '/admin/wallet/banks']],

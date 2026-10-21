@@ -3745,4 +3745,11 @@ It is valid for :minutes minutes. If you did not request it, ignore this message
     'finance.row_discount' => 'Discount',
     'finance.row_tax_rate' => 'VAT %',
     'finance.row_tax' => 'VAT',
+    'admin.unverified.title' => 'Unverified users',
+    'admin.unverified.subtitle' => 'Users whose email is not verified yet. If the verification email did not arrive, you can verify the user here by hand.',
+    'admin.unverified.search' => 'Search by name, email or organization',
+    'admin.unverified.verify' => 'Verify manually',
+    'admin.unverified.verify_confirm' => 'Verify the email :email manually? The user will be able to log in.',
+    'admin.unverified.verified' => 'Email :email was verified.',
+    'admin.unverified.empty' => 'No unverified users.',
 ];

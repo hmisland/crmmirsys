@@ -99,4 +99,20 @@ final class UserRepository extends BaseRepository
     {
         $this->update('users', ['status' => $status], 'id = :id', ['id' => $userId]);
     }
+
+    /**
+     * Super Admin → unverified users: every user on the platform whose
+     * email is not verified yet, newest first, with the organization
+     * name. Platform-wide on purpose (Super Admin only, see
+     * SuperAdminController) — no organization filter.
+     */
+    public function findUnverified(): array
+    {
+        return $this->findMany(
+            'SELECT u.id, u.email, u.first_name, u.last_name, u.status, u.organization_id, u.created_at, o.name AS organization_name
+             FROM users u LEFT JOIN organizations o ON o.id = u.organization_id
+             WHERE u.email_verified_at IS NULL
+             ORDER BY u.created_at DESC, u.id DESC'
+        );
+    }
 }

@@ -105,7 +105,8 @@ $orgStructureController = new OrgStructureController(
 $superAdminController = new SuperAdminController(
     $container->make(TemplateEngine::class),
     new \App\Infrastructure\Repositories\OrganizationRepository(),
-    new \App\Infrastructure\Repositories\UserRepository()
+    new \App\Infrastructure\Repositories\UserRepository(),
+    $container->make(\App\Core\Events\EventBus::class)
 );
 
 $moduleAdminController = new ModuleAdminController(
@@ -386,6 +387,9 @@ $router->post('/p/{token}', fn (Request $r) => $publicLinkController->submit($r)
 // --- Super Admin (Phase 3/4) --------------------------------------------
 
 $router->get('/admin/organizations', fn (Request $r) => $superAdminController->index($r), [new AuthMiddleware()]);
+// Manual email verification when the verification email never arrived.
+$router->get('/admin/unverified-users', fn (Request $r) => $superAdminController->unverifiedUsers($r), [new AuthMiddleware()]);
+$router->post('/admin/unverified-users/{id}/verify', fn (Request $r) => $superAdminController->verifyUser($r), [new AuthMiddleware(), new CsrfMiddleware()]);
 
 $router->get('/admin/modules', fn (Request $r) => $moduleAdminController->index($r), [new AuthMiddleware()]);
 $router->post('/admin/modules/sync', fn (Request $r) => $moduleAdminController->sync($r), [new AuthMiddleware(), new CsrfMiddleware()]);

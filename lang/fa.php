@@ -3736,4 +3736,11 @@ return [
     'finance.row_discount' => 'تخفیف',
     'finance.row_tax_rate' => 'نرخ ارزش افزوده',
     'finance.row_tax' => 'ارزش افزوده',
+    'admin.unverified.title' => 'کاربران تأییدنشده',
+    'admin.unverified.subtitle' => 'کاربرانی که ایمیلشان هنوز تأیید نشده است. اگر ایمیل تأیید به دست کاربر نرسیده، می‌توانید او را از اینجا دستی تأیید کنید.',
+    'admin.unverified.search' => 'جستجو بر اساس نام، ایمیل یا سازمان',
+    'admin.unverified.verify' => 'تأیید دستی',
+    'admin.unverified.verify_confirm' => 'ایمیل :email به‌صورت دستی تأیید شود؟ کاربر پس از آن می‌تواند وارد شود.',
+    'admin.unverified.verified' => 'ایمیل :email تأیید شد.',
+    'admin.unverified.empty' => 'کاربر تأییدنشده‌ای وجود ندارد.',
 ];

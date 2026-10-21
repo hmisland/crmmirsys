@@ -3714,4 +3714,11 @@ return [
     'finance.row_discount' => 'الخصم',
     'finance.row_tax_rate' => 'نسبة الضريبة',
     'finance.row_tax' => 'الضريبة',
+    'admin.unverified.title' => 'المستخدمون غير المؤكَّدين',
+    'admin.unverified.subtitle' => 'مستخدمون لم يتم تأكيد بريدهم الإلكتروني بعد. إذا لم تصل رسالة التأكيد، يمكنك تأكيد المستخدم يدويًا من هنا.',
+    'admin.unverified.search' => 'البحث بالاسم أو البريد الإلكتروني أو المؤسسة',
+    'admin.unverified.verify' => 'تأكيد يدوي',
+    'admin.unverified.verify_confirm' => 'هل تريد تأكيد البريد الإلكتروني :email يدويًا؟ سيتمكن المستخدم من تسجيل الدخول.',
+    'admin.unverified.verified' => 'تم تأكيد البريد الإلكتروني :email.',
+    'admin.unverified.empty' => 'لا يوجد مستخدمون غير مؤكَّدين.',
 ];

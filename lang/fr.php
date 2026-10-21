@@ -3609,4 +3609,11 @@ Il est valable :minutes minutes. Si vous ne l\'avez pas demandé, ignorez ce mes
     'finance.row_discount' => 'Remise',
     'finance.row_tax_rate' => 'TVA %',
     'finance.row_tax' => 'TVA',
+    'admin.unverified.title' => 'Utilisateurs non vérifiés',
+    'admin.unverified.subtitle' => 'Utilisateurs dont l’e-mail n’est pas encore vérifié. Si l’e-mail de vérification n’est pas arrivé, vous pouvez vérifier l’utilisateur ici manuellement.',
+    'admin.unverified.search' => 'Rechercher par nom, e-mail ou organisation',
+    'admin.unverified.verify' => 'Vérifier manuellement',
+    'admin.unverified.verify_confirm' => 'Vérifier manuellement l’e-mail :email ? L’utilisateur pourra se connecter.',
+    'admin.unverified.verified' => 'L’e-mail :email a été vérifié.',
+    'admin.unverified.empty' => 'Aucun utilisateur non vérifié.',
 ];
