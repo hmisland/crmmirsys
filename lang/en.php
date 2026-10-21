@@ -3777,4 +3777,13 @@ It is valid for :minutes minutes. If you did not request it, ignore this message
     'tasks.project_panel.assignees' => 'Assignees',
     'tasks.project_panel.empty' => 'No tasks for this project yet.',
     'tasks.project_panel.new' => 'New task',
+    'tasks.project_filter.label' => 'Project',
+    'tasks.project_filter.all' => 'All projects',
+    'tasks.project_board.title' => 'Project task board',
+    'tasks.project_board.open' => 'Kanban board',
+    'tasks.project_board.back' => 'Back to project',
+    'tasks.project_board.list' => 'Task list',
+    'tasks.project_board.move' => 'Move',
+    'tasks.project_board.column_empty' => 'No tasks',
+    'tasks.project_list.progress' => 'Progress',
 ];

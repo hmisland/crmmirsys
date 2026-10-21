@@ -26,6 +26,9 @@ use function App\Infrastructure\Theme\t;
 $returnTo = '/projects/' . $projectId;
 include __DIR__ . '/_project_tasks_summary.php';
 ?>
+<div class="actions">
+    <a href="/tasks/projects/<?= e($projectId) ?>/board" class="btn btn--sm"><?= icon('kanban') ?><?= e(t('tasks.project_board.open')) ?></a>
+</div>
 <div class="table-responsive">
 <table class="table table--compact">
     <thead><tr>

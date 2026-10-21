@@ -3746,4 +3746,13 @@ return [
     'tasks.project_panel.assignees' => 'Atananlar',
     'tasks.project_panel.empty' => 'Bu proje için henüz görev yok.',
     'tasks.project_panel.new' => 'Yeni görev',
+    'tasks.project_filter.label' => 'Proje',
+    'tasks.project_filter.all' => 'Tüm projeler',
+    'tasks.project_board.title' => 'Proje görev panosu',
+    'tasks.project_board.open' => 'Kanban panosu',
+    'tasks.project_board.back' => 'Projeye dön',
+    'tasks.project_board.list' => 'Görev listesi',
+    'tasks.project_board.move' => 'Taşı',
+    'tasks.project_board.column_empty' => 'Görev yok',
+    'tasks.project_list.progress' => 'İlerleme',
 ];

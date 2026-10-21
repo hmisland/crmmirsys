@@ -28,6 +28,11 @@ final class ProjectTaskPanels
     public const SUBJECT = 'project';
     /** The project page's overview card slot (stats only, no list). */
     public const OVERVIEW_SUBJECT = 'project_overview';
+    /** One row of the Projects list (the Progress cell); the row carries 'list_ids' = every id on the page. */
+    public const LIST_ROW_SUBJECT = 'project_list_row';
+
+    /** @var array<string, array<int, int>> page ids key => project id => percent (one grouped query per page) */
+    private array $progressByPage = [];
 
     public function __construct(
         private readonly TaskService $tasks,
@@ -57,6 +62,37 @@ final class ProjectTaskPanels
             permission: Permission::TASKS_VIEW,
             icon: 'check-square',
         ));
+        $panels->register(new RelatedPanel(
+            subjectType: self::LIST_ROW_SUBJECT,
+            id: 'tasks.project_list_row',
+            module: 'sales',
+            titleKey: 'tasks.project_list.progress',
+            render: fn (array $subject, array $user): string => $this->renderListRow($subject, $user),
+            order: 40,
+            permission: Permission::TASKS_VIEW,
+        ));
+    }
+
+    /**
+     * The Progress cell of one Projects-list row. The first row of a page
+     * computes every row's percent in one grouped query
+     * (TaskService::progressForProjects()); the others reuse it.
+     */
+    public function renderListRow(array $project, array $user): string
+    {
+        $projectId = (int) ($project['id'] ?? 0);
+        if ($projectId <= 0) {
+            return '';
+        }
+        $ids = array_map('intval', is_array($project['list_ids'] ?? null) ? $project['list_ids'] : [$projectId]);
+        $key = (int) ($user['id'] ?? 0) . ':' . implode(',', $ids);
+        $this->progressByPage[$key] ??= $this->tasks->progressForProjects($user, $ids);
+        $percent = $this->progressByPage[$key][$projectId] ?? 0;
+
+        return $this->templates->render('sales/_project_progress_cell', [
+            'percent' => $percent,
+            'fmt' => TaskController::formatter(),
+        ]);
     }
 
     public function render(array $project, array $user): string

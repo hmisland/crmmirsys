@@ -121,6 +121,8 @@ final class TaskController extends BaseController
         $search = is_string($query['q'] ?? null) ? trim($query['q']) : '';
         // A custom status (T8); the older ?status= (legacy values) keeps working.
         $statusId = is_string($query['status_id'] ?? null) && ctype_digit($query['status_id']) ? (int) $query['status_id'] : null;
+        // Optional Project filter: kept only when it names a project this user may see.
+        $projectId = is_string($query['project_id'] ?? null) && ctype_digit($query['project_id']) ? (int) $query['project_id'] : null;
 
         // The list's own query (never ?new=1), in a fixed order: page links,
         // the filter form and every action's return_to keep it.
@@ -129,13 +131,17 @@ final class TaskController extends BaseController
             'status' => $status,
             'q' => $search,
             'status_id' => $statusId !== null ? (string) $statusId : '',
+            'project_id' => $projectId !== null ? (string) $projectId : '',
             'page' => is_scalar($query['page'] ?? null) ? (string) $query['page'] : '',
             'per_page' => is_scalar($query['per_page'] ?? null) ? (string) $query['per_page'] : '',
         ], fn (string $v) => $v !== '');
 
-        $criteria = $this->tasks->listCriteria($user, $view, $status !== '' ? $status : null, $search, $statusId);
+        $criteria = $this->tasks->listCriteria($user, $view, $status !== '' ? $status : null, $search, $statusId, null, $projectId);
         if (!isset($criteria['status_filter'])) {
             unset($listQuery['status_id']); // not a status of this organization
+        }
+        if (!isset($criteria['project_id'])) {
+            unset($listQuery['project_id']); // unknown or not visible: ignored
         }
         $pagination = Pagination::fromRequest(new Request('GET', '/tasks', $listQuery, [], [], []), $this->tasks->countList($criteria));
         $tasks = $this->tasks->listPage($user, $criteria, $pagination->perPage, $pagination->offset());
@@ -159,6 +165,8 @@ final class TaskController extends BaseController
             'archived' => $view === 'archived',
             'statusFilter' => $status,
             'statusIdFilter' => isset($criteria['status_filter']) ? (int) $criteria['status_filter']['id'] : null,
+            'projectFilter' => $criteria['project_id'] ?? null,
+            'projectOptions' => $this->tasks->projectFilterOptions($user),
             'taskStatuses' => $this->tasks->statusMap(),
             'createStatuses' => $this->tasks->createStatusOptions(),
             'canManageStatuses' => $this->tasks->statuses()->canManage($user),
@@ -175,6 +183,26 @@ final class TaskController extends BaseController
             'errors' => $errors,
             'fmt' => self::formatter(),
         ], $httpStatus);
+    }
+
+    /**
+     * GET /tasks/projects/{projectId}/board — one project's tasks as a board,
+     * one column per organization status. Moving a card posts to the usual
+     * /tasks/{id}/status route (its own RBAC, CSRF and validation).
+     */
+    public function projectBoard(Request $request): Response
+    {
+        $user = CurrentUser::user();
+        $board = $this->tasks->projectBoard($user, (int) $request->attribute('projectId'));
+
+        return $this->viewWithLayout('sales/project-board', 'layout', [
+            'project' => $board['project'],
+            'columns' => $board['columns'],
+            'taskActions' => $this->tasks->actionsFor($user, $board['tasks']),
+            'assignees' => $this->tasks->assigneeNamesFor($board['tasks']),
+            'taskStatuses' => $this->tasks->statusMap(),
+            'fmt' => self::formatter(),
+        ]);
     }
 
     /** Dates and digits in the user's language (Jalali in Persian), as Appointments does. */
@@ -639,6 +667,6 @@ final class TaskController extends BaseController
     public static function isSafeReturnTo(string $path): bool
     {
         // The query part may carry the list's url-encoded search (%XX, +, -, .).
-        return preg_match('#^/(tasks(/\d+)?(\?[A-Za-z0-9_=&%+.\-]*)?|deals/\d+|projects/\d+)$#D', $path) === 1;
+        return preg_match('#^/(tasks(/\d+)?(\?[A-Za-z0-9_=&%+.\-]*)?|deals/\d+|projects/\d+|tasks/projects/\d+/board)$#D', $path) === 1;
     }
 }

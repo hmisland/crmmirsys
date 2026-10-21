@@ -50,6 +50,14 @@ include __DIR__ . '/_helpers.php';
 
     <?php include __DIR__ . '/../partials/pagination.php'; ?>
 
+    <?php
+    // Extra per-row columns other modules contribute (e.g. task progress) through
+    // the Core panel slot — Projects names only its own subject type. Each row
+    // carries the page's ids so a contributor can answer the whole page at once.
+    $listUser = \App\Infrastructure\Security\CurrentUser::user();
+    $rowPanels = ($relatedPanels ?? null)?->panelsFor('project_list_row', $listUser) ?? [];
+    $listIds = array_map(fn (array $row) => (int) $row['id'], $projects);
+    ?>
     <div class="table-responsive">
     <table class="table">
         <thead><tr>
@@ -58,6 +66,7 @@ include __DIR__ . '/_helpers.php';
             <th><?= e(t('projects.manager')) ?></th>
             <th><?= e(t('projects.status')) ?></th>
             <th><?= e(t('projects.period')) ?></th>
+            <?php foreach ($rowPanels as $rowPanel): ?><th><?= e(t($rowPanel->titleKey)) ?></th><?php endforeach; ?>
             <th><span class="visually-hidden"><?= e(t('contacts.row_actions')) ?></span></th>
         </tr></thead>
         <tbody>
@@ -72,11 +81,15 @@ include __DIR__ . '/_helpers.php';
                 <td><?= e(trim((string) ($p['owner_name'] ?? '')) ?: '—') ?></td>
                 <td><?= badge(t('projects.status.' . $p['status']), $projectTone($p['status'])) ?></td>
                 <td class="nowrap"><?= e($fmt->date($p['start_date'])) ?> – <?= e($fmt->date($p['expected_end_date'])) ?></td>
+                <?php if ($rowPanels !== []): ?>
+                    <?php $rowCells = []; foreach ($relatedPanels->render('project_list_row', $p + ['list_ids' => $listIds], $listUser) as $rendered) { $rowCells[$rendered['panel']->id] = $rendered['html']; } ?>
+                    <?php foreach ($rowPanels as $rowPanel): ?><td class="project-list__extra"><?= $rowCells[$rowPanel->id] ?? '—' ?></td><?php endforeach; ?>
+                <?php endif; ?>
                 <td class="actions-cell"><?php $editUrl = '/projects/' . $p['id'] . '/edit'; $deleteUrl = '/projects/' . $p['id'] . '/delete'; include __DIR__ . '/../partials/row-actions.php'; ?></td>
             </tr>
         <?php endforeach; ?>
         <?php if ($projects === []): ?>
-            <tr><td colspan="6" class="muted"><?= e(t('projects.empty')) ?></td></tr>
+            <tr><td colspan="<?= 6 + count($rowPanels) ?>" class="muted"><?= e(t('projects.empty')) ?></td></tr>
         <?php endif; ?>
         </tbody>
     </table>

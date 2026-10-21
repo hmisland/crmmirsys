@@ -3768,4 +3768,13 @@ return [
     'tasks.project_panel.assignees' => 'مسئولان',
     'tasks.project_panel.empty' => 'هنوز وظیفه‌ای برای این پروژه ثبت نشده است.',
     'tasks.project_panel.new' => 'وظیفه جدید',
+    'tasks.project_filter.label' => 'پروژه',
+    'tasks.project_filter.all' => 'همه‌ی پروژه‌ها',
+    'tasks.project_board.title' => 'بورد وظایف پروژه',
+    'tasks.project_board.open' => 'بورد کانبان',
+    'tasks.project_board.back' => 'بازگشت به پروژه',
+    'tasks.project_board.list' => 'فهرست وظایف',
+    'tasks.project_board.move' => 'انتقال',
+    'tasks.project_board.column_empty' => 'بدون وظیفه',
+    'tasks.project_list.progress' => 'پیشرفت',
 ];

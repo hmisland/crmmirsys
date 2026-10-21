@@ -192,6 +192,8 @@ final class SalesModule implements ModuleInterface, ProvidesServices
             $router->post('/labels/{labelId}/delete', fn (Request $r) => $taskController->deleteLabel($r), [new CsrfMiddleware()]);
             // Calendar (T9) and custom statuses (T8), before /{id}.
             $router->get('/calendar', fn (Request $r) => $taskController->calendar($r));
+            // One project's task board (before /{id}).
+            $router->get('/projects/{projectId}/board', fn (Request $r) => $taskController->projectBoard($r));
             $router->get('/statuses', fn (Request $r) => $taskController->statusesPage($r));
             $router->post('/statuses', fn (Request $r) => $taskController->createStatus($r), [new CsrfMiddleware()]);
             $router->post('/statuses/{statusId}', fn (Request $r) => $taskController->updateStatus($r), [new CsrfMiddleware()]);

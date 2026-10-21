@@ -10,6 +10,8 @@
 /** @var array $createStatuses the statuses a new task may start in */
 /** @var bool $canManageStatuses */
 /** @var string $search the ?q= search text */
+/** @var ?int $projectFilter the Project filter (a project this user may see), null = all */
+/** @var array<int, string> $projectOptions projects this user may see (id => label) */
 /** @var array $listQuery the list's view / status / q / page / per_page (kept by links and actions) */
 /** @var \App\Infrastructure\Pagination\Pagination $pagination */
 /** @var array<string, bool> $can */
@@ -84,8 +86,16 @@ $newTaskHref = $returnTo . (str_contains($returnTo, '?') ? '&' : '?') . 'new=1';
                 <option value="<?= e($option['id']) ?>"<?= $statusIdFilter === (int) $option['id'] ? ' selected' : '' ?>><?= e($option['label']) ?><?= (int) $option['is_active'] !== 1 ? ' (' . e(t('tasks.status_inactive')) . ')' : '' ?></option>
             <?php endforeach; ?>
         </select>
+        <?php if ($projectOptions !== [] || $projectFilter !== null): ?>
+            <select name="project_id" aria-label="<?= e(t('tasks.project_filter.label')) ?>">
+                <option value=""><?= e(t('tasks.project_filter.all')) ?></option>
+                <?php foreach ($projectOptions as $optionId => $optionLabel): ?>
+                    <option value="<?= e($optionId) ?>"<?= $projectFilter === (int) $optionId ? ' selected' : '' ?>><?= e($optionLabel) ?></option>
+                <?php endforeach; ?>
+            </select>
+        <?php endif; ?>
         <button type="submit" class="btn"><?= icon('filter') ?><?= e(t('tasks.filter')) ?></button>
-        <?php if ($search !== '' || $statusFilter !== '' || $statusIdFilter !== null): ?>
+        <?php if ($search !== '' || $statusFilter !== '' || $statusIdFilter !== null || $projectFilter !== null): ?>
             <a href="/tasks<?= $view !== 'mine' ? '?view=' . e($view) : '' ?>" class="btn btn--ghost"><?= icon('x') ?><?= e(t('filters.clear')) ?></a>
         <?php endif; ?>
     </form>

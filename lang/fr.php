@@ -3641,4 +3641,13 @@ Il est valable :minutes minutes. Si vous ne l\'avez pas demandé, ignorez ce mes
     'tasks.project_panel.assignees' => 'Responsables',
     'tasks.project_panel.empty' => 'Aucune tâche pour ce projet pour le moment.',
     'tasks.project_panel.new' => 'Nouvelle tâche',
+    'tasks.project_filter.label' => 'Projet',
+    'tasks.project_filter.all' => 'Tous les projets',
+    'tasks.project_board.title' => 'Tableau des tâches du projet',
+    'tasks.project_board.open' => 'Tableau Kanban',
+    'tasks.project_board.back' => 'Retour au projet',
+    'tasks.project_board.list' => 'Liste des tâches',
+    'tasks.project_board.move' => 'Déplacer',
+    'tasks.project_board.column_empty' => 'Aucune tâche',
+    'tasks.project_list.progress' => 'Avancement',
 ];

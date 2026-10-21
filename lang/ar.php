@@ -3746,4 +3746,13 @@ return [
     'tasks.project_panel.assignees' => 'المكلَّفون',
     'tasks.project_panel.empty' => 'لا توجد مهام لهذا المشروع بعد.',
     'tasks.project_panel.new' => 'مهمة جديدة',
+    'tasks.project_filter.label' => 'المشروع',
+    'tasks.project_filter.all' => 'كل المشاريع',
+    'tasks.project_board.title' => 'لوحة مهام المشروع',
+    'tasks.project_board.open' => 'لوحة كانبان',
+    'tasks.project_board.back' => 'العودة إلى المشروع',
+    'tasks.project_board.list' => 'قائمة المهام',
+    'tasks.project_board.move' => 'نقل',
+    'tasks.project_board.column_empty' => 'لا توجد مهام',
+    'tasks.project_list.progress' => 'التقدّم',
 ];

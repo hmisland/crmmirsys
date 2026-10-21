@@ -221,12 +221,66 @@ final class TaskRepository extends TenantScopedRepository
             $params += ['search1' => $like, 'search2' => $like, 'search3' => $like, 'search_org' => OrganizationContext::id()];
         }
 
+        // One project's tasks (the Project filter); the id was checked by TaskService::listCriteria().
+        if (!empty($criteria['project_id'])) {
+            $where .= " AND related_type = 'project' AND related_id = :project_id";
+            $params['project_id'] = (int) $criteria['project_id'];
+        }
+
         $exclude = array_values(array_filter(array_map('intval', $criteria['exclude'] ?? []), fn (int $id) => $id > 0));
         if ($exclude !== []) {
             $where .= ' AND id NOT IN (' . implode(',', $exclude) . ')';
         }
 
         return [$where, $params];
+    }
+
+    /**
+     * Task counts per legacy status for several records of one type (the
+     * Projects list's progress), in ONE grouped query — active tasks only
+     * (not archived, not deleted), like forSubject(). $people (narrow
+     * tasks.view scopes): only tasks whose creator, primary assignee or any
+     * additional assignee is one of these users; null = no restriction.
+     *
+     * @param int[] $relatedIds
+     * @param int[]|null $people
+     * @return array<int, array<string, int>> related id => status => count
+     */
+    public function statusCountsForSubjects(string $relatedType, array $relatedIds, ?array $people): array
+    {
+        $relatedIds = array_values(array_unique(array_map('intval', $relatedIds)));
+        if ($relatedIds === [] || ($people !== null && $people === [])) {
+            return [];
+        }
+
+        $where = 'related_type = :type AND related_id IN (' . implode(',', $relatedIds) . ') AND archived_at IS NULL AND deleted_at IS NULL';
+        if ($people !== null) {
+            $in = implode(',', array_values(array_unique(array_map('intval', $people))));
+            $where .= " AND (created_by_user_id IN ({$in}) OR assigned_to_user_id IN ({$in}) OR id IN (SELECT task_id FROM task_assignees WHERE user_id IN ({$in})))";
+        }
+
+        $result = [];
+        foreach ($this->tenantFindMany("SELECT related_id, status, COUNT(*) AS c FROM tasks WHERE {$where} GROUP BY related_id, status", ['type' => $relatedType]) as $row) {
+            $result[(int) $row['related_id']][(string) $row['status']] = (int) $row['c'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Ids of the current organization's users in one team or department
+     * (TEAM / DEPARTMENT task scopes).
+     *
+     * @return int[]
+     */
+    public function userIdsWith(string $column, int $value): array
+    {
+        if (!in_array($column, ['team_id', 'department_id'], true)) {
+            return [];
+        }
+        $rows = $this->findMany("SELECT id FROM users WHERE organization_id = :org_id AND {$column} = :value", ['org_id' => OrganizationContext::id(), 'value' => $value]);
+
+        return array_map(fn (array $r) => (int) $r['id'], $rows);
     }
 
     /**

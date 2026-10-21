@@ -1661,6 +1661,8 @@ dialog.modal--wide { width: min(56rem, calc(100vw - 2rem)); }
 .task-recurrence, .task-series a { display: inline-flex; align-items: center; gap: var(--space-1); }
 .task-recurrence { white-space: nowrap; }
 .task-row__progress { max-width: 8rem; margin-top: var(--space-1); }
+/* Projects list: a contributed Progress cell (percent + bar). */
+.project-list__extra { min-inline-size: 7rem; }
 [data-checklist] > progress.progress { margin-top: var(--space-2); }
 /* Elements the checklist script shows/hides (the hidden error, an empty checklist's bar). */
 [data-checklist] [hidden] { display: none; }

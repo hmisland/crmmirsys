@@ -226,15 +226,124 @@ final class TaskService
             }
         }
 
-        $counted = count($tasks) - $dropped;
-
         return [
             'total' => count($tasks),
             'open' => $open,
             'completed' => $completed,
             'overdue' => $overdue,
-            'progress' => $counted > 0 ? (int) floor($completed * 100 / $counted) : 0,
+            'progress' => self::progressPercent($completed, count($tasks) - $dropped),
         ];
+    }
+
+    /**
+     * THE task progress definition (project overview, Tasks panel, project
+     * list): completed out of the tasks that were not rejected or cancelled,
+     * rounded down; 0 when none count.
+     */
+    public static function progressPercent(int $completed, int $counted): int
+    {
+        return $counted > 0 ? (int) floor($completed * 100 / $counted) : 0;
+    }
+
+    /**
+     * Progress of several projects at once (the Projects list page), with the
+     * same definition and the same task visibility as summaryFor() over
+     * visibleForSubject(): the viewer's tasks.view scope is applied in SQL and
+     * the counts come from ONE grouped query for all the ids (no per-project
+     * query, no task rows loaded). The projects themselves are the host
+     * page's, already authorized by their own module.
+     *
+     * @param int[] $projectIds
+     * @return array<int, int> project id => percent ([] without tasks.view)
+     */
+    public function progressForProjects(array $actingUser, array $projectIds): array
+    {
+        $projectIds = array_values(array_unique(array_filter(array_map('intval', $projectIds), fn (int $id) => $id > 0)));
+        $scope = $this->authorization->scopeFor($actingUser, Permission::TASKS_VIEW);
+        if ($scope === null || $projectIds === []) {
+            return [];
+        }
+
+        // Narrow scopes: tasks whose creator or any assignee is one of these people (scopeAllows()).
+        $people = null;
+        if ($scope !== Scope::ALL && $scope !== Scope::ORGANIZATION) {
+            $people = [(int) $actingUser['id']];
+            $column = match ($scope) {
+                Scope::TEAM => 'team_id',
+                Scope::DEPARTMENT => 'department_id',
+                default => null,
+            };
+            if ($column !== null && isset($actingUser[$column]) && $actingUser[$column] !== '' && $actingUser[$column] !== null) {
+                $people = array_merge($people, $this->tasks->userIdsWith($column, (int) $actingUser[$column]));
+            }
+        }
+
+        $result = array_fill_keys($projectIds, 0);
+        foreach ($this->tasks->statusCountsForSubjects('project', $projectIds, $people) as $projectId => $counts) {
+            $dropped = 0;
+            foreach (self::REOPEN_FROM as $closed) {
+                if ($closed !== 'completed') {
+                    $dropped += $counts[$closed] ?? 0;
+                }
+            }
+            $result[$projectId] = self::progressPercent($counts['completed'] ?? 0, array_sum($counts) - $dropped);
+        }
+
+        return $result;
+    }
+
+    /**
+     * The task list's Project filter choices: the projects this user may see
+     * (the Projects module's own rule, through TaskRelatedRecords).
+     *
+     * @return array<int, string> project id => label
+     */
+    public function projectFilterOptions(array $actingUser): array
+    {
+        $out = [];
+        foreach ($this->related->options($actingUser)['project'] ?? [] as $key => $label) {
+            $out[(int) substr((string) $key, strlen('project:'))] = $label;
+        }
+
+        return $out;
+    }
+
+    /**
+     * One project's task board: the project must be visible to the user
+     * (404 otherwise — never revealing another organization's project);
+     * tasks are visibleForSubject() grouped by the organization's statuses
+     * (active ones, plus any inactive status a task still carries), in the
+     * organization's order.
+     *
+     * @return array{project: array{id: int, label: string, url: ?string}, columns: array<int, array{status: array, tasks: array}>, tasks: array}
+     */
+    public function projectBoard(array $actingUser, int $projectId): array
+    {
+        $this->authorize($actingUser, Permission::TASKS_VIEW);
+        $resolved = $this->related->resolve($actingUser, 'project', $projectId);
+        if ($resolved['state'] !== 'ok') {
+            throw new NotFoundException('Project not found.');
+        }
+
+        $tasks = $this->visibleForSubject($actingUser, 'project', $projectId);
+        $byId = $this->statusMap();
+        $columns = [];
+        foreach ($byId as $id => $status) {
+            if ((int) $status['is_active'] === 1) {
+                $columns[(int) $id] = ['status' => $status, 'tasks' => []];
+            }
+        }
+        foreach ($tasks as $task) {
+            $status = TaskStatusService::effective($task, $byId);
+            if ($status === null) {
+                continue;
+            }
+            $columns[(int) $status['id']] ??= ['status' => $status, 'tasks' => []];
+            $columns[(int) $status['id']]['tasks'][] = $task;
+        }
+        uasort($columns, fn (array $a, array $b) => [(int) $a['status']['sort_order'], (int) $a['status']['id']] <=> [(int) $b['status']['sort_order'], (int) $b['status']['id']]);
+
+        return ['project' => ['id' => $projectId, 'label' => (string) $resolved['label'], 'url' => $resolved['url']], 'columns' => array_values($columns), 'tasks' => $tasks];
     }
 
     /**
@@ -301,7 +410,7 @@ final class TaskService
      * viewer may not see are excluded here, in SQL, so counts and pages
      * never include them.
      */
-    public function listCriteria(array $actingUser, string $view, ?string $status, string $search, ?int $statusId = null, ?int $labelId = null): array
+    public function listCriteria(array $actingUser, string $view, ?string $status, string $search, ?int $statusId = null, ?int $labelId = null, ?int $projectId = null): array
     {
         $this->authorize($actingUser, Permission::TASKS_VIEW);
         $view = in_array($view, self::LIST_VIEWS, true) ? $view : 'mine';
@@ -323,6 +432,11 @@ final class TaskService
         // A label of this organization only (T9).
         if ($labelId !== null && $this->labels->findById($labelId) !== null) {
             $criteria['label_id'] = $labelId;
+        }
+        // A project this user may see (its own module's rule); any other id —
+        // unknown, forbidden, another organization's — is ignored, revealing nothing.
+        if ($projectId !== null && $projectId > 0 && $this->related->resolve($actingUser, 'project', $projectId)['state'] === 'ok') {
+            $criteria['project_id'] = $projectId;
         }
 
         $hidden = [];
