@@ -34,6 +34,7 @@ use Modules\Projects\Controllers\ProjectController;
 use Modules\Projects\Controllers\ProjectMilestoneController;
 use Modules\Projects\Controllers\ProjectSettingsController;
 use Modules\Projects\Listeners\DealStageChangedListener;
+use Modules\Projects\Services\ProjectDashboardService;
 use Modules\Projects\Services\ProjectMilestoneService;
 use Modules\Projects\Services\ProjectService;
 
@@ -115,6 +116,7 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
             new ContactRepository(),
             new CompanyRepository(),
             $milestones,
+            new ProjectDashboardService($this->projectService, $projects),
         );
         $this->milestoneController = new ProjectMilestoneController($templates, $milestones);
         $this->settingsController = new ProjectSettingsController($templates, $this->projectService);
@@ -169,6 +171,7 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
 
             $router->get('', fn (Request $r) => $projects->index($r), [$rbac(ProjectPermission::VIEW)]);
             $router->get('/create', fn (Request $r) => $projects->showCreate($r), [$rbac(ProjectPermission::CREATE)]);
+            $router->get('/dashboard', fn (Request $r) => $projects->dashboard($r), [$rbac(ProjectPermission::VIEW)]);
             $router->post('', fn (Request $r) => $projects->create($r), [$rbac(ProjectPermission::CREATE), $csrf]);
             // "Link existing project" from a deal/contract panel; project_id comes from the form.
             $router->post('/links', fn (Request $r) => $projects->link($r), [$rbac(ProjectPermission::EDIT), $csrf]);

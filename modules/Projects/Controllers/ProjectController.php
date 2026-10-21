@@ -23,6 +23,7 @@ use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Projects\ProjectPermission;
+use Modules\Projects\Services\ProjectDashboardService;
 use Modules\Projects\Services\ProjectMilestoneService;
 use Modules\Projects\Services\ProjectService;
 
@@ -46,6 +47,7 @@ final class ProjectController extends BaseController
         private readonly ContactRepository $contactRepository,
         private readonly CompanyRepository $companyRepository,
         private readonly ?ProjectMilestoneService $milestones = null,
+        private readonly ?ProjectDashboardService $dashboard = null,
     ) {
         parent::__construct($templates);
     }
@@ -83,6 +85,20 @@ final class ProjectController extends BaseController
             'canCreate' => $this->can(ProjectPermission::CREATE),
             'canManageSettings' => $this->can(ProjectPermission::MANAGE_SETTINGS),
             'fmt' => $this->formatter(),
+        ]);
+    }
+
+    /** GET /projects/dashboard — figures and deadlines over the projects this user may see. */
+    public function dashboard(Request $request): Response
+    {
+        $user = CurrentUser::user();
+        if ($this->dashboard === null) {
+            throw new NotFoundException();
+        }
+
+        return $this->viewWithLayout('projects/dashboard', 'layout', $this->dashboard->overview($user) + [
+            'fmt' => $this->formatter(),
+            'horizonDays' => ProjectDashboardService::HORIZON_DAYS,
         ]);
     }
 

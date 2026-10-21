@@ -259,23 +259,9 @@ final class TaskService
     public function progressForProjects(array $actingUser, array $projectIds): array
     {
         $projectIds = array_values(array_unique(array_filter(array_map('intval', $projectIds), fn (int $id) => $id > 0)));
-        $scope = $this->authorization->scopeFor($actingUser, Permission::TASKS_VIEW);
-        if ($scope === null || $projectIds === []) {
+        $people = $this->scopePeople($actingUser);
+        if ($people === false || $projectIds === []) {
             return [];
-        }
-
-        // Narrow scopes: tasks whose creator or any assignee is one of these people (scopeAllows()).
-        $people = null;
-        if ($scope !== Scope::ALL && $scope !== Scope::ORGANIZATION) {
-            $people = [(int) $actingUser['id']];
-            $column = match ($scope) {
-                Scope::TEAM => 'team_id',
-                Scope::DEPARTMENT => 'department_id',
-                default => null,
-            };
-            if ($column !== null && isset($actingUser[$column]) && $actingUser[$column] !== '' && $actingUser[$column] !== null) {
-                $people = array_merge($people, $this->tasks->userIdsWith($column, (int) $actingUser[$column]));
-            }
         }
 
         $result = array_fill_keys($projectIds, 0);
@@ -290,6 +276,58 @@ final class TaskService
         }
 
         return $result;
+    }
+
+    /**
+     * Open and overdue tasks of several projects (the Projects dashboard), in
+     * ONE grouped query, with the same visibility as progressForProjects() and
+     * the same rules as summaryFor(): open = not completed, rejected or
+     * cancelled; overdue = open with a due point before now on the
+     * organization's wall clock (an all-day due date from the next day).
+     *
+     * @param int[] $projectIds
+     * @return array<int, array{open: int, overdue: int}> only projects that have open tasks ([] without tasks.view)
+     */
+    public function deadlinesForProjects(array $actingUser, array $projectIds, ?string $localNow = null): array
+    {
+        $projectIds = array_values(array_unique(array_filter(array_map('intval', $projectIds), fn (int $id) => $id > 0)));
+        $people = $this->scopePeople($actingUser);
+        if ($people === false || $projectIds === []) {
+            return [];
+        }
+        $now = $localNow ?? OrganizationTimezone::shared()->localNow();
+
+        return $this->tasks->openOverdueCountsForSubjects('project', $projectIds, $people, self::REOPEN_FROM, substr($now, 0, 10), $now);
+    }
+
+    /**
+     * The tasks.view scope as SQL "people" (scopeAllows()): null = the whole
+     * organization; a list = tasks whose creator or any assignee is one of
+     * them; false = no tasks.view at all.
+     *
+     * @return int[]|null|false
+     */
+    private function scopePeople(array $actingUser): array|null|false
+    {
+        $scope = $this->authorization->scopeFor($actingUser, Permission::TASKS_VIEW);
+        if ($scope === null) {
+            return false;
+        }
+        if ($scope === Scope::ALL || $scope === Scope::ORGANIZATION) {
+            return null;
+        }
+
+        $people = [(int) $actingUser['id']];
+        $column = match ($scope) {
+            Scope::TEAM => 'team_id',
+            Scope::DEPARTMENT => 'department_id',
+            default => null,
+        };
+        if ($column !== null && isset($actingUser[$column]) && $actingUser[$column] !== '' && $actingUser[$column] !== null) {
+            $people = array_merge($people, $this->tasks->userIdsWith($column, (int) $actingUser[$column]));
+        }
+
+        return $people;
     }
 
     /**

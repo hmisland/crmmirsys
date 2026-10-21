@@ -103,6 +103,16 @@ final class ProjectService
         return $this->projects->search($this->scoped($actingUser, $filters), $limit, $offset);
     }
 
+    /**
+     * The list's visibility rule as repository filters (organization, record
+     * scope widened by membership) — for aggregate queries over the same rows
+     * the list shows (the Projects dashboard). 403 without projects.view.
+     */
+    public function visibleFilters(array $actingUser, array $filters = []): array
+    {
+        return $this->scoped($actingUser, $filters);
+    }
+
     public function count(array $actingUser, array $filters = []): int
     {
         return $this->projects->countSearch($this->scoped($actingUser, $filters));

@@ -268,6 +268,45 @@ final class TaskRepository extends TenantScopedRepository
     }
 
     /**
+     * Open and overdue task counts per record (the Projects dashboard), in ONE
+     * grouped query; same filters as statusCountsForSubjects(). $closed are
+     * the closed legacy statuses; overdue = open with due_at before $now
+     * (timed) or a due date before $today (all-day).
+     *
+     * @param int[] $relatedIds
+     * @param int[]|null $people
+     * @param string[] $closed
+     * @return array<int, array{open: int, overdue: int}> only records with open tasks
+     */
+    public function openOverdueCountsForSubjects(string $relatedType, array $relatedIds, ?array $people, array $closed, string $today, string $now): array
+    {
+        $relatedIds = array_values(array_unique(array_map('intval', $relatedIds)));
+        if ($relatedIds === [] || ($people !== null && $people === [])) {
+            return [];
+        }
+
+        $closedIn = implode(',', array_map(fn (string $s) => $this->pdo()->quote($s), $closed));
+        $where = 'related_type = :type AND related_id IN (' . implode(',', $relatedIds) . ") AND archived_at IS NULL AND deleted_at IS NULL AND status NOT IN ({$closedIn})";
+        if ($people !== null) {
+            $in = implode(',', array_values(array_unique(array_map('intval', $people))));
+            $where .= " AND (created_by_user_id IN ({$in}) OR assigned_to_user_id IN ({$in}) OR id IN (SELECT task_id FROM task_assignees WHERE user_id IN ({$in})))";
+        }
+
+        $result = [];
+        $rows = $this->tenantFindMany(
+            "SELECT related_id, COUNT(*) AS open_count,
+                    SUM(due_at IS NOT NULL AND ((due_all_day = 1 AND DATE(due_at) < :today) OR (due_all_day = 0 AND due_at < :now))) AS overdue_count
+             FROM tasks WHERE {$where} GROUP BY related_id",
+            ['type' => $relatedType, 'today' => $today, 'now' => $now]
+        );
+        foreach ($rows as $row) {
+            $result[(int) $row['related_id']] = ['open' => (int) $row['open_count'], 'overdue' => (int) $row['overdue_count']];
+        }
+
+        return $result;
+    }
+
+    /**
      * Ids of the current organization's users in one team or department
      * (TEAM / DEPARTMENT task scopes).
      *

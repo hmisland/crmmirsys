@@ -20,16 +20,15 @@ include __DIR__ . '/_helpers.php';
 <section class="card">
     <h1><?= e(t('projects.title')) ?></h1>
 
-    <?php if ($canCreate || $canManageSettings): ?>
     <div class="actions">
         <?php if ($canCreate): ?>
             <a href="/projects/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('projects.new')) ?></a>
         <?php endif; ?>
+        <a href="/projects/dashboard" class="btn"><?= icon('bar-chart') ?><?= e(t('projects.dashboard.title')) ?></a>
         <?php if ($canManageSettings): ?>
             <a href="/projects/settings" class="btn"><?= icon('settings') ?><?= e(t('projects.settings_title')) ?></a>
         <?php endif; ?>
     </div>
-    <?php endif; ?>
 
     <form method="get" action="/projects" class="inline-form-row filter-bar">
         <?php foreach ($partyFilter as $partyKey => $partyId): ?>
