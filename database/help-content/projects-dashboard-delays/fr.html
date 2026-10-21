@@ -1,0 +1,13 @@
+<h2>Le tableau de bord</h2>
+<p>Ouvrez <strong>Projets → Tableau de bord des projets</strong>. Seuls les projets que vous voyez sont comptés : projets actifs et en retard, jalons à venir et en retard et, avec le module Ventes, tâches ouvertes et en retard.</p>
+<h2>Comment les dates sont évaluées</h2>
+<ul>
+<li><strong>Projet en retard</strong> : la date de fin prévue est passée et le projet n’est ni terminé ni annulé.</li>
+<li><strong>Bientôt terminé / à venir</strong> : dans les 14 prochains jours.</li>
+<li><strong>Jalon en retard</strong> : toujours planifié après sa date. Les jalons des projets terminés ou annulés ne sont jamais en retard.</li>
+<li><strong>Tâche en retard</strong> : ni terminée, ni annulée, ni rejetée, et son échéance est passée.</li>
+</ul>
+<p><strong>Projets à surveiller</strong> les liste du plus urgent au moins urgent, avec le motif ; <strong>Projets avec des tâches en retard</strong> renvoie au tableau Kanban de chaque projet.</p>
+<h2>E-mails de retard</h2>
+<p>Lorsqu’un projet dépasse sa date de fin prévue, ou qu’un jalon planifié dépasse sa date, le <strong>responsable du projet</strong> reçoit un seul e-mail listant les éléments nouvellement en retard. Chaque élément est envoyé une fois par date ; si une nouvelle date est fixée puis dépassée, un nouvel e-mail part.</p>
+<div class="help-callout help-callout--tip"><p><strong>Pour l’administrateur :</strong> les e-mails exigent les réglages de messagerie du CRM et le cron du planificateur (<code>app/bin/scheduler.php</code>, chaque minute).</p></div>

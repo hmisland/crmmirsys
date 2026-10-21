@@ -12,13 +12,14 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
 
 include __DIR__ . '/_helpers.php';
 ?>
 <section class="card">
-    <h1><?= e(t('projects.title')) ?></h1>
+    <h1><?= e(t('projects.title')) ?><?= help_link('projects-getting-started') ?></h1>
 
     <div class="actions">
         <?php if ($canCreate): ?>

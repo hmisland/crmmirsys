@@ -25,6 +25,7 @@ use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\icon;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 
 include __DIR__ . '/_helpers.php';
 $user = CurrentUser::user();
@@ -40,7 +41,7 @@ $kpis = [
 ?>
 <div class="page-head">
     <div>
-        <h1><?= e(t('projects.dashboard.title')) ?></h1>
+        <h1><?= e(t('projects.dashboard.title')) ?><?= help_link('projects-dashboard-delays') ?></h1>
         <p><?= e(t('projects.dashboard.subtitle', ['days' => $num($horizonDays)])) ?></p>
     </div>
     <div class="quick-actions">

@@ -1,0 +1,13 @@
+<h2>The dashboard</h2>
+<p>Open <strong>Projects → Projects dashboard</strong>. It counts only the projects you can see: active projects, overdue projects, upcoming and late milestones and, with the Sales module, open and overdue tasks.</p>
+<h2>How dates are judged</h2>
+<ul>
+<li><strong>Overdue project</strong>: the expected end date has passed and the project is not completed or cancelled.</li>
+<li><strong>Ending soon / upcoming</strong>: within the next 14 days.</li>
+<li><strong>Late milestone</strong>: still planned after its date. Milestones of completed or cancelled projects are never late.</li>
+<li><strong>Overdue task</strong>: not completed, cancelled or rejected, and its due date has passed.</li>
+</ul>
+<p><strong>Projects needing attention</strong> lists them most urgent first, with the reason; <strong>Projects with overdue tasks</strong> links to each project’s Kanban board.</p>
+<h2>Delay emails</h2>
+<p>When a project passes its expected end date, or a planned milestone passes its date, the <strong>project manager</strong> receives one email listing the newly late items. Each item is sent once per date; if you set a new date and it is missed again, a new email is sent.</p>
+<div class="help-callout help-callout--tip"><p><strong>For the administrator:</strong> emails need the CRM mail settings and the scheduler cron (<code>app/bin/scheduler.php</code>, every minute).</p></div>

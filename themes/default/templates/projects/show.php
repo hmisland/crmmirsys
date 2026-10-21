@@ -21,6 +21,7 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\local_today;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\Csrf;
@@ -103,7 +104,7 @@ $lifecycle = array_filter(array_keys($projectActionIcons), fn (string $a) => !em
 </section>
 
 <section class="card" data-project-milestones>
-    <h2><?= icon('flag') ?><?= e(t('projects.milestones.title')) ?></h2>
+    <h2><?= icon('flag') ?><?= e(t('projects.milestones.title')) ?><?= help_link('projects-milestones-tasks') ?></h2>
     <div class="table-responsive">
     <table class="table table--compact">
         <thead><tr>

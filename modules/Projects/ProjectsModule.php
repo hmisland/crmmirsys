@@ -28,12 +28,20 @@ use App\Infrastructure\Repositories\CompanyRepository;
 use App\Infrastructure\Repositories\ContactRepository;
 use App\Infrastructure\Repositories\NumberSeriesRepository;
 use App\Infrastructure\Repositories\UserRepository;
+use App\Infrastructure\Mail\MailerInterface;
+use App\Infrastructure\Modules\ModuleAccessResolver;
+use App\Infrastructure\Repositories\ModuleRepository;
+use App\Infrastructure\Repositories\OrganizationModuleRepository;
+use App\Infrastructure\Repositories\UserModuleOverrideRepository;
+use App\Infrastructure\Scheduling\ScheduledTasks;
+use App\Infrastructure\Time\OrganizationTimezone;
 use App\Infrastructure\Theme\TemplateEngine;
 use App\Infrastructure\Logging\LoggerInterface;
 use Modules\Projects\Controllers\ProjectController;
 use Modules\Projects\Controllers\ProjectMilestoneController;
 use Modules\Projects\Controllers\ProjectSettingsController;
 use Modules\Projects\Listeners\DealStageChangedListener;
+use Modules\Projects\Services\ProjectAlertService;
 use Modules\Projects\Services\ProjectDashboardService;
 use Modules\Projects\Services\ProjectMilestoneService;
 use Modules\Projects\Services\ProjectService;
@@ -124,6 +132,21 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
         // "Projects" boxes on contact, company, deal and contract pages — via
         // the Core panel slot only; ProjectPanels explains the access rules.
         (new ProjectPanels($this->projectService, $templates))->registerAll($container->make(RelatedPanelRegistry::class));
+
+        // Delay alerts by email to the project manager, by the shared scheduler
+        // (app/bin/scheduler.php, cron every minute). ProjectAlertService explains the rules.
+        $alerts = new ProjectAlertService(
+            new ProjectAlertRepository(),
+            new UserRepository(),
+            new ModuleAccessResolver(new ModuleRepository(), new OrganizationModuleRepository(), new UserModuleOverrideRepository()),
+            OrganizationTimezone::shared(),
+            $container->make(MailerInterface::class),
+        );
+        $container->make(ScheduledTasks::class)->register('projects.delay_alerts', function (int $budget) use ($alerts): string {
+            $s = $alerts->run($budget);
+
+            return $s['waiting'] ? 'waiting (mail not configured)' : sprintf('emails=%d items=%d skipped=%d failed=%d', $s['emails'], $s['items'], $s['skipped'], $s['failed']);
+        });
 
         // Notes, tags, attachments and timeline on a project, and other
         // modules' lookups, all go through this registration (ModuleGate:

@@ -6,11 +6,12 @@
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\local_now;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 use function App\Infrastructure\Theme\badge;
 use function App\Infrastructure\Theme\icon;
 ?>
 <section class="card">
-    <h1><?= e(t('followups.title')) ?></h1>
+    <h1><?= e(t('followups.title')) ?><?= help_link('followups-getting-started') ?></h1>
     <p>
         <a href="/followups/create" class="btn btn--primary"><?= icon('plus') ?><?= e(t('followups.new')) ?></a>
         <a href="/followups/rules" class="btn"><?= icon('zap') ?><?= e(t('followups.rules_title')) ?></a>

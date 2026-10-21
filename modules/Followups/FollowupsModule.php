@@ -20,11 +20,19 @@ use App\Infrastructure\Records\RecordTypeRegistry;
 use App\Infrastructure\Records\RelatedPanelRegistry;
 use App\Infrastructure\Repositories\ContactRepository;
 use App\Infrastructure\Repositories\LeadRepository;
+use App\Infrastructure\Mail\MailerInterface;
+use App\Infrastructure\Modules\ModuleAccessResolver;
+use App\Infrastructure\Repositories\ModuleRepository;
+use App\Infrastructure\Repositories\OrganizationModuleRepository;
+use App\Infrastructure\Repositories\UserModuleOverrideRepository;
 use App\Infrastructure\Repositories\UserRepository;
+use App\Infrastructure\Scheduling\ScheduledTasks;
+use App\Infrastructure\Time\OrganizationTimezone;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Followups\Controllers\FollowUpController;
 use Modules\Followups\Controllers\FollowUpRuleController;
 use Modules\Followups\Listeners\FollowUpRuleEngineListener;
+use Modules\Followups\Services\FollowUpReminderService;
 use Modules\Followups\Services\FollowUpRuleService;
 use Modules\Followups\Services\FollowUpService;
 use Modules\Sales\Events\DealStageChanged;
@@ -87,6 +95,22 @@ final class FollowupsModule implements ModuleInterface
         // DealService into an EventBus with no one listening.
         $listener = new FollowUpRuleEngineListener($ruleRepo, $executionRepo, $reminderRepo, $followUpService);
         $container->make(EventBus::class)->listen(DealStageChanged::class, $listener);
+
+        // Due reminders → one email to the assignee, by the shared scheduler
+        // (app/bin/scheduler.php, cron every minute). FollowUpReminderService explains the rules.
+        $reminderService = new FollowUpReminderService(
+            $reminderRepo,
+            $followUpRepo,
+            new UserRepository(),
+            new ModuleAccessResolver(new ModuleRepository(), new OrganizationModuleRepository(), new UserModuleOverrideRepository()),
+            OrganizationTimezone::shared(),
+            $container->make(MailerInterface::class),
+        );
+        $container->make(ScheduledTasks::class)->register('followups.reminders', function (int $budget) use ($reminderService): string {
+            $s = $reminderService->processDue($budget);
+
+            return sprintf('sent=%d skipped=%d failed=%d waiting=%d', $s['sent'], $s['skipped'], $s['failed'], $s['waiting']);
+        });
     }
 
     public function routes(Router $router): void

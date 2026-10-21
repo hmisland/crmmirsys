@@ -4,6 +4,34 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Follow-up reminders, project delay alerts and help guides
+- **Follow-up reminders are delivered**: due reminders (created by the automation rules) now become one email to the follow-up's assignee (or owner), in their language, by the shared scheduler (`app/bin/scheduler.php`, task `followups.reminders`). Closed follow-ups, inactive people and people without the Follow-ups module are skipped; each reminder is claimed atomically, so it is sent once; nothing is claimed while mail is not configured.
+- **Project delay alerts**: when an open project passes its expected end date, or a planned milestone passes its date, the project manager receives one email listing the newly late items (task `projects.delay_alerts`). Once per item and date; a rescheduled item alerts again when missed again. Same rules as the dashboard (completed / cancelled projects are never late).
+- Core helper `App\Infrastructure\Mail\MailReadiness` (the "is mail configured" rule the background senders use).
+- **5 new help guides** in en, fa, ar, tr, fr: Projects — getting started; milestones, tasks and the Kanban board; dashboard and delay alerts; Tasks — getting started; Follow-ups — getting started. "?" links on the projects list, project page (milestones), projects dashboard, tasks and follow-ups pages.
+- Migrations: core `0093_seed_projects_tasks_followups_help_articles`; module `projects` `0007_create_project_alerts_table`. 12 email translation keys × 5 languages. New suite `ReminderAlertsHelpTest`.
+- Deployment: no new cron — the existing scheduler cron (every minute) runs both tasks.
+
+### Projects Phase 3 — dashboard and deadline / delay monitoring
+- **Projects dashboard** (`/projects/dashboard`, projects.view): active and overdue projects, upcoming and late milestones, projects needing attention (overdue, ending within 14 days, late milestones) with status, progress, end date and reason, and upcoming milestones. All figures are SQL aggregates over the list's own visibility rule; completed / cancelled projects are never flagged; empty state instead of zeros.
+- With Sales: open / overdue task tiles and "projects with overdue tasks" (links to the board and the filtered task list), through `RelatedPanelRegistry` slots — one grouped query, the viewer's task scope. Projects stays independent of Sales.
+- 25 translation keys × 5 languages. New suite `ProjectDashboardTest`. No migration.
+
+### Projects Phase 2 — task filter, project task board, progress column
+- `/tasks`: optional **Project** filter (only projects the user may see; unknown / foreign ids ignored), kept across pages and actions.
+- **Project task board** (`/tasks/projects/{id}/board`): one column per organization task status; cards move through the existing status route (RBAC, CSRF, validation). Entry point in the project's Tasks panel.
+- `/projects`: **Progress** column (contributed by Sales; one grouped query per page). One progress definition everywhere: completed ÷ tasks not cancelled or rejected; 0% without tasks.
+- 9 translation keys × 5 languages. New suite `ProjectTasksPhase2Test`. No migration.
+
+### Projects Phase 1 — milestones, overview, project tasks
+- **Milestones** on the project page (name, date, planned / completed / cancelled): add, edit, delete with projects.edit on an editable project; recorded on the project timeline.
+- **Overview** card: status, manager, dates, milestone summary and — with Sales — task counts and progress.
+- **Tasks** panel on the project page (Sales, through `RelatedPanelRegistry`): the project's visible tasks, open / completed / overdue counts, progress and a quick "New task" linked to the project.
+- Migration: module `projects` `0006_create_project_milestones_table`. 25 translation keys × 5 languages. New suite `ProjectMilestonesTasksTest`.
+
+### Super Admin — manual email verification
+- **Unverified users** (`/admin/unverified-users`, Super Admin only): lists users whose email is not verified yet and verifies one by hand when the verification email never arrived (same effect as the verification link).
+
 ### Invoices for the tax system
 - Invoice form: optional **tax system invoice type** — type 1 (with buyer information), 2 (without), 3 (store sale). Type 1 cannot be saved unless the contact has a national ID or economic code. Not set = works as before.
 - **CSV for the tax system**: Invoices → "CSV for the tax system" (choose issued invoices) and a button on each issued invoice. One row per item; VAT per row from the product (exempt → 0) after the row's own discount; amounts in whole Rials; CRM invoice number in `note2`; payment cash. Problems (non-Rial currency, missing 13-digit ID, unit outside the official list, no VAT %, type not set, invoice-level discount, VAT total different from the CRM invoice) are listed first; the file is built after "build anyway". Read-only: CRM financial calculations are unchanged. Format: `docs/tax-invoice-csv.md`.

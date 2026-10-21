@@ -52,6 +52,25 @@ final class FollowUpReminderRepository extends BaseRepository
         $this->update($this->table(), ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')], 'id = :id', ['id' => $id]);
     }
 
+    /**
+     * Takes one pending reminder for this run: true only for the run that
+     * moved it out of "pending" (it is marked sent at once; the processor
+     * corrects that to skipped / failed when it can't deliver), so two
+     * overlapping runs never send the same reminder twice.
+     */
+    public function claim(int $id): bool
+    {
+        return $this->update($this->table(), ['status' => 'sent', 'sent_at' => gmdate('Y-m-d H:i:s')], "id = :id AND status = 'pending'", ['id' => $id]) === 1;
+    }
+
+    /** Final outcome other than sent: skipped (no longer relevant) or failed (could not be delivered). */
+    public function finish(int $id, string $status): void
+    {
+        if (in_array($status, ['skipped', 'failed'], true)) {
+            $this->update($this->table(), ['status' => $status, 'sent_at' => null], 'id = :id', ['id' => $id]);
+        }
+    }
+
     public function deleteAllFor(int $followUpId): void
     {
         $this->delete($this->table(), 'follow_up_id = :follow_up_id', ['follow_up_id' => $followUpId]);

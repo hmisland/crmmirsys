@@ -1,0 +1,13 @@
+<h2>Pano</h2>
+<p><strong>Projeler → Proje panosu</strong> sayfasını açın. Yalnızca görebildiğiniz projeler sayılır: aktif ve gecikmiş projeler, yaklaşan ve geciken kilometre taşları ve Satış modülüyle açık ve gecikmiş görevler.</p>
+<h2>Tarihler nasıl değerlendirilir</h2>
+<ul>
+<li><strong>Gecikmiş proje</strong>: beklenen bitiş tarihi geçti ve proje tamamlanmadı veya iptal edilmedi.</li>
+<li><strong>Yakında bitiyor / yaklaşan</strong>: önümüzdeki 14 gün içinde.</li>
+<li><strong>Geciken kilometre taşı</strong>: tarihinden sonra hâlâ planlanmış durumda. Tamamlanan veya iptal edilen projelerin kilometre taşları hiçbir zaman gecikmiş sayılmaz.</li>
+<li><strong>Gecikmiş görev</strong>: tamamlanmamış, iptal edilmemiş veya reddedilmemiş ve son tarihi geçmiş.</li>
+</ul>
+<p><strong>İlgi gerektiren projeler</strong> bunları en acilden başlayarak nedeniyle listeler; <strong>Gecikmiş görevi olan projeler</strong> her projenin Kanban panosuna bağlanır.</p>
+<h2>Gecikme e-postaları</h2>
+<p>Bir proje beklenen bitiş tarihini veya planlanmış bir kilometre taşı tarihini geçtiğinde <strong>proje yöneticisi</strong> yeni geciken öğelerin listesini içeren tek bir e-posta alır. Her öğe her tarih için bir kez gönderilir; yeni bir tarih belirlenip o da kaçırılırsa yeni bir e-posta gider.</p>
+<div class="help-callout help-callout--tip"><p><strong>Yönetici için:</strong> e-postalar CRM posta ayarlarını ve zamanlayıcı cron’unu (<code>app/bin/scheduler.php</code>, her dakika) gerektirir.</p></div>

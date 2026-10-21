@@ -27,6 +27,7 @@
 
 use function App\Infrastructure\Theme\e;
 use function App\Infrastructure\Theme\t;
+use function App\Infrastructure\Theme\help_link;
 use function App\Infrastructure\Theme\icon;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Csrf;
@@ -52,7 +53,7 @@ $newTaskHref = $returnTo . (str_contains($returnTo, '?') ? '&' : '?') . 'new=1';
 <section class="card">
     <div class="card__header">
         <div>
-            <h1><?= e(t($titleKey)) ?></h1>
+            <h1><?= e(t($titleKey)) ?><?= help_link('tasks-getting-started') ?></h1>
             <p class="muted"><?= e(t($hintKey)) ?></p>
         </div>
         <div class="actions">
