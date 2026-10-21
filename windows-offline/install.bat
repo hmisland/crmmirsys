@@ -29,6 +29,18 @@ if not exist "%MDB%\mysqld.exe" (
     goto :fail
 )
 echo   PHP and MariaDB found.
+"%PHP%" -v >nul 2>&1
+if errorlevel 1 (
+    if exist "%RT%\VC_redist.x64.exe" (
+        echo   PHP needs Microsoft Visual C++ Runtime - installing it ...
+        "%RT%\VC_redist.x64.exe" /install /quiet /norestart
+    )
+)
+"%PHP%" -v >nul 2>&1
+if errorlevel 1 (
+    echo   [ERROR] PHP does not run. Install Microsoft Visual C++ Redistributable x64 and try again.
+    goto :fail
+)
 
 echo.
 echo [2/7] Preparing php.ini ...
