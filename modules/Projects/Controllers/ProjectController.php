@@ -23,6 +23,7 @@ use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
 use Modules\Projects\ProjectPermission;
+use Modules\Projects\Services\ProjectMilestoneService;
 use Modules\Projects\Services\ProjectService;
 
 use function App\Infrastructure\Theme\t;
@@ -44,6 +45,7 @@ final class ProjectController extends BaseController
         private readonly AttachmentService $attachments,
         private readonly ContactRepository $contactRepository,
         private readonly CompanyRepository $companyRepository,
+        private readonly ?ProjectMilestoneService $milestones = null,
     ) {
         parent::__construct($templates);
     }
@@ -134,6 +136,7 @@ final class ProjectController extends BaseController
         $id = (int) $request->attribute('id');
         $project = $this->projects->find($user, $id);
         $actions = $this->projects->allowedActions($user, $project);
+        $milestones = $this->milestones?->forProject($user, $id) ?? [];
 
         return $this->viewWithLayout('projects/show', 'layout', [
             'project' => $project,
@@ -149,6 +152,9 @@ final class ProjectController extends BaseController
             'allTags' => $this->tags->allForOrganization(),
             'timeline' => $this->timeline->forSubject('project', $id),
             'attachments' => $this->attachments->forSubject('project', $id),
+            'milestones' => $milestones,
+            'milestoneSummary' => $this->milestones?->summary($milestones) ?? ['total' => 0, 'completed' => 0, 'next' => null],
+            'milestoneStatuses' => ProjectMilestoneService::STATUSES,
             'fmt' => $this->formatter(),
         ]);
     }

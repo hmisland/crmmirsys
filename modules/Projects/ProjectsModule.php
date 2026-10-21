@@ -31,8 +31,10 @@ use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Theme\TemplateEngine;
 use App\Infrastructure\Logging\LoggerInterface;
 use Modules\Projects\Controllers\ProjectController;
+use Modules\Projects\Controllers\ProjectMilestoneController;
 use Modules\Projects\Controllers\ProjectSettingsController;
 use Modules\Projects\Listeners\DealStageChangedListener;
+use Modules\Projects\Services\ProjectMilestoneService;
 use Modules\Projects\Services\ProjectService;
 
 /**
@@ -56,6 +58,7 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
     private ?ProjectService $projectService = null;
     private ?ProjectController $projectController = null;
     private ?ProjectSettingsController $settingsController = null;
+    private ?ProjectMilestoneController $milestoneController = null;
 
     public function manifest(): ModuleManifest
     {
@@ -94,6 +97,13 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
             $this->projectService,
         ));
 
+        $milestones = new ProjectMilestoneService(
+            $this->projectService,
+            new ProjectMilestoneRepository(),
+            $container->make(AuthorizationEngine::class),
+            $container->make(TimelineService::class),
+        );
+
         $templates = $container->make(TemplateEngine::class);
         $this->projectController = new ProjectController(
             $templates,
@@ -104,7 +114,9 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
             $container->make(AttachmentService::class),
             new ContactRepository(),
             new CompanyRepository(),
+            $milestones,
         );
+        $this->milestoneController = new ProjectMilestoneController($templates, $milestones);
         $this->settingsController = new ProjectSettingsController($templates, $this->projectService);
 
         // "Projects" boxes on contact, company, deal and contract pages — via
@@ -149,9 +161,10 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
     {
         $projects = $this->projectController;
         $settings = $this->settingsController;
+        $milestones = $this->milestoneController;
         $rbac = fn (string $key) => new RbacMiddleware($key);
 
-        $router->group('/projects', [new AuthMiddleware(), new ModuleMiddleware(self::KEY)], function (Router $router) use ($projects, $settings, $rbac) {
+        $router->group('/projects', [new AuthMiddleware(), new ModuleMiddleware(self::KEY)], function (Router $router) use ($projects, $settings, $milestones, $rbac) {
             $csrf = new CsrfMiddleware();
 
             $router->get('', fn (Request $r) => $projects->index($r), [$rbac(ProjectPermission::VIEW)]);
@@ -171,6 +184,11 @@ final class ProjectsModule implements ModuleInterface, ProvidesServices
             $router->post('/{id}/members', fn (Request $r) => $projects->addMember($r), [$rbac(ProjectPermission::MANAGE_MEMBERS), $csrf]);
             $router->post('/{id}/members/{memberId}/delete', fn (Request $r) => $projects->removeMember($r), [$rbac(ProjectPermission::MANAGE_MEMBERS), $csrf]);
             $router->post('/{id}/links/{linkId}/delete', fn (Request $r) => $projects->unlink($r), [$rbac(ProjectPermission::EDIT), $csrf]);
+            // Milestones: projects.edit on the project (re-checked with the row by ProjectMilestoneService).
+            $router->post('/{id}/milestones', fn (Request $r) => $milestones->create($r), [$rbac(ProjectPermission::EDIT), $csrf]);
+            $router->get('/{id}/milestones/{milestoneId}/edit', fn (Request $r) => $milestones->edit($r), [$rbac(ProjectPermission::EDIT)]);
+            $router->post('/{id}/milestones/{milestoneId}', fn (Request $r) => $milestones->update($r), [$rbac(ProjectPermission::EDIT), $csrf]);
+            $router->post('/{id}/milestones/{milestoneId}/delete', fn (Request $r) => $milestones->delete($r), [$rbac(ProjectPermission::EDIT), $csrf]);
         });
     }
 

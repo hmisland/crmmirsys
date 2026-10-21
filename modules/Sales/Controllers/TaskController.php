@@ -639,6 +639,6 @@ final class TaskController extends BaseController
     public static function isSafeReturnTo(string $path): bool
     {
         // The query part may carry the list's url-encoded search (%XX, +, -, .).
-        return preg_match('#^/(tasks(/\d+)?(\?[A-Za-z0-9_=&%+.\-]*)?|deals/\d+)$#D', $path) === 1;
+        return preg_match('#^/(tasks(/\d+)?(\?[A-Za-z0-9_=&%+.\-]*)?|deals/\d+|projects/\d+)$#D', $path) === 1;
     }
 }

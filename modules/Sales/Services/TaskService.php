@@ -14,6 +14,7 @@ use App\Infrastructure\Authorization\Permission;
 use App\Infrastructure\Authorization\Scope;
 use App\Infrastructure\Repositories\OrganizationContext;
 use App\Infrastructure\Repositories\UserRepository;
+use App\Infrastructure\Time\OrganizationTimezone;
 use Modules\Sales\TaskChecklistRepository;
 use Modules\Sales\TaskLabelRepository;
 use Modules\Sales\TaskRepository;
@@ -190,6 +191,73 @@ final class TaskService
     public function visibleForSubject(array $actingUser, string $relatedType, int $relatedId): array
     {
         return $this->visibleRows($actingUser, $this->tasks->forSubject($relatedType, $relatedId));
+    }
+
+    /**
+     * Counts and progress of a record's tasks (e.g. a project's panel), over
+     * rows the caller already filtered (visibleForSubject()). Closed =
+     * completed, rejected or cancelled; overdue = still open with a due
+     * point before now (organization wall clock — an all-day due date is
+     * overdue from the next day). Progress = completed out of the tasks that
+     * were not rejected or cancelled, 0 when there are none.
+     *
+     * @return array{total: int, open: int, completed: int, overdue: int, progress: int}
+     */
+    public function summaryFor(array $tasks, ?string $localNow = null): array
+    {
+        $now = $localNow ?? OrganizationTimezone::shared()->localNow();
+        $today = substr($now, 0, 10);
+        $open = $completed = $overdue = $dropped = 0;
+
+        foreach ($tasks as $task) {
+            $status = (string) ($task['status'] ?? 'pending');
+            if ($status === 'completed') {
+                $completed++;
+                continue;
+            }
+            if (in_array($status, self::REOPEN_FROM, true)) {
+                $dropped++;
+                continue;
+            }
+            $open++;
+            $due = (string) ($task['due_at'] ?? '');
+            if ($due !== '' && ((bool) ($task['due_all_day'] ?? true) ? substr($due, 0, 10) < $today : $due < $now)) {
+                $overdue++;
+            }
+        }
+
+        $counted = count($tasks) - $dropped;
+
+        return [
+            'total' => count($tasks),
+            'open' => $open,
+            'completed' => $completed,
+            'overdue' => $overdue,
+            'progress' => $counted > 0 ? (int) floor($completed * 100 / $counted) : 0,
+        ];
+    }
+
+    /**
+     * Names of each task's assignees (primary + additional), for display.
+     * Only users of the current organization are named.
+     *
+     * @return array<int, string[]> task id => names
+     */
+    public function assigneeNamesFor(array $tasks): array
+    {
+        $names = [];
+        foreach ($this->users->findAllInOrganization(OrganizationContext::id()) as $u) {
+            $names[(int) $u['id']] = trim($u['first_name'] . ' ' . ($u['last_name'] ?? ''));
+        }
+
+        $additional = $this->tasks->assigneeIdsFor(array_map(fn (array $t) => (int) $t['id'], $tasks));
+        $result = [];
+        foreach ($tasks as $task) {
+            $ids = array_unique(array_filter([(int) ($task['assigned_to_user_id'] ?? 0), ...($additional[(int) $task['id']] ?? [])]));
+            $result[(int) $task['id']] = array_values(array_filter(array_map(fn (int $id) => $names[$id] ?? null, $ids), fn ($n) => $n !== null && $n !== ''));
+        }
+
+        return $result;
     }
 
     /** The dashboard's upcoming tasks of this user, same visibility rule as the lists. */

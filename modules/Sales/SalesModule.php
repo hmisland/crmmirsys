@@ -22,6 +22,7 @@ use App\Infrastructure\Modules\ModuleInterface;
 use App\Infrastructure\Modules\ProvidesServices;
 use App\Infrastructure\Records\RecordType;
 use App\Infrastructure\Records\RecordTypeRegistry;
+use App\Infrastructure\Records\RelatedPanelRegistry;
 use App\Infrastructure\Modules\ModuleManifest;
 use App\Infrastructure\Repositories\CompanyRepository;
 use App\Infrastructure\Repositories\ContactRepository;
@@ -146,6 +147,9 @@ final class SalesModule implements ModuleInterface, ProvidesServices
 
         $this->pipelineController = new PipelineController($templates, $pipelineService);
         $this->taskController = new TaskController($templates, $taskService, $taskLabelService, $this->reminderService);
+
+        // "Tasks" on project pages — via the Core panel slot only (ProjectTaskPanels).
+        (new ProjectTaskPanels($taskService, $templates))->registerAll($container->make(RelatedPanelRegistry::class));
     }
 
     /** The reminder/email and recurrence processors, for modules/Sales/bin/task-reminders.php (cron). */
