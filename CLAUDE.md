@@ -3,6 +3,10 @@
 Plain PHP 8.1 + MySQL, no framework, no Composer/Node at runtime (shared
 cPanel hosting). Templates are PHP files under `themes/default/templates`.
 
+**Start here:** read `docs/PROJECT-KNOWLEDGE.md` first. It is the compact project
+reference (architecture, modules, migrations, decisions, workflow, test baseline,
+history), so the repository and old chats don't need rescanning.
+
 ## Before any UI work
 Read `docs/ui-design-system.md` first and follow it. Do not invent new
 colors, spacing, or one-off page styles — use the tokens and components
