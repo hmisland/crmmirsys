@@ -36,7 +36,7 @@ $fieldError = fn (string $field) => isset($errors[$field]) ? $errors[$field][0] 
 
         <label for="password_confirmation"><?= e(t('auth.register.confirm_password')) ?></label>
         <input type="password" id="password_confirmation" name="password_confirmation" required>
-
+        <?php $captchaError = $fieldError('captcha'); include $theme->templatesPath() . '/partials/captcha.php'; ?>
         <button type="submit" class="btn btn--primary"><?= icon('user-plus') ?><?= e(t('auth.register.submit')) ?></button>
     </form>
 

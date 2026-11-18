@@ -32,6 +32,11 @@ $css = $theme->assetUrl('css/app.css') . (is_file($cssFile) ? '?v=' . filemtime(
     <meta name="referrer" content="no-referrer">
     <title><?= e(($publicTitle ?? null) ?: $brand) ?></title>
     <link rel="stylesheet" href="<?= e($css) ?>">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
 </head>
 <body class="dir-<?= e($dir) ?>">
 <?php include __DIR__ . '/partials/icons.php'; ?>

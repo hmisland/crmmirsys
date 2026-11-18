@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Application\Services\ApiTokenService;
 use App\Application\Services\AuthService;
 use App\Application\Services\BankAccountService;
 use App\Application\Services\BankService;
@@ -47,6 +48,7 @@ use App\Infrastructure\Records\RecordType;
 use App\Infrastructure\Records\RecordTypeRegistry;
 use App\Infrastructure\Records\RelatedPanelRegistry;
 use App\Infrastructure\Repositories\AttachmentRepository;
+use App\Infrastructure\Repositories\ApiTokenRepository;
 use App\Infrastructure\Repositories\AuthTokenRepository;
 use App\Infrastructure\Repositories\CompanyRepository;
 use App\Infrastructure\Repositories\ContactEmailRepository;
@@ -93,6 +95,9 @@ use App\Infrastructure\Repositories\UserBankAccountRepository;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Localization\Locale;
 use App\Infrastructure\Localization\Translator;
+use App\Core\Exceptions\AuthenticationException;
+use App\Infrastructure\Security\BearerToken;
+use App\Infrastructure\Security\CorsPolicy;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\LoginThrottle;
 use App\Infrastructure\Security\Session;
@@ -264,6 +269,13 @@ final class Application
             new LoginThrottle(new LoginAttemptRepository()),
             $c->make(OrganizationService::class),
             new RoleRepository(),
+            new ApiTokenRepository(),
+        ));
+
+        // Phase 0 multi-client API: Bearer access tokens for non-browser clients.
+        $this->container->singleton(ApiTokenService::class, fn () => new ApiTokenService(
+            new ApiTokenRepository(),
+            new UserRepository(),
         ));
 
         $this->container->singleton(BankAccountService::class, fn () => new BankAccountService(
@@ -630,6 +642,20 @@ final class Application
 
     public function handle(Request $request): Response
     {
+        // CORS (explicit origin allowlist, /api/* only, off unless configured)
+        // is decided before routing: a preflight is an OPTIONS request that no
+        // route matches, and it carries no credentials to authenticate.
+        $cors = CorsPolicy::fromConfig();
+
+        if ($cors->isEnabled() && $cors->isPreflight($request)) {
+            return $cors->preflight($request);
+        }
+
+        return $cors->decorate($request, $this->process($request));
+    }
+
+    private function process(Request $request): Response
+    {
         // Defensive per-request reset: on ordinary shared hosting each
         // request is a fresh PHP process so these statics start empty
         // anyway, but resetting explicitly keeps this correct even if
@@ -640,42 +666,78 @@ final class Application
         Locale::reset();
         $this->container->make(ModuleGate::class)->reset();
 
-        // Resolves "who is logged in" (if anyone) for EVERY request,
-        // not just routes that require login. This used to only
-        // happen inside AuthMiddleware, which is only attached to
-        // protected routes (like /profile) — so a public page like
-        // the homepage never populated CurrentUser at all, and the
-        // layout's "logged in as X / Log out" nav silently showed the
-        // guest state even for a logged-in visitor. AuthMiddleware
-        // now just checks CurrentUser::isGuest() (see its docblock)
-        // instead of re-resolving the user itself.
-        $this->resolveCurrentUser();
-
-        // Same reasoning, one step further (Phase 3): resolve
-        // OrganizationContext from the now-known CurrentUser for
-        // EVERY request too, rather than depending on every route
-        // remembering to attach TenantMiddleware. A Super Admin (no
-        // organization_id) simply never gets a context set here —
-        // per Phase 0 §12–13, their cross-org access must go through
-        // the explicit, conspicuous SuperAdminContext::run() wrapper
-        // instead, never an implicit global bypass.
-        $this->resolveOrganizationContext();
-
-        // One step further again: resolve which language/direction
-        // this request renders in, from the now-known CurrentUser (a
-        // logged-in user's own `language` — always populated at
-        // registration, see AuthService::register()) or, for a guest
-        // who hasn't logged in yet, the app's configured default.
-        $this->resolveLocale();
-
         try {
+            // Resolves "who is logged in" (if anyone) for EVERY request,
+            // not just routes that require login. This used to only
+            // happen inside AuthMiddleware, which is only attached to
+            // protected routes (like /profile) — so a public page like
+            // the homepage never populated CurrentUser at all, and the
+            // layout's "logged in as X / Log out" nav silently showed the
+            // guest state even for a logged-in visitor. AuthMiddleware
+            // now just checks CurrentUser::isGuest() (see its docblock)
+            // instead of re-resolving the user itself.
+            //
+            // A /api/* request that presents a Bearer credential is
+            // authenticated by that token and by nothing else: it never
+            // consults the session, and an invalid/expired/revoked token is
+            // a 401 — never a silent fall-back to a cookie session.
+            if (BearerToken::appliesTo($request)) {
+                $this->resolveBearerUser($request);
+            } else {
+                $this->resolveCurrentUser();
+            }
+
+            // Same reasoning, one step further (Phase 3): resolve
+            // OrganizationContext from the now-known CurrentUser for
+            // EVERY request too, rather than depending on every route
+            // remembering to attach TenantMiddleware. A Super Admin (no
+            // organization_id) simply never gets a context set here —
+            // per Phase 0 §12–13, their cross-org access must go through
+            // the explicit, conspicuous SuperAdminContext::run() wrapper
+            // instead, never an implicit global bypass. The organization
+            // always comes from the user row, never from the token or client.
+            $this->resolveOrganizationContext();
+
+            // One step further again: resolve which language/direction
+            // this request renders in, from the now-known CurrentUser (a
+            // logged-in user's own `language` — always populated at
+            // registration, see AuthService::register()) or, for a guest
+            // who hasn't logged in yet, the app's configured default.
+            $this->resolveLocale();
+
             return $this->router->dispatch($request);
         } catch (\Throwable $e) {
             /** @var ErrorHandler $handler */
             $handler = $this->container->make(ErrorHandler::class);
 
-            return $handler->handle($e, $request);
+            $response = $handler->handle($e, $request);
+
+            if ($e instanceof AuthenticationException && BearerToken::appliesTo($request)) {
+                $response->withHeader('WWW-Authenticate', 'Bearer');
+            }
+
+            return $response;
         }
+    }
+
+    /**
+     * @throws AuthenticationException when the presented token cannot be used,
+     *         for any reason, without telling the client which one
+     */
+    private function resolveBearerUser(Request $request): void
+    {
+        $authenticated = $this->container->make(ApiTokenService::class)->authenticate(
+            (string) BearerToken::credential($request),
+            (string) $request->server('REMOTE_ADDR', '')
+        );
+
+        if ($authenticated === null) {
+            throw new AuthenticationException('Invalid or expired access token.', 'invalid_token');
+        }
+
+        CurrentUser::set($authenticated['user']);
+        $request->setAttribute('auth_method', 'bearer');
+        $request->setAttribute('api_token_id', $authenticated['token_id']);
     }
 
     private function resolveCurrentUser(): void
@@ -722,9 +784,16 @@ final class Application
 
     public function run(): void
     {
-        Session::start();
-
         $request = Request::fromGlobals();
+
+        // Bearer-authenticated requests, token issuance and CORS preflights
+        // are stateless: starting a session for them would create a session
+        // file and emit a Set-Cookie for nothing (and would blur the line
+        // between cookie-authenticated and token-authenticated requests).
+        if (!BearerToken::isStateless($request)) {
+            Session::start();
+        }
+
         $response = $this->handle($request);
         $response->send();
     }

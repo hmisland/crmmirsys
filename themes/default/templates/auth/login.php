@@ -22,7 +22,7 @@ use App\Infrastructure\Security\Csrf;
 
         <label for="password"><?= e(t('auth.password')) ?></label>
         <input type="password" id="password" name="password" required>
-
+        <?php include $theme->templatesPath() . '/partials/captcha.php'; ?>
         <button type="submit" class="btn btn--primary"><?= icon('log-in') ?><?= e(t('auth.login.submit')) ?></button>
     </form>
 

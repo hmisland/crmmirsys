@@ -2609,3 +2609,8 @@ body.nav-locked { overflow: hidden; }
 .line-items__rows { counter-reset: line-item; }
 .line-items__rows > .line-item { counter-increment: line-item; }
 .line-items__rows > .line-item::before { content: "#" counter(line-item); font-size: var(--text-sm); font-weight: 600; color: var(--color-text-muted); }
+/* Self-hosted captcha (login / register) */
+.captcha { display: flex; align-items: center; gap: var(--space-2); }
+.captcha__img { max-width: 100%; height: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.captcha__refresh { flex: none; }
+input#captcha { direction: ltr; text-align: center; letter-spacing: 0.35em; font-variant-numeric: tabular-nums; }

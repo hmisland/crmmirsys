@@ -46,6 +46,9 @@ return [
     'auth.register.confirm_password' => 'تأكيد كلمة المرور',
     'auth.register.submit' => 'تسجيل',
     'auth.register.have_account' => 'لديك حساب بالفعل؟',
+    'auth.captcha.label' => 'أدخل رمز الأمان الظاهر في الصورة',
+    'auth.captcha.refresh' => 'رمز جديد',
+    'auth.captcha.invalid' => 'رمز الأمان غير صحيح أو منتهي الصلاحية. يرجى المحاولة مرة أخرى.',
 
     // Common
     'common.search' => 'بحث',

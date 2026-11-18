@@ -4,6 +4,19 @@ All notable changes to this project are recorded here, per Phase 0 §65/§108.
 
 ## [Unreleased]
 
+### Sync with production: multi-client API, Captcha, CORS, PWA icons
+These changes were already running on production; this brings `main` in line with it.
+- **Bearer access tokens** for non-browser clients (mobile app / PWA): `POST /api/v1/auth/token` (email, password, device_name) issues a token, `DELETE /api/v1/auth/token` revokes it. Tokens are 32 random bytes with the prefix `crmat_`; only their SHA-256 hash is stored. They expire after 30 days (`AUTH_API_TOKEN_TTL_DAYS`) and each user can hold at most 10 (`AUTH_API_TOKEN_MAX_PER_USER`; issuing one more revokes the oldest). Issuing is rate-limited per IP. A password reset revokes all of the user's tokens, and an inactive user's token is refused. A `/api/*` request with a Bearer header is authenticated by the token only, never by the session, and gets no session cookie.
+- **CSRF**: the token is also accepted from the `X-CSRF-Token` header (`GET /api/v1/auth/csrf`). Requests authenticated by a valid Bearer token are exempt. API `logout` and `profile` now check CSRF for cookie sessions.
+- **Contacts API (read-only)**: `GET /api/v1/contacts` and `/api/v1/contacts/{id}`, with `contacts.view` and the same organization scope as the web pages (`RequireOrganizationMiddleware`: no organization → 404).
+- **CORS** for `/api/*` only, from an explicit list of allowed origins (`CORS_ALLOWED_ORIGINS`; off when empty).
+- **Captcha** (5 digits, GD) on the web login and register forms (`AUTH_CAPTCHA_ENABLED`, `AUTH_CAPTCHA_TTL_SECONDS`); 3 translation keys × 5 languages.
+- Favicons and the web app manifest; `.htaccess` keeps pentazone.ir and pentazone.ca out of the CRM (the cPanel PHP handler stays on the server only).
+- `OwnKavenegarSender` added (not used yet).
+- Migration: core `0094_create_api_access_tokens_table` (already applied on production).
+- **Known pre-existing test failures** (identical on `main` before this sync; not caused by it): with a fully migrated `crm_local`, `tests/lite` gives 1134 tests — 1047 passed, 26 failed, 61 skipped. `ModuleCatalogTest` (12), `CustomerPortalTest` (2), `IntegrationHelpTest` (1), `ProjectTasksPhase2Test` (1) — likely the local `modules` table is not synced with the module registry. `TimezoneBusinessLogicTest` (10) and the 61 skips — an earlier suite (probably `TaxInvoiceTest`) leaves a transaction open in the full run; each suite passes on its own.
+- Open points: the API register / login / token endpoints have no Captcha; changing the password from the profile does not revoke tokens; token authentication does not check the organization's status; `docs/phase0-multi-client-api.md` (referenced in `config/auth.php`) is not written yet.
+
 ### Follow-up reminders, project delay alerts and help guides
 - **Follow-up reminders are delivered**: due reminders (created by the automation rules) now become one email to the follow-up's assignee (or owner), in their language, by the shared scheduler (`app/bin/scheduler.php`, task `followups.reminders`). Closed follow-ups, inactive people and people without the Follow-ups module are skipped; each reminder is claimed atomically, so it is sent once; nothing is claimed while mail is not configured.
 - **Project delay alerts**: when an open project passes its expected end date, or a planned milestone passes its date, the project manager receives one email listing the newly late items (task `projects.delay_alerts`). Once per item and date; a rescheduled item alerts again when missed again. Same rules as the dashboard (completed / cancelled projects are never late).

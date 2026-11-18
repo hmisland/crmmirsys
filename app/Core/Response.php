@@ -46,6 +46,31 @@ final class Response
         return $this;
     }
 
+    public function status(): int
+    {
+        return $this->status;
+    }
+
+    /**
+     * Case-insensitive header lookup (null when absent). Mainly so tests and
+     * middleware can inspect a response without sending it.
+     */
+    public function header(string $name): ?string
+    {
+        foreach ($this->headers as $key => $value) {
+            if (strcasecmp($key, $name) === 0) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    public function body(): string
+    {
+        return $this->body;
+    }
+
     public function send(): void
     {
         http_response_code($this->status);

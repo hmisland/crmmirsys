@@ -238,7 +238,7 @@ $dashboardController = new DashboardController(
 $router->get('/', fn (Request $r) => $dashboardController->index($r));
 
 // --- Auth (Phase 2) ---------------------------------------------------
-
+$router->get('/captcha', fn (Request $r) => $authController->captcha($r));
 $router->get('/login', fn (Request $r) => $authController->showLogin($r));
 $router->post('/login', fn (Request $r) => $authController->login($r), [new CsrfMiddleware()]);
 

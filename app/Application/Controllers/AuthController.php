@@ -16,6 +16,8 @@ use App\Core\Response;
 use App\Infrastructure\Security\CurrentUser;
 use App\Infrastructure\Security\Session;
 use App\Infrastructure\Theme\TemplateEngine;
+use App\Infrastructure\Security\Captcha;
+use function App\Infrastructure\Theme\t;
 
 /**
  * Per Phase 0 §55: request/response plumbing only — every actual
@@ -36,6 +38,17 @@ final class AuthController extends BaseController
         parent::__construct($templates);
     }
 
+    public function captcha(Request $request): Response
+    {
+        if (!Captcha::isEnabled()) {
+            return Response::html('', 404);
+        }
+
+        return Response::html(Captcha::render(Captcha::issue()))
+            ->withHeader('Content-Type', 'image/png')
+            ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->withHeader('Pragma', 'no-cache');
+    }
     public function showLogin(Request $request): Response
     {
         if (!CurrentUser::isGuest()) {
@@ -47,6 +60,12 @@ final class AuthController extends BaseController
 
     public function login(Request $request): Response
     {
+                if (Captcha::isEnabled() && !Captcha::verify((string) $request->input('captcha', ''))) {
+            return $this->viewWithLayout('auth/login', 'layout', [
+                'error' => t('auth.captcha.invalid'),
+                'old' => ['email' => $request->input('email', '')],
+            ], 422);
+        }
         try {
             $this->auth->login(
                 (string) $request->input('email', ''),
@@ -74,6 +93,12 @@ final class AuthController extends BaseController
 
     public function register(Request $request): Response
     {
+                if (Captcha::isEnabled() && !Captcha::verify((string) $request->input('captcha', ''))) {
+            return $this->viewWithLayout('auth/register', 'layout', [
+                'errors' => ['captcha' => [t('auth.captcha.invalid')]],
+                'old' => $request->all(),
+            ], 422);
+        }
         try {
             $this->auth->register($request->all());
         } catch (ValidationException $e) {

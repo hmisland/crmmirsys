@@ -46,6 +46,9 @@ return [
     'auth.register.confirm_password' => 'Şifreyi onayla',
     'auth.register.submit' => 'Kaydol',
     'auth.register.have_account' => 'Zaten bir hesabınız var mı?',
+    'auth.captcha.label' => 'Görseldeki güvenlik kodunu girin',
+    'auth.captcha.refresh' => 'Yeni kod',
+    'auth.captcha.invalid' => 'Güvenlik kodu yanlış veya süresi dolmuş. Lütfen tekrar deneyin.',
 
     // Common
     'common.search' => 'Ara',

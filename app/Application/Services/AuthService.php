@@ -17,6 +17,7 @@ use App\Domain\Users\Events\UserRegistered;
 use App\Infrastructure\Config\Config;
 use App\Infrastructure\Logging\LoggerInterface;
 use App\Infrastructure\Mail\MailerInterface;
+use App\Infrastructure\Repositories\ApiTokenRepository;
 use App\Infrastructure\Repositories\AuthTokenRepository;
 use App\Infrastructure\Repositories\RoleRepository;
 use App\Infrastructure\Repositories\UserRepository;
@@ -41,6 +42,7 @@ final class AuthService extends BaseService
         private readonly LoginThrottle $throttle,
         private readonly OrganizationService $organizations,
         private readonly RoleRepository $roles,
+        private readonly ?ApiTokenRepository $apiTokens = null,
     ) {
         parent::__construct($logger, $events);
     }
@@ -145,7 +147,13 @@ final class AuthService extends BaseService
         $this->events->dispatch(new UserEmailVerified((int) $token['user_id']));
     }
 
-    public function login(string $email, string $password, string $ip): array
+    /**
+     * Verifies credentials and every account precondition (throttle, active,
+     * email verified) and records the login — but creates NO session and no
+     * token: callers decide what a successful authentication turns into
+     * (web session via login(), Bearer token via loginForApiToken()).
+     */
+    public function authenticateCredentials(string $email, string $password, string $ip): array
     {
         $email = strtolower(trim($email));
 
@@ -180,11 +188,32 @@ final class AuthService extends BaseService
         }
 
         $this->users->updateLastLogin((int) $user['id']);
+
+        return $this->users->findById((int) $user['id']);
+    }
+
+    public function login(string $email, string $password, string $ip): array
+    {
+        $user = $this->authenticateCredentials($email, $password, $ip);
+
         Session::login((int) $user['id']);
 
         $this->events->dispatch(new UserLoggedIn((int) $user['id']));
 
-        return $this->users->findById((int) $user['id']);
+        return $user;
+    }
+
+    /**
+     * Same checks as login() but without touching the PHP session: the caller
+     * (token endpoint) issues a Bearer token for the returned user instead.
+     */
+    public function loginForApiToken(string $email, string $password, string $ip): array
+    {
+        $user = $this->authenticateCredentials($email, $password, $ip);
+
+        $this->events->dispatch(new UserLoggedIn((int) $user['id']));
+
+        return $user;
     }
 
     public function logout(): void
@@ -249,6 +278,9 @@ final class AuthService extends BaseService
         }
 
         $this->users->updatePasswordHash((int) $token['user_id'], PasswordHasher::hash($password));
+        // A reset is the "I may have lost control of my account" path: every
+        // Bearer token issued before it must stop working.
+        $this->apiTokens?->revokeAllForUser((int) $token['user_id'], gmdate('Y-m-d H:i:s'));
         $this->tokens->markUsed((int) $token['id']);
         // Any other outstanding reset link for this user is now stale too.
         $this->tokens->invalidateAllOfType((int) $token['user_id'], 'password_reset');

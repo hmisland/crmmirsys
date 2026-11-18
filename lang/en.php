@@ -55,6 +55,9 @@ return [
     'auth.register.confirm_password' => 'Confirm password',
     'auth.register.submit' => 'Register',
     'auth.register.have_account' => 'Already have an account?',
+    'auth.captcha.label' => 'Enter the code shown in the image',
+    'auth.captcha.refresh' => 'Refresh code',
+    'auth.captcha.invalid' => 'The security code is incorrect or has expired. Please try again.',
 
     // Common — reused across Contacts/Companies/Leads/Tickets and elsewhere
     'common.search' => 'Search',

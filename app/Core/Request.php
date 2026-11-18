@@ -89,9 +89,20 @@ final class Request
         return $this->headers[strtoupper($name)] ?? $this->headers[$name] ?? $default;
     }
 
+    /**
+     * Anything under /api is a JSON API by definition: its errors are JSON
+     * and it must never answer with a redirect or an HTML page, whatever
+     * Accept / Content-Type the client sent (or forgot to send).
+     */
+    public function isApi(): bool
+    {
+        return $this->path === '/api' || str_starts_with($this->path, '/api/');
+    }
+
     public function isJson(): bool
     {
-        return str_contains((string) $this->header('CONTENT-TYPE', ''), 'application/json')
+        return $this->isApi()
+            || str_contains((string) $this->header('CONTENT-TYPE', ''), 'application/json')
             || str_contains((string) $this->header('ACCEPT', ''), 'application/json');
     }
 

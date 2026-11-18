@@ -46,6 +46,9 @@ return [
     'auth.register.confirm_password' => 'تکرار رمز عبور',
     'auth.register.submit' => 'ثبت‌نام',
     'auth.register.have_account' => 'قبلاً حساب کاربری دارید؟',
+    'auth.captcha.label' => 'کد امنیتی داخل تصویر را وارد کنید',
+    'auth.captcha.refresh' => 'کد جدید',
+    'auth.captcha.invalid' => 'کد امنیتی اشتباه است یا منقضی شده است. لطفاً دوباره تلاش کنید.',
 
     // Common
     'common.search' => 'جستجو',

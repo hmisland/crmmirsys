@@ -4,25 +4,30 @@ declare(strict_types=1);
 
 namespace App\Application\Controllers\Api;
 
+use App\Application\Services\ApiTokenService;
 use App\Application\Services\AuthService;
+use App\Core\Exceptions\HttpException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Infrastructure\Security\Csrf;
 use App\Infrastructure\Security\CurrentUser;
 
 /**
- * Reuses the same cookie-based PHP session as the web app rather than
- * introducing a separate token scheme in Phase 2 — Phase 0 §28 asks
- * for a consistent envelope and independence from HTML templates,
- * not a specific auth transport. A proper API token mechanism
- * (personal access tokens, similar to Sanctum) can be added later
- * as an additional, opt-in way to call this same API without
- * replacing session auth for the web app — noted here as an open
- * item rather than decided silently.
+ * Two ways to call this API, one business layer behind both:
+ *  - browsers/PWA: the same cookie-based PHP session as the web app
+ *    (CSRF-protected writes);
+ *  - native clients: a revocable Bearer access token from
+ *    POST /api/v1/auth/token (stateless, see TokenApiController and
+ *    docs/phase0-multi-client-api.md).
+ * Both resolve to the same CurrentUser, so tenant isolation and RBAC apply
+ * identically.
  */
 final class AuthApiController extends BaseApiController
 {
-    public function __construct(private readonly AuthService $auth)
-    {
+    public function __construct(
+        private readonly AuthService $auth,
+        private readonly ApiTokenService $tokens,
+    ) {
     }
 
     public function register(Request $request): Response
@@ -34,6 +39,12 @@ final class AuthApiController extends BaseApiController
 
     public function login(Request $request): Response
     {
+        // Cookie-session login. A Bearer client has no session (Application
+        // does not start one for it) and must use POST /api/v1/auth/token.
+        if ($request->attribute('auth_method') === 'bearer') {
+            throw new HttpException(400, 'Bearer clients obtain tokens from POST /api/v1/auth/token.', 'use_token_endpoint');
+        }
+
         $user = $this->auth->login(
             (string) $request->input('email', ''),
             (string) $request->input('password', ''),
@@ -45,9 +56,34 @@ final class AuthApiController extends BaseApiController
 
     public function logout(Request $request): Response
     {
+        // A Bearer request is stateless: logging out means revoking its token.
+        // Calling AuthService::logout() here would start a session (and emit
+        // a Set-Cookie) just to destroy it.
+        if ($request->attribute('auth_method') === 'bearer') {
+            $this->tokens->revoke((int) $request->attribute('api_token_id'), (int) CurrentUser::id());
+
+            return $this->noContent();
+        }
+
         $this->auth->logout();
 
         return $this->noContent();
+    }
+
+    /**
+     * CSRF token of the current browser session, for fetch/XHR clients (PWA)
+     * that cannot read it from a rendered form. Send it back in the
+     * X-CSRF-Token header on POST/PUT/PATCH/DELETE. Not applicable to
+     * Bearer-authenticated requests, which are not cookie-authenticated.
+     */
+    public function csrf(Request $request): Response
+    {
+        if ($request->attribute('auth_method') === 'bearer' || session_status() !== PHP_SESSION_ACTIVE) {
+            throw new HttpException(400, 'CSRF tokens apply to cookie-session requests only.', 'csrf_not_applicable');
+        }
+
+        return $this->data(['csrf_token' => Csrf::token(), 'header' => 'X-CSRF-Token', 'field' => '_csrf'])
+            ->withHeader('Cache-Control', 'no-store');
     }
 
     public function me(Request $request): Response
